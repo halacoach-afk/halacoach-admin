@@ -7,11 +7,13 @@ import {
   getClient,
   getSettings,
   isApiError,
+  listQuoteRequests,
   listProfessionals,
   updateClient,
   type Client,
   type LookupOption,
   type ProfessionalSummary,
+  type QuoteRequestSummary,
   type SessionUser,
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
@@ -25,6 +27,7 @@ import {PageHeader} from '@/components/ui/PageHeader';
 import {NotificationPrefsPanel} from '@/components/support/NotificationPrefsPanel';
 import {clientAnswerRows, consentLabels} from '@/lib/client-utils';
 import {can} from '@/lib/permissions';
+import {quoteStatusLabels, quoteStatusTone} from '@/lib/request-utils';
 
 function Section({title, children}: {title: string; children: ReactNode}) {
   return (
@@ -51,6 +54,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
   const [client, setClient] = useState<Client | null>(null);
   const [lookups, setLookups] = useState<LookupOption[]>([]);
   const [coaches, setCoaches] = useState<ProfessionalSummary[]>([]);
+  const [requests, setRequests] = useState<QuoteRequestSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -63,14 +67,16 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
     setLoading(true);
     setError(null);
     try {
-      const [detail, settings, professionals] = await Promise.all([
+      const [detail, settings, professionals, allRequests] = await Promise.all([
         getClient(id),
         getSettings(),
         listProfessionals(),
+        listQuoteRequests(),
       ]);
       setClient(detail);
       setLookups(settings.lookups);
       setCoaches(professionals);
+      setRequests(allRequests.filter(request => request.clientId === id));
       setForm({name: detail.name, email: detail.email, phone: detail.phone});
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load client.');
@@ -270,6 +276,36 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
                     {coach.name} · {coach.specialty}
                     <ExternalLink size={14} />
                   </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+
+        <Section title="Quote requests">
+          {requests.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No quote requests yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {requests.slice(0, 5).map(request => (
+                <li key={request.id} className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-medium">{request.professionalName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {request.professionalSpecialty} · {new Date(request.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={quoteStatusTone(request.status)}>
+                      {quoteStatusLabels[request.status]}
+                    </Badge>
+                    <Link
+                      href={`/requests/${request.id}`}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                      Open
+                      <ExternalLink size={14} />
+                    </Link>
+                  </div>
                 </li>
               ))}
             </ul>

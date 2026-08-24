@@ -343,6 +343,7 @@ export type Client = {
   consents: ClientConsents;
   savedCoachIds: string[];
   onlinePlans?: OnlinePlanSummary[];
+  requests?: QuoteRequestSummary[];
   note?: string;
   notificationPrefs: NotificationPrefs;
 };
