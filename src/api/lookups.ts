@@ -44,4 +44,6 @@ export type AppSettings = {
   defaultPhonePrefix: string;
   vatRate: number;
   maxGoals: number;
+  /** Credits charged to unlock a lead; new leads use this; global updates only touch leads still on the previous default. */
+  defaultLeadUnlockCost: number;
 };

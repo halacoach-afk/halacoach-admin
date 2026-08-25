@@ -131,7 +131,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       <PageHeader
         title="Settings"
         module="M2"
-        description="Source of truth for matching questionnaire options and app config (OTP, VAT, phone prefix, max goals)."
+        description="Source of truth for matching questionnaire options and app config (OTP, VAT, phone prefix, max goals, lead unlock cost)."
       />
 
       {error ? <div className="mb-4"><ErrorState body={error} onRetry={() => void load()} /></div> : null}
@@ -140,7 +140,9 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
         <Card className="mb-8">
           <h2 className="mb-1 text-lg font-semibold text-foreground">App config</h2>
           <p className="mb-5 text-sm text-muted-foreground">
-            Matches `halacoach-app` env defaults. Super admins can edit.
+            Matches `halacoach-app` env defaults. Super admins can edit. Changing default lead unlock
+            cost updates existing leads that still use the previous default; custom per-lead costs
+            are kept.
           </p>
           <form className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" onSubmit={e => void saveConfig(e)}>
             <Input
@@ -187,6 +189,17 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
               value={settings.maxGoals}
               disabled={!canWrite}
               onChange={e => setSettings({...settings, maxGoals: Number(e.target.value)})}
+            />
+            <Input
+              label="Default lead unlock cost (credits)"
+              type="number"
+              min={0}
+              max={100}
+              value={settings.defaultLeadUnlockCost ?? 3}
+              disabled={!canWrite}
+              onChange={e =>
+                setSettings({...settings, defaultLeadUnlockCost: Number(e.target.value)})
+              }
             />
             {canWrite ? (
               <div className="flex items-end">

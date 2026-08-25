@@ -237,8 +237,8 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
               <Input
                 label="Credits to unlock"
                 type="number"
-                min={1}
-                max={20}
+                min={0}
+                max={100}
                 value={creditCost}
                 onChange={event => setCreditCost(event.target.value)}
               />
@@ -246,6 +246,9 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
                 {saving ? 'Saving…' : 'Save'}
               </Button>
             </form>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Override for this lead only. Global default is in Settings.
+            </p>
             {formError ? <p className="mt-2 text-sm text-destructive">{formError}</p> : null}
           </Section>
         ) : null}

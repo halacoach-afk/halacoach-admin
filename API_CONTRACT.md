@@ -142,7 +142,8 @@ Invite admin. **Body:** `{ name, email, role, password }` · **Super only.**
     "otpResendSeconds": 30,
     "defaultPhonePrefix": "+971",
     "vatRate": 0.05,
-    "maxGoals": 2
+    "maxGoals": 2,
+    "defaultLeadUnlockCost": 3
   },
   "lookups": [{ "id", "groupId", "value", "label", "sortOrder", "active", "system" }],
   "groups": [{ "id", "title", "hint", "locked" }]
