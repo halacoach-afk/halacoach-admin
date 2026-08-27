@@ -31,7 +31,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
   const [savingConfig, setSavingConfig] = useState(false);
   const [configMessage, setConfigMessage] = useState<string | null>(null);
   const [vatPercent, setVatPercent] = useState('5');
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useState<Record<number, string>>({});
 
   const load = async () => {
     setLoading(true);
@@ -254,9 +254,9 @@ function LookupGroupCard({
 }: {
   group: LookupGroupMeta;
   options: LookupOption[];
-  drafts: Record<string, string>;
+  drafts: Record<number, string>;
   canWrite: boolean;
-  onDraft: (id: string, label: string) => void;
+  onDraft: (id: number, label: string) => void;
   onSaveLabel: (option: LookupOption) => void;
   onToggle: (option: LookupOption) => void;
   onAdd: (label: string) => void;

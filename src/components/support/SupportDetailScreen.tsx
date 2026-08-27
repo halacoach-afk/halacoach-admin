@@ -58,7 +58,7 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
     setLoading(true);
     setError(null);
     try {
-      const detail = await getSupportTicket(id);
+      const detail = await getSupportTicket(Number(id));
       setTicket(detail);
       setReplyNote(detail.replyNote ?? '');
     } catch (err) {
@@ -86,7 +86,7 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
     setError(null);
     setMessage(null);
     try {
-      const next = await updateSupportTicket(id, {
+      const next = await updateSupportTicket(Number(id), {
         replyNote: note,
         status: status ?? (ticket.status === 'closed' ? 'closed' : 'replied'),
         actorName: actor.name,
@@ -109,7 +109,7 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
     setError(null);
     setMessage(null);
     try {
-      const next = await updateSupportTicket(id, {
+      const next = await updateSupportTicket(Number(id), {
         status: 'replied',
         replyNote: replyNote.trim() || ticket?.replyNote || '',
         actorName: actor.name,

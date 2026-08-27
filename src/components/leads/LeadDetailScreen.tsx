@@ -59,7 +59,7 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
     setLoading(true);
     setError(null);
     try {
-      const [detail, catalog] = await Promise.all([getLead(id), listServices()]);
+      const [detail, catalog] = await Promise.all([getLead(Number(id)), listServices()]);
       setLead(detail);
       setServices(catalog);
       setCreditCost(String(detail.creditCost));

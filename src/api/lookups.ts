@@ -21,7 +21,7 @@ export type LookupGroupId =
   | 'paymentMethod';
 
 export type LookupOption = {
-  id: string;
+  id: number;
   groupId: LookupGroupId;
   value: string;
   label: string;

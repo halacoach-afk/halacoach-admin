@@ -196,7 +196,7 @@ export function addLookupOption(input: {groupId: LookupGroupId; label: string; v
 }
 
 export function updateLookupOption(
-  id: string,
+  id: number,
   input: {label?: string; active?: boolean},
 ) {
   return request<LookupOption>(`/v1/lookups/${id}`, {
@@ -254,11 +254,11 @@ export function listLeads() {
   return request<LeadSummary[]>('/v1/leads');
 }
 
-export function getLead(id: string) {
+export function getLead(id: number) {
   return request<LeadDetail>(`/v1/leads/${id}`);
 }
 
-export function updateLead(id: string, input: UpdateLeadInput) {
+export function updateLead(id: number, input: UpdateLeadInput) {
   return request<LeadDetail>(`/v1/leads/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
@@ -303,11 +303,11 @@ export function listSupportTickets() {
   return request<SupportTicketSummary[]>('/v1/support');
 }
 
-export function getSupportTicket(id: string) {
+export function getSupportTicket(id: number) {
   return request<SupportTicketDetail>(`/v1/support/${id}`);
 }
 
-export function updateSupportTicket(id: string, input: UpdateSupportTicketInput) {
+export function updateSupportTicket(id: number, input: UpdateSupportTicketInput) {
   return request<SupportTicketDetail>(`/v1/support/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
@@ -326,6 +326,6 @@ export function listOnlinePlans() {
   return request<OnlinePlanSummary[]>('/v1/online-clients');
 }
 
-export function getOnlinePlan(id: string) {
+export function getOnlinePlan(id: number) {
   return request<OnlinePlanDetail>(`/v1/online-clients/${id}`);
 }

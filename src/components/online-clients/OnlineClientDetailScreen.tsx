@@ -38,7 +38,7 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
     setLoading(true);
     setError(null);
     try {
-      setPlan(await getOnlinePlan(id));
+      setPlan(await getOnlinePlan(Number(id)));
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load plan.');
     } finally {

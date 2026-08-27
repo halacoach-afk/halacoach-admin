@@ -305,7 +305,7 @@ export type ClientConsents = {
 };
 
 export type OnlinePlanSummary = {
-  id: string;
+  id: number;
   name: string;
   goal: string;
   frequency: string;
@@ -314,7 +314,7 @@ export type OnlinePlanSummary = {
   status: string;
   since: string;
   dayCount: number;
-  coachId: string;
+  coachId: number;
   coachName: string;
   clientUserId: string | null;
   clientUserEmail: string | null;
@@ -341,7 +341,7 @@ export type Client = {
   lastActiveAt: string;
   answers: ClientAnswers;
   consents: ClientConsents;
-  savedCoachIds: string[];
+  savedCoachIds: number[];
   onlinePlans?: OnlinePlanSummary[];
   requests?: QuoteRequestSummary[];
   note?: string;
@@ -399,7 +399,7 @@ export type LeadUnlock = {
 };
 
 export type MarketplaceLead = {
-  id: string;
+  id: number;
   clientId: string;
   goal: string;
   serviceId: number;
@@ -418,7 +418,7 @@ export type MarketplaceLead = {
 };
 
 export type LeadSummary = {
-  id: string;
+  id: number;
   clientId: string;
   clientName: string;
   goal: string;
@@ -503,7 +503,7 @@ export type SupportTicketStatus = 'new' | 'replied' | 'closed';
 export type SupportUserType = 'client' | 'professional';
 
 export type SupportTicket = {
-  id: string;
+  id: number;
   userType: SupportUserType;
   userId: string;
   subject: string;
@@ -517,7 +517,7 @@ export type SupportTicket = {
 };
 
 export type SupportTicketSummary = {
-  id: string;
+  id: number;
   userType: SupportUserType;
   userId: string;
   userName: string;
@@ -569,7 +569,7 @@ export type ConversationSummary = {
   professionalName: string;
   professionalSpecialty: string;
   kind?: string;
-  leadId?: string | null;
+  leadId?: number | null;
   lastMessage: string;
   lastMessageAt: string;
   messageCount: number;
@@ -582,7 +582,7 @@ export type ConversationDetail = Conversation & {
   professionalEmail: string;
   professionalSpecialty: string;
   kind?: string;
-  leadId?: string | null;
+  leadId?: number | null;
 };
 
 export type LegalDocId = 'terms' | 'privacy' | 'professional';
