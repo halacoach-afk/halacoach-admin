@@ -7,8 +7,8 @@ export function toClientSummary(client: Client): ClientSummary {
     name: client.name,
     email: client.email,
     phone: client.phone,
-    location: client.answers.location ?? '—',
-    goals: client.answers.goal,
+    location: client.profile?.location ?? '—',
+    goals: client.matchPrefs?.goals ?? [],
     onboarded: client.onboarded,
     otpVerified: client.otpVerified,
     suspended: client.suspended,
@@ -18,7 +18,7 @@ export function toClientSummary(client: Client): ClientSummary {
   };
 }
 
-type AnswerRow = {
+type MatchPrefRow = {
   step: number;
   label: string;
   value: string;
@@ -32,55 +32,67 @@ function labelsFor(lookups: LookupOption[], groupId: string, values: string[]) {
   return values.map(value => labelFor(lookups, groupId, value)).join(', ');
 }
 
-/** Steps aligned with live mobile MatchScreen onboarding (14 steps). */
-export function clientAnswerRows(client: Client, lookups: LookupOption[]): AnswerRow[] {
-  const answers = client.answers;
+/** Steps aligned with live mobile MatchScreen onboarding. */
+export function clientMatchPrefRows(client: Client, lookups: LookupOption[]): MatchPrefRow[] {
+  const prefs = client.matchPrefs ?? {
+    goals: [],
+    formats: [],
+    days: [],
+    times: [],
+    ages: [],
+    languages: [],
+  };
+  const profile = client.profile ?? {};
   return [
-    {step: 1, label: 'Goals', value: labelsFor(lookups, 'goals', answers.goal) || '—'},
+    {step: 1, label: 'Goals', value: labelsFor(lookups, 'goals', prefs.goals) || '—'},
     {
       step: 2,
-      label: 'Training type',
-      value: answers.trainingType
-        ? labelFor(lookups, 'trainingType', answers.trainingType)
+      label: 'Training formats',
+      value: prefs.formats.length
+        ? labelsFor(lookups, 'formats', prefs.formats)
         : '—',
     },
     {
       step: 3,
       label: 'Frequency',
-      value: answers.frequency ? labelFor(lookups, 'frequency', answers.frequency) : '—',
+      value: prefs.frequency ? labelFor(lookups, 'frequency', prefs.frequency) : '—',
     },
-    {step: 4, label: 'Preferred days', value: labelsFor(lookups, 'days', answers.days) || '—'},
+    {step: 4, label: 'Preferred days', value: labelsFor(lookups, 'days', prefs.days) || '—'},
     {
       step: 5,
       label: 'Preferred times',
       value:
-        (labelsFor(lookups, 'times', answers.times) || '—') +
-        (answers.timesOther ? ` (${answers.timesOther})` : ''),
+        (labelsFor(lookups, 'times', prefs.times) || '—') +
+        (prefs.timesOther ? ` (${prefs.timesOther})` : ''),
     },
     {
       step: 6,
       label: 'Current routine',
       value:
-        (answers.routine ? labelFor(lookups, 'routine', answers.routine) : '—') +
-        (answers.routineOther ? ` (${answers.routineOther})` : ''),
+        (prefs.routine ? labelFor(lookups, 'routine', prefs.routine) : '—') +
+        (prefs.routineOther ? ` (${prefs.routineOther})` : ''),
     },
     {
       step: 7,
-      label: 'Coach gender preference',
-      value: answers.coachGender ? labelFor(lookups, 'coachGender', answers.coachGender) : '—',
+      label: 'Gender preference',
+      value: prefs.genderPreference
+        ? labelFor(lookups, 'genderPreference', prefs.genderPreference)
+        : '—',
     },
     {
       step: 8,
       label: 'Coaching style',
-      value: answers.style ? labelFor(lookups, 'coachingStyle', answers.style) : '—',
+      value: prefs.style ? labelFor(lookups, 'style', prefs.style) : '—',
     },
     {
       step: 9,
       label: 'Personal details',
       value: [
-        answers.gender ? labelFor(lookups, 'clientGender', answers.gender) : null,
-        answers.age ? labelFor(lookups, 'age', answers.age) : null,
-        answers.gymAccess ? labelFor(lookups, 'gymAccess', answers.gymAccess) : null,
+        profile.gender ? labelFor(lookups, 'gender', profile.gender) : null,
+        profile.age ? labelFor(lookups, 'age', profile.age) : null,
+        profile.gymAccess ? labelFor(lookups, 'gymAccess', profile.gymAccess) : null,
+        profile.location || null,
+        profile.ethnicity ? labelFor(lookups, 'ethnicity', profile.ethnicity) : null,
       ]
         .filter(Boolean)
         .join(' · ') || '—',
@@ -88,28 +100,25 @@ export function clientAnswerRows(client: Client, lookups: LookupOption[]): Answe
     {
       step: 10,
       label: 'Languages',
-      value: labelsFor(lookups, 'languages', answers.languages) || '—',
+      value: labelsFor(lookups, 'languages', prefs.languages) || '—',
     },
     {
       step: 11,
-      label: 'Ethnicity',
-      value: answers.ethnicity ? labelFor(lookups, 'ethnicity', answers.ethnicity) : '—',
+      label: 'When to start',
+      value: prefs.startTraining
+        ? labelFor(lookups, 'startTraining', prefs.startTraining)
+        : '—',
     },
     {
       step: 12,
-      label: 'When to start',
-      value: answers.startTraining
-        ? labelFor(lookups, 'startTraining', answers.startTraining)
-        : '—',
-    },
-    {step: 13, label: 'Location', value: answers.location ?? '—'},
-    {
-      step: 14,
       label: 'Account',
-      value: [answers.email, answers.phone].filter(Boolean).join(' · ') || '—',
+      value: [client.email, client.phone].filter(Boolean).join(' · ') || '—',
     },
   ];
 }
+
+/** @deprecated Use clientMatchPrefRows */
+export const clientAnswerRows = clientMatchPrefRows;
 
 export const consentLabels = {
   terms: 'Terms of Service',

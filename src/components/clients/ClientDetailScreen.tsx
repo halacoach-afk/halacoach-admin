@@ -25,7 +25,7 @@ import {Input} from '@/components/ui/Input';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {NotificationPrefsPanel} from '@/components/support/NotificationPrefsPanel';
-import {clientAnswerRows, consentLabels} from '@/lib/client-utils';
+import {clientMatchPrefRows, consentLabels} from '@/lib/client-utils';
 import {can} from '@/lib/permissions';
 import {quoteStatusLabels, quoteStatusTone} from '@/lib/request-utils';
 
@@ -90,7 +90,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
   }, [id]);
 
   const answerRows = useMemo(
-    () => (client ? clientAnswerRows(client, lookups) : []),
+    () => (client ? clientMatchPrefRows(client, lookups) : []),
     [client, lookups],
   );
 
@@ -158,7 +158,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
       <PageHeader
         module="M6"
         title={client.name}
-        description={`${client.email} · ${client.answers.location ?? 'No location'} · mobile register + questionnaire`}
+        description={`${client.email} · ${client.profile?.location ?? 'No location'} · mobile register + questionnaire`}
         actions={
           canWrite ? (
             <div className="flex flex-wrap gap-2">

@@ -449,41 +449,70 @@ export function ProfessionalDetailScreen({
           )}
         </Section>
 
-        <Section title="Lead preferences">
-          {Object.values(pro.leadPrefs ?? {}).every(list => !list?.length) ? (
-            <p className="text-sm text-muted-foreground">
-              Coach has not set lead preferences yet (shown as incomplete on their dashboard).
-            </p>
-          ) : (
-            <dl className="grid gap-3">
-              {(
-                [
-                  ['Goals', pro.leadPrefs?.goals],
-                  ['Client gender', pro.leadPrefs?.clientGender],
-                  ['Ages', pro.leadPrefs?.ages],
-                  ['Days', pro.leadPrefs?.days],
-                  ['Times', pro.leadPrefs?.times],
-                  ['Languages', pro.leadPrefs?.languages],
-                  ['Formats', pro.leadPrefs?.formats],
-                ] as const
-              ).map(([label, values]) => (
-                <div key={label}>
-                  <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-                  <dd className="mt-1 flex flex-wrap gap-1.5">
-                    {values?.length ? (
-                      values.map(value => (
-                        <Badge key={value} tone="sky">
-                          {value}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          )}
+        <Section title="Match preferences">
+          {(() => {
+            const prefs = pro.matchPrefs;
+            const listFields = [
+              prefs?.goals,
+              prefs?.formats,
+              prefs?.days,
+              prefs?.times,
+              prefs?.ages,
+              prefs?.languages,
+            ];
+            const scalarEmpty = ![
+              prefs?.frequency,
+              prefs?.timesOther,
+              prefs?.genderPreference,
+              prefs?.style,
+              prefs?.startTraining,
+              prefs?.routine,
+              prefs?.routineOther,
+            ].some(Boolean);
+            const empty =
+              !prefs || (listFields.every(list => !list?.length) && scalarEmpty);
+            if (empty) {
+              return (
+                <p className="text-sm text-muted-foreground">
+                  Coach has not set match preferences yet (shown as incomplete on their
+                  dashboard).
+                </p>
+              );
+            }
+            return (
+              <dl className="grid gap-3">
+                {(
+                  [
+                    ['Goals', prefs.goals],
+                    ['Formats', prefs.formats],
+                    [
+                      'Gender preference',
+                      prefs.genderPreference ? [prefs.genderPreference] : [],
+                    ],
+                    ['Ages', prefs.ages],
+                    ['Days', prefs.days],
+                    ['Times', prefs.times],
+                    ['Languages', prefs.languages],
+                  ] as const
+                ).map(([label, values]) => (
+                  <div key={label}>
+                    <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+                    <dd className="mt-1 flex flex-wrap gap-1.5">
+                      {values?.length ? (
+                        values.map(value => (
+                          <Badge key={value} tone="sky">
+                            {value}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            );
+          })()}
         </Section>
 
         <Section title="Public profile">

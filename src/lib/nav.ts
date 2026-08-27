@@ -54,7 +54,7 @@ export const navItems: NavItem[] = [
   {
     href: '/clients',
     label: 'Clients',
-    description: 'Matching questionnaire answers, consents, OTP, and saved coaches.',
+    description: 'Matching preferences, consents, OTP, and saved coaches.',
     icon: Users,
     module: 'M6',
     permission: 'clients:read',

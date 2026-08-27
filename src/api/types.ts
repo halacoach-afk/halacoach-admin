@@ -176,14 +176,32 @@ export type ProPricing = {
   notes: string;
 };
 
-export type LeadPrefs = {
+export type MatchPrefs = {
   goals: string[];
-  clientGender: string[];
-  ages: string[];
+  formats: string[];
+  frequency?: string;
   days: string[];
   times: string[];
+  timesOther?: string;
+  genderPreference?: string;
+  style?: string;
+  ages: string[];
   languages: string[];
-  formats: string[];
+  startTraining?: string;
+  routine?: string;
+  routineOther?: string;
+};
+
+export type PersonalProfile = {
+  gender?: string | null;
+  age?: string | null;
+  ethnicity?: string | null;
+  gymAccess?: string | null;
+  location?: string | null;
+  locationLatitude?: number | null;
+  locationLongitude?: number | null;
+  bio?: string | null;
+  years?: string | null;
 };
 
 export type Professional = {
@@ -204,7 +222,7 @@ export type Professional = {
   verificationRejectedReason: string | null;
   activated: boolean;
   pricing: ProPricing;
-  leadPrefs: LeadPrefs;
+  matchPrefs: MatchPrefs;
   bio: string;
   credits: number;
   txns: ProfessionalTxn[];
@@ -274,28 +292,6 @@ export type UpdateProfessionalInput = {
   suspended?: boolean;
 };
 
-export type ClientAnswers = {
-  goal: string[];
-  trainingType?: string;
-  frequency?: string;
-  startTraining?: string;
-  days: string[];
-  times: string[];
-  timesOther?: string;
-  routine?: string;
-  routineOther?: string;
-  coachGender?: string;
-  style?: string;
-  gender?: string;
-  age?: string;
-  ethnicity?: string;
-  gymAccess?: string;
-  languages: string[];
-  location?: string;
-  email?: string;
-  phone?: string;
-};
-
 export type ClientConsents = {
   terms: boolean;
   privacy: boolean;
@@ -339,7 +335,8 @@ export type Client = {
   suspended: boolean;
   createdAt: string;
   lastActiveAt: string;
-  answers: ClientAnswers;
+  matchPrefs: MatchPrefs;
+  profile: PersonalProfile;
   consents: ClientConsents;
   savedCoachIds: number[];
   onlinePlans?: OnlinePlanSummary[];
