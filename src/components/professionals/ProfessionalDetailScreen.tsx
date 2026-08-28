@@ -501,7 +501,9 @@ export function ProfessionalDetailScreen({
                       {values?.length ? (
                         values.map(value => (
                           <Badge key={value} tone="sky">
-                            {value}
+                            {label === 'Formats'
+                              ? (locationLabels[value] ?? value)
+                              : value}
                           </Badge>
                         ))
                       ) : (
@@ -523,7 +525,12 @@ export function ProfessionalDetailScreen({
             <Field label="Availability" value={pro.availability} />
             <Field label="Price from" value={pro.priceFrom} />
             <Field label="Rating" value={`${pro.rating} (${pro.reviews} reviews)`} />
-            <Field label="Formats" value={pro.formats.join(', ')} />
+            <Field
+              label="Formats"
+              value={
+                pro.formats.map(id => locationLabels[id] ?? id).join(', ') || '—'
+              }
+            />
             <Field label="Languages" value={pro.languages.join(', ')} />
           </dl>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{pro.about || pro.bio}</p>
