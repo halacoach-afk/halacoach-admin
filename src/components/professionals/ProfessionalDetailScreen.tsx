@@ -332,7 +332,7 @@ export function ProfessionalDetailScreen({
             <div>
               <p className="mb-2 text-sm font-medium">Session locations</p>
               <div className="flex flex-wrap gap-2">
-                {(['mine', 'client', 'online'] as const).map(key => (
+                {(['coach', 'client', 'online'] as const).map(key => (
                   <button
                     key={key}
                     type="button"

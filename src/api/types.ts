@@ -215,7 +215,7 @@ export type Professional = {
   onboarded: boolean;
   createdAt: string;
   serviceIds: number[];
-  locations: ('mine' | 'client' | 'online')[];
+  locations: ('coach' | 'client' | 'online')[];
   radiusKm: number;
   certificationFiles: string[];
   insuranceFiles: string[];

@@ -62,7 +62,7 @@ export const verificationLabels = {
 } as const;
 
 export const locationLabels: Record<string, string> = {
-  mine: 'My location',
+  coach: 'My location',
   client: 'Client location',
   online: 'Online',
 };
