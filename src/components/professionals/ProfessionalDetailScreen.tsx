@@ -463,7 +463,7 @@ export function ProfessionalDetailScreen({
             const scalarEmpty = ![
               prefs?.frequency,
               prefs?.timesOther,
-              prefs?.genderPreference,
+              prefs?.gender,
               prefs?.style,
               prefs?.startTraining,
               prefs?.routine,
@@ -487,7 +487,7 @@ export function ProfessionalDetailScreen({
                     ['Formats', prefs.formats],
                     [
                       'Gender preference',
-                      prefs.genderPreference ? [prefs.genderPreference] : [],
+                      prefs.gender ? [prefs.gender] : [],
                     ],
                     ['Ages', prefs.ages],
                     ['Days', prefs.days],

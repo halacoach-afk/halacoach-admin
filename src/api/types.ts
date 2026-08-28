@@ -178,12 +178,14 @@ export type ProPricing = {
 
 export type MatchPrefs = {
   goals: string[];
+  /** Coach offer list — same catalog values as client goals. */
+  services: string[];
   formats: string[];
   frequency?: string;
   days: string[];
   times: string[];
   timesOther?: string;
-  genderPreference?: string;
+  gender?: string;
   style?: string;
   ages: string[];
   languages: string[];

@@ -75,8 +75,8 @@ export function clientMatchPrefRows(client: Client, lookups: LookupOption[]): Ma
     {
       step: 7,
       label: 'Gender preference',
-      value: prefs.genderPreference
-        ? labelFor(lookups, 'genderPreference', prefs.genderPreference)
+      value: prefs.gender
+        ? labelFor(lookups, 'genderPreference', prefs.gender)
         : '—',
     },
     {
