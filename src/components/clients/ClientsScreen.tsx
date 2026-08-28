@@ -14,18 +14,8 @@ import {PageHeader} from '@/components/ui/PageHeader';
 
 type Filter = 'all' | 'onboarded' | 'incomplete' | 'suspended';
 
-const goalLabels: Record<string, string> = {
-  'lose-weight': 'Weight loss',
-  'build-muscle': 'Build muscle',
-  'get-stronger': 'Get stronger',
-  'improve-health': 'Improve health',
-  rehab: 'Rehab',
-  'sport-beginner': 'Sport (beginner)',
-  'sport-advanced': 'Sport (advanced)',
-};
-
 function goalText(goals: string[]) {
-  return goals.map(goal => goalLabels[goal] ?? goal).join(', ') || '—';
+  return goals.length ? goals.join(', ') : '—';
 }
 
 export function ClientsScreen({actor}: {actor: SessionUser}) {
