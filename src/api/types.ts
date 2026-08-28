@@ -177,8 +177,10 @@ export type ProPricing = {
 };
 
 export type MatchPrefs = {
-  goals: string[];
-  /** Coach offer list — same catalog values as client goals. */
+  /**
+   * Shared catalog service ids.
+   * Client: services they want · Coach: services they provide.
+   */
   services: string[];
   formats: string[];
   frequency?: string;
@@ -353,7 +355,7 @@ export type ClientSummary = {
   email: string;
   phone: string;
   location: string;
-  goals: string[];
+  services: string[];
   onboarded: boolean;
   otpVerified: boolean;
   suspended: boolean;

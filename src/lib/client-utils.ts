@@ -8,7 +8,7 @@ export function toClientSummary(client: Client): ClientSummary {
     email: client.email,
     phone: client.phone,
     location: client.profile?.location ?? '—',
-    goals: client.matchPrefs?.goals ?? [],
+    services: client.matchPrefs?.services ?? [],
     onboarded: client.onboarded,
     otpVerified: client.otpVerified,
     suspended: client.suspended,
@@ -35,7 +35,7 @@ function labelsFor(lookups: LookupOption[], groupId: string, values: string[]) {
 /** Steps aligned with live mobile MatchScreen onboarding. */
 export function clientMatchPrefRows(client: Client, lookups: LookupOption[]): MatchPrefRow[] {
   const prefs = client.matchPrefs ?? {
-    goals: [],
+    services: [],
     formats: [],
     days: [],
     times: [],
@@ -44,7 +44,7 @@ export function clientMatchPrefRows(client: Client, lookups: LookupOption[]): Ma
   };
   const profile = client.profile ?? {};
   return [
-    {step: 1, label: 'Goals', value: labelsFor(lookups, 'goals', prefs.goals) || '—'},
+    {step: 1, label: 'Services', value: labelsFor(lookups, 'services', prefs.services) || '—'},
     {
       step: 2,
       label: 'Training formats',

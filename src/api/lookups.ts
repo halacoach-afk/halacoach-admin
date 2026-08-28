@@ -1,5 +1,5 @@
 export type LookupGroupId =
-  | 'goals'
+  | 'services'
   | 'formats'
   | 'frequency'
   | 'startTraining'

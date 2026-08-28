@@ -453,7 +453,7 @@ export function ProfessionalDetailScreen({
           {(() => {
             const prefs = pro.matchPrefs;
             const listFields = [
-              prefs?.goals,
+              prefs?.services,
               prefs?.formats,
               prefs?.days,
               prefs?.times,
@@ -483,7 +483,7 @@ export function ProfessionalDetailScreen({
               <dl className="grid gap-3">
                 {(
                   [
-                    ['Goals', prefs.goals],
+                    ['Services', prefs.services],
                     ['Formats', prefs.formats],
                     [
                       'Gender preference',

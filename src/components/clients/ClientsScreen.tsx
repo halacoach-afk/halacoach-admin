@@ -14,8 +14,8 @@ import {PageHeader} from '@/components/ui/PageHeader';
 
 type Filter = 'all' | 'onboarded' | 'incomplete' | 'suspended';
 
-function goalText(goals: string[]) {
-  return goals.length ? goals.join(', ') : '—';
+function servicesText(services: string[]) {
+  return services.length ? services.join(', ') : '—';
 }
 
 export function ClientsScreen({actor}: {actor: SessionUser}) {
@@ -118,7 +118,7 @@ export function ClientsScreen({actor}: {actor: SessionUser}) {
       {visible.length === 0 ? (
         <EmptyState title="No clients match" body="Try another filter or clear the search box." />
       ) : (
-        <DataTable columns={['Client', 'Location', 'Goals', 'Onboarded', 'Saved', '']}>
+        <DataTable columns={['Client', 'Location', 'Services', 'Onboarded', 'Saved', '']}>
           {visible.map(row => (
             <tr key={row.id} className="border-b border-border last:border-0">
               <td className="px-4 py-3">
@@ -126,7 +126,7 @@ export function ClientsScreen({actor}: {actor: SessionUser}) {
                 <div className="text-xs text-muted-foreground">{row.email}</div>
               </td>
               <td className="px-4 py-3 text-muted-foreground">{row.location}</td>
-              <td className="px-4 py-3 text-sm">{goalText(row.goals)}</td>
+              <td className="px-4 py-3 text-sm">{servicesText(row.services)}</td>
               <td className="px-4 py-3">
                 {row.suspended ? (
                   <Badge tone="danger">Suspended</Badge>
