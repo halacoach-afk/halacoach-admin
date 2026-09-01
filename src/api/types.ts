@@ -409,8 +409,6 @@ export type MarketplaceLead = {
   format: string;
   days: string;
   time: string;
-  matchScore: number;
-  creditCost: number;
   status: LeadStatus;
   postedAt: string;
   closedAt: string | null;
@@ -428,8 +426,6 @@ export type LeadSummary = {
   location: string;
   frequency?: string;
   format?: string;
-  matchScore: number;
-  creditCost: number;
   status: LeadStatus;
   unlockCount: number;
   postedAt: string;
@@ -448,7 +444,6 @@ export type LeadDetail = Omit<MarketplaceLead, 'unlocks'> & {
 
 export type UpdateLeadInput = {
   status?: LeadStatus;
-  creditCost?: number;
 };
 
 export type QuoteRequestStatus = 'pending' | 'quoted' | 'closed';

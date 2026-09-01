@@ -8,8 +8,6 @@ export function toLeadSummary(lead: MarketplaceLead, client?: Client): LeadSumma
     goal: lead.goal,
     serviceId: lead.serviceId,
     location: lead.location,
-    matchScore: lead.matchScore,
-    creditCost: lead.creditCost,
     status: lead.status,
     unlockCount: lead.unlocks.length,
     postedAt: lead.postedAt,

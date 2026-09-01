@@ -131,7 +131,7 @@ export function LeadsScreen({actor}: {actor: SessionUser}) {
         <EmptyState title="No leads match" body="Try another filter or clear the search box." />
       ) : (
         <DataTable
-          columns={['Goal', 'Client', 'Location', 'Format', 'Match', 'Cost', 'Unlocks', 'Posted', '']}>
+          columns={['Goal', 'Client', 'Location', 'Format', 'Unlocks', 'Posted', '']}>
           {visible.map(row => (
             <tr key={row.id} className="border-b border-border last:border-0">
               <td className="px-4 py-3">
@@ -144,10 +144,6 @@ export function LeadsScreen({actor}: {actor: SessionUser}) {
               <td className="px-4 py-3 text-sm">{row.clientName}</td>
               <td className="px-4 py-3 text-muted-foreground">{row.location}</td>
               <td className="px-4 py-3 text-sm text-muted-foreground">{row.format ?? '—'}</td>
-              <td className="px-4 py-3">
-                <Badge tone="sky">{row.matchScore}%</Badge>
-              </td>
-              <td className="px-4 py-3 font-medium">{row.creditCost} cr</td>
               <td className="px-4 py-3">
                 {row.unlockCount > 0 ? (
                   <Badge tone="primary">{row.unlockCount}</Badge>
