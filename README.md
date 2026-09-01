@@ -12,8 +12,11 @@ Next.js operations console for HalaCoach. All modules **M0–M14** are implement
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
+
+Set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` (see `.env.example`).
 
 Open [http://localhost:3000](http://localhost:3000).
 
@@ -53,10 +56,7 @@ Role-based nav: reviewers see verification + professionals; support sees clients
 
 ## Connect real API
 
-When `halacoach-apis` is ready:
-
-1. Set `NEXT_PUBLIC_API_BASE_URL` to the admin API base (e.g. `https://api.example.com/api/admin`)
-2. Implement routes in [API_CONTRACT.md](./API_CONTRACT.md) — admin UI stays unchanged
+When `halacoach-apis` is ready, set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` (see `.env.example`).
 
 ## Project layout
 
