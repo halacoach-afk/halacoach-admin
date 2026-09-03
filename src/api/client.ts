@@ -1,1 +1,1 @@
-export {request} from '@/lib/request';
+export {request, requestBlob} from '@/lib/request';

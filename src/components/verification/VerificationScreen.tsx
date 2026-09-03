@@ -8,6 +8,7 @@ import {
   isApiError,
   listServices,
   listVerificationQueue,
+  openVerificationFile,
   rejectVerification,
   type CatalogService,
   type SessionUser,
@@ -142,7 +143,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                   {formatSubmitted(item.submittedAt)}
                 </td>
                 <td className="px-4 py-3">
-                  {item.certificationFiles.length + item.insuranceFiles.length} files
+                  {(item.verificationFiles?.length ?? 0)} files
                 </td>
                 <td className="px-4 py-3">
                   <Badge tone="sky">{item.profileCompletion}%</Badge>
@@ -204,34 +205,23 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                 <div>
                   <h3 className="mb-2 text-sm font-semibold text-foreground">Uploaded documents</h3>
                   <ul className="space-y-2">
-                    {selected.certificationFiles.map(file => (
+                    {(selected.verificationFiles ?? []).map(file => (
                       <li
-                        key={file}
+                        key={file.id}
                         className="flex items-center gap-2 rounded-xl bg-muted/60 px-3 py-2 text-sm">
                         <FileCheck2 size={16} className="text-primary" />
-                        <span>{file}</span>
-                        <Badge tone="muted">Certification</Badge>
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 truncate text-start text-primary hover:underline"
+                          onClick={() => void openVerificationFile(selected.id, file.id)}>
+                          {file.originalName}
+                        </button>
                       </li>
                     ))}
-                    {selected.insuranceFiles.map(file => (
-                      <li
-                        key={file}
-                        className="flex items-center gap-2 rounded-xl bg-muted/60 px-3 py-2 text-sm">
-                        <FileCheck2 size={16} className="text-primary" />
-                        <span>{file}</span>
-                        <Badge tone="muted">Insurance</Badge>
-                      </li>
-                    ))}
-                    {selected.certificationFiles.length + selected.insuranceFiles.length === 0 ? (
+                    {(selected.verificationFiles?.length ?? 0) === 0 ? (
                       <li className="text-sm text-muted-foreground">No documents uploaded.</li>
                     ) : null}
                   </ul>
-                  {selected.insuranceFiles.length === 0 ? (
-                    <p className="mt-3 text-xs text-amber-800">
-                      No insurance document on file — you can still approve if certifications look
-                      valid.
-                    </p>
-                  ) : null}
                 </div>
               </div>
 

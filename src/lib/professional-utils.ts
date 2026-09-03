@@ -12,9 +12,9 @@ export function profileCompletion(pro: Professional): number {
     pro.serviceIds.length > 0,
     pro.locations.length > 0,
     hasPricing,
-    pro.certificationFiles.length > 0,
+    (pro.verificationFiles?.length ?? 0) > 0,
     pro.activated,
-    pro.verification === 'pending' || pro.verification === 'verified',
+    pro.verificationStatus === 'pending' || pro.verificationStatus === 'verified',
   ];
   return Math.round((checks.filter(Boolean).length / checks.length) * 100);
 }
@@ -28,7 +28,7 @@ export function toProfessionalSummary(pro: Professional): ProfessionalSummary {
     specialty: pro.specialty,
     location: pro.location,
     serviceCount: pro.serviceIds.length,
-    verification: pro.verification,
+    verificationStatus: pro.verificationStatus,
     credits: pro.credits,
     activated: pro.activated,
     onboarded: pro.onboarded,
@@ -46,8 +46,7 @@ export function toVerificationQueueItem(pro: Professional): VerificationQueueIte
     specialty: pro.specialty,
     location: pro.location,
     submittedAt: pro.verificationSubmittedAt ?? pro.createdAt,
-    certificationFiles: pro.certificationFiles,
-    insuranceFiles: pro.insuranceFiles,
+    verificationFiles: pro.verificationFiles ?? [],
     serviceIds: pro.serviceIds,
     profileCompletion: profileCompletion(pro),
     profileCertifications: pro.profileCertifications,
@@ -55,8 +54,8 @@ export function toVerificationQueueItem(pro: Professional): VerificationQueueIte
 }
 
 export const verificationLabels = {
-  none: 'None',
-  pending: 'Pending',
+  none: 'Not submitted',
+  pending: 'In review',
   verified: 'Verified',
   rejected: 'Rejected',
 } as const;

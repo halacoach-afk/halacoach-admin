@@ -7,6 +7,7 @@ import {
   getProfessional,
   isApiError,
   listServices,
+  openVerificationFile,
   updateProfessional,
   type CatalogService,
   type Professional,
@@ -56,8 +57,8 @@ function completionChecks(pro: Professional) {
     {label: 'Services selected', done: pro.serviceIds.length > 0},
     {label: 'Locations set', done: pro.locations.length > 0},
     {label: 'Pricing set', done: hasPricing},
-    {label: 'Certifications uploaded', done: pro.certificationFiles.length > 0},
-    {label: 'Verification submitted', done: pro.verification === 'pending' || pro.verification === 'verified'},
+    {label: 'Documents uploaded', done: (pro.verificationFiles?.length ?? 0) > 0},
+    {label: 'Verification submitted', done: pro.verificationStatus === 'pending' || pro.verificationStatus === 'verified'},
     {label: 'Profile activated', done: pro.activated},
   ];
 }
@@ -284,12 +285,12 @@ export function ProfessionalDetailScreen({
         ) : (
           <Badge tone="warning">Signup incomplete</Badge>
         )}
-        <Badge tone={pro.verification === 'verified' ? 'primary' : pro.verification === 'pending' ? 'warning' : 'muted'}>
-          {verificationLabels[pro.verification]}
+        <Badge tone={pro.verificationStatus === 'verified' ? 'primary' : pro.verificationStatus === 'pending' ? 'warning' : 'muted'}>
+          {verificationLabels[pro.verificationStatus]}
         </Badge>
         {pro.suspended ? <Badge tone="danger">Suspended</Badge> : null}
         {pro.activated ? <Badge tone="primary">Live profile</Badge> : <Badge tone="muted">Not activated</Badge>}
-        {pro.verification === 'rejected' && pro.verificationRejectedReason ? (
+        {pro.verificationStatus === 'rejected' && pro.verificationRejectedReason ? (
           <Badge tone="danger">Rejected: {pro.verificationRejectedReason}</Badge>
         ) : null}
         <Badge tone="sky">{pct}% complete</Badge>
@@ -588,28 +589,22 @@ export function ProfessionalDetailScreen({
         </Section>
 
         <Section title="Documents">
-          <div className="space-y-3 text-sm">
-            <div>
-              <p className="font-medium text-foreground">Certifications</p>
-              <ul className="mt-1 list-inside list-disc text-muted-foreground">
-                {pro.certificationFiles.length ? (
-                  pro.certificationFiles.map(file => <li key={file}>{file}</li>)
-                ) : (
-                  <li>None uploaded</li>
-                )}
-              </ul>
-            </div>
-            <div>
-              <p className="font-medium text-foreground">Insurance</p>
-              <ul className="mt-1 list-inside list-disc text-muted-foreground">
-                {pro.insuranceFiles.length ? (
-                  pro.insuranceFiles.map(file => <li key={file}>{file}</li>)
-                ) : (
-                  <li>None uploaded</li>
-                )}
-              </ul>
-            </div>
-          </div>
+          <ul className="space-y-2 text-sm">
+            {(pro.verificationFiles ?? []).length ? (
+              (pro.verificationFiles ?? []).map(file => (
+                <li key={file.id}>
+                  <button
+                    type="button"
+                    className="text-primary hover:underline"
+                    onClick={() => void openVerificationFile(pro.id, file.id)}>
+                    {file.originalName}
+                  </button>
+                </li>
+              ))
+            ) : (
+              <li className="text-muted-foreground">None uploaded</li>
+            )}
+          </ul>
         </Section>
 
         <Section title="Wallet">

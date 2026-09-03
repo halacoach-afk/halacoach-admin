@@ -1,4 +1,4 @@
-import {request} from './client';
+import {request, requestBlob} from './client';
 import type {
   AdminUser,
   AppSettings,
@@ -115,6 +115,7 @@ export type {
   UpdateSupportTicketInput,
   VerificationStatus,
   VerificationQueueItem,
+  VerificationFile,
 } from './types';
 export {ApiError, isApiError} from './errors';
 
@@ -233,6 +234,15 @@ export function rejectVerification(id: string, input: RejectVerificationInput = 
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export async function openVerificationFile(professionalId: string, fileId: string) {
+  const blob = await requestBlob(
+    `/v1/verification/${encodeURIComponent(professionalId)}/files/${encodeURIComponent(fileId)}`,
+  );
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank', 'noopener,noreferrer');
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 export function listClients() {

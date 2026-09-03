@@ -156,6 +156,14 @@ export type UpdateServiceInput = {
 
 export type VerificationStatus = 'none' | 'pending' | 'verified' | 'rejected';
 
+export type VerificationFile = {
+  id: string;
+  originalName: string;
+  storedName: string;
+  mime: string;
+  size: number;
+};
+
 export type ProfessionalTxn = {
   id: string;
   type: 'purchase' | 'spend' | 'adjustment';
@@ -219,9 +227,8 @@ export type Professional = {
   serviceIds: number[];
   locations: ('coach' | 'client' | 'online')[];
   radiusKm: number;
-  certificationFiles: string[];
-  insuranceFiles: string[];
-  verification: VerificationStatus;
+  verificationFiles: VerificationFile[];
+  verificationStatus: VerificationStatus;
   verificationSubmittedAt: string | null;
   verificationRejectedReason: string | null;
   activated: boolean;
@@ -270,7 +277,7 @@ export type ProfessionalSummary = {
   specialty: string;
   location: string;
   serviceCount: number;
-  verification: VerificationStatus;
+  verificationStatus: VerificationStatus;
   credits: number;
   activated: boolean;
   onboarded: boolean;
@@ -379,8 +386,7 @@ export type VerificationQueueItem = {
   specialty: string;
   location: string;
   submittedAt: string;
-  certificationFiles: string[];
-  insuranceFiles: string[];
+  verificationFiles: VerificationFile[];
   serviceIds: number[];
   profileCompletion: number;
   profileCertifications: string[];

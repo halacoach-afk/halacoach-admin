@@ -15,7 +15,7 @@ import {verificationLabels} from '@/lib/professional-utils';
 
 type Filter = 'all' | 'onboarded' | 'verified' | 'pending' | 'inactive' | 'suspended';
 
-function verificationTone(status: ProfessionalSummary['verification']) {
+function verificationTone(status: ProfessionalSummary['verificationStatus']) {
   if (status === 'verified') {
     return 'primary' as const;
   }
@@ -57,10 +57,10 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
       if (filter === 'onboarded' && !row.onboarded) {
         return false;
       }
-      if (filter === 'verified' && row.verification !== 'verified') {
+      if (filter === 'verified' && row.verificationStatus !== 'verified') {
         return false;
       }
-      if (filter === 'pending' && row.verification !== 'pending') {
+      if (filter === 'pending' && row.verificationStatus !== 'pending') {
         return false;
       }
       if (filter === 'inactive' && row.activated) {
@@ -85,8 +85,8 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
     () => ({
       all: rows.length,
       onboarded: rows.filter(row => row.onboarded).length,
-      verified: rows.filter(row => row.verification === 'verified').length,
-      pending: rows.filter(row => row.verification === 'pending').length,
+      verified: rows.filter(row => row.verificationStatus === 'verified').length,
+      pending: rows.filter(row => row.verificationStatus === 'pending').length,
       inactive: rows.filter(row => !row.activated).length,
       suspended: rows.filter(row => row.suspended).length,
     }),
@@ -170,8 +170,8 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
                 )}
               </td>
               <td className="px-4 py-3">
-                <Badge tone={verificationTone(row.verification)}>
-                  {verificationLabels[row.verification]}
+                <Badge tone={verificationTone(row.verificationStatus)}>
+                  {verificationLabels[row.verificationStatus]}
                 </Badge>
               </td>
               <td className="px-4 py-3 font-medium">{row.credits}</td>
