@@ -131,7 +131,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       <PageHeader
         title="Settings"
         module="M2"
-        description="Source of truth for matching questionnaire options and app config (OTP, VAT, phone prefix, max goals)."
+        description="Source of truth for matching questionnaire options and app config (OTP, VAT, phone prefix). Clients select one goal."
       />
 
       {error ? <div className="mb-4"><ErrorState body={error} onRetry={() => void load()} /></div> : null}
@@ -184,10 +184,10 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
               label="Max goals a client can select"
               type="number"
               min={1}
-              max={5}
+              max={1}
               value={settings.maxGoals}
               disabled={!canWrite}
-              onChange={e => setSettings({...settings, maxGoals: Number(e.target.value)})}
+              onChange={e => setSettings({...settings, maxGoals: Math.min(1, Math.max(1, Number(e.target.value) || 1))})}
             />
             {canWrite ? (
               <div className="flex items-end">
