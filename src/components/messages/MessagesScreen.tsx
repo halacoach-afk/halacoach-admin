@@ -45,7 +45,7 @@ export function MessagesScreen() {
         row.clientName.toLowerCase().includes(q) ||
         row.professionalName.toLowerCase().includes(q) ||
         row.lastMessage.toLowerCase().includes(q) ||
-        (row.leadId ?? '').toLowerCase().includes(q),
+        (row.leadId != null && String(row.leadId).includes(q)),
     );
   }, [rows, query]);
 
