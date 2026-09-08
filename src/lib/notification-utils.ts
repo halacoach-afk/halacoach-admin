@@ -3,10 +3,10 @@ import type {NotificationPrefs} from '@/api/types';
 export const defaultNotificationPrefs: NotificationPrefs = {
   push: true,
   email: true,
-  sms: false,
+  sms: true,
   matchUpdates: true,
   messages: true,
-  marketing: false,
+  marketing: true,
 };
 
 export const notificationPrefLabels: {key: keyof NotificationPrefs; label: string; hint: string}[] = [
