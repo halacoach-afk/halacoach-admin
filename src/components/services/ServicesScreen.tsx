@@ -173,11 +173,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
 
   return (
     <>
-      <PageHeader
-        title="Services"
-        module="M3"
-        description="Catalog for professional onboarding. Archived services stay available so existing coach profiles still resolve."
-      />
+      <PageHeader title="Services" />
 
       {error ? (
         <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-destructive">{error}</p>

@@ -584,10 +584,3 @@ export type DashboardOverview = {
   counts: DashboardCounts;
   recentActivity: DashboardActivity[];
 };
-
-export type {
-  AppSettings,
-  LookupGroupId,
-  LookupGroupMeta,
-  LookupOption,
-} from './lookups';

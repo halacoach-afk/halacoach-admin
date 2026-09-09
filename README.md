@@ -40,7 +40,6 @@ Role-based nav: reviewers see verification + professionals; support sees clients
 |---|---|---|
 | M0 | Foundation | shell, routing, mock client |
 | M1 | Auth & admins | `/login`, `/admins` |
-| M2 | Settings & lookups | `/settings` |
 | M3 | Services catalog | `/services` |
 | M4 | Professionals | `/professionals` |
 | M5 | Verification | `/verification` |

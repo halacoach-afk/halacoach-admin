@@ -5,12 +5,10 @@ import {FormEvent, useEffect, useMemo, useState, type ReactNode} from 'react';
 import {ArrowLeft, ExternalLink} from 'lucide-react';
 import {
   getClient,
-  getSettings,
   isApiError,
   listProfessionals,
   updateClient,
   type Client,
-  type LookupOption,
   type ProfessionalSummary,
   type SessionUser,
 } from '@/api';
@@ -49,7 +47,6 @@ function Field({label, value}: {label: string; value: ReactNode}) {
 export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}) {
   const canWrite = can(actor.role, 'clients:write');
   const [client, setClient] = useState<Client | null>(null);
-  const [lookups, setLookups] = useState<LookupOption[]>([]);
   const [coaches, setCoaches] = useState<ProfessionalSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,13 +60,11 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
     setLoading(true);
     setError(null);
     try {
-      const [detail, settings, professionals] = await Promise.all([
+      const [detail, professionals] = await Promise.all([
         getClient(id),
-        getSettings(),
         listProfessionals(),
       ]);
       setClient(detail);
-      setLookups(settings.lookups);
       setCoaches(professionals);
       setForm({name: detail.name, email: detail.email, phone: detail.phone});
     } catch (err) {
@@ -84,8 +79,8 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
   }, [id]);
 
   const answerRows = useMemo(
-    () => (client ? clientMatchPrefRows(client, lookups) : []),
-    [client, lookups],
+    () => (client ? clientMatchPrefRows(client) : []),
+    [client],
   );
 
   const savedCoaches = useMemo(() => {

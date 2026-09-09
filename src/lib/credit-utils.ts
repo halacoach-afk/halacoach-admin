@@ -6,7 +6,9 @@ import type {
   PromoCode,
 } from '@/api/types';
 import type {CreditPackage} from '@/api/types';
-import type {AppSettings} from '@/api/lookups';
+
+/** Matches web/app hardcoded checkout VAT. */
+export const VAT_RATE = 0.05;
 
 export function buildCreditLedger(
   professionals: Professional[],
@@ -36,15 +38,15 @@ export function buildCreditLedger(
 }
 
 export function buildCreditsOverview(input: {
-  settings: AppSettings;
   packs: CreditPackage[];
   promos: PromoCode[];
   professionals: Professional[];
   purchases: CreditPurchase[];
+  vatRate?: number;
 }): CreditsOverview {
   const transactions = buildCreditLedger(input.professionals, input.purchases);
   return {
-    vatRate: input.settings.vatRate,
+    vatRate: input.vatRate ?? VAT_RATE,
     packs: [...input.packs].sort((a, b) => a.sortOrder - b.sortOrder),
     promos: input.promos,
     transactions,

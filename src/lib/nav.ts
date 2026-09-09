@@ -8,7 +8,6 @@ import {
   LifeBuoy,
   MapPin,
   MessageCircle,
-  Settings2,
   Shield,
   Users,
   UserRoundCog,
@@ -104,14 +103,6 @@ export const navItems: NavItem[] = [
     icon: MessageCircle,
     module: 'M12',
     permission: 'messages:read',
-  },
-  {
-    href: '/settings',
-    label: 'Settings',
-    description: 'Lookups, VAT, OTP, phone prefix, and matching rules.',
-    icon: Settings2,
-    module: 'M2',
-    permission: 'settings:read',
   },
   {
     href: '/admins',

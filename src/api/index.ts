@@ -1,7 +1,6 @@
 import {request, requestBlob} from './client';
 import type {
   AdminUser,
-  AppSettings,
   CatalogService,
   Client,
   ClientSummary,
@@ -11,9 +10,6 @@ import type {
   InviteAdminInput,
   LeadDetail,
   LeadSummary,
-  LookupGroupId,
-  LookupGroupMeta,
-  LookupOption,
   Professional,
   ProfessionalSummary,
   RejectVerificationInput,
@@ -39,7 +35,6 @@ export type {
   AdminRole,
   AdminUser,
   AdjustCreditsInput,
-  AppSettings,
   CatalogService,
   Client,
   ClientConsents,
@@ -65,9 +60,6 @@ export type {
   LeadStatus,
   LeadSummary,
   LeadUnlock,
-  LookupGroupId,
-  LookupGroupMeta,
-  LookupOption,
   MessageAuthor,
   NotificationPrefs,
   OnlinePlanDetail,
@@ -150,40 +142,6 @@ export {createService, listServices, updateService} from '@/lib/apis';
 export function adjustCredits(input: AdjustCreditsInput) {
   return request<Professional>(`/v1/credit-adjustments`, {
     method: 'POST',
-    body: JSON.stringify(input),
-  });
-}
-
-export type SettingsPayload = {
-  settings: AppSettings;
-  lookups: LookupOption[];
-  groups: LookupGroupMeta[];
-};
-
-export function getSettings() {
-  return request<SettingsPayload>('/v1/settings');
-}
-
-export function updateSettings(input: Partial<AppSettings>) {
-  return request<AppSettings>('/v1/settings', {
-    method: 'PATCH',
-    body: JSON.stringify(input),
-  });
-}
-
-export function addLookupOption(input: {groupId: LookupGroupId; label: string; value?: string}) {
-  return request<LookupOption>('/v1/lookups', {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
-}
-
-export function updateLookupOption(
-  id: number,
-  input: {label?: string; active?: boolean},
-) {
-  return request<LookupOption>(`/v1/lookups/${id}`, {
-    method: 'PATCH',
     body: JSON.stringify(input),
   });
 }

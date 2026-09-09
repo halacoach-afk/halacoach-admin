@@ -1,6 +1,6 @@
 'use client';
 
-import {FormEvent, useEffect, useMemo, useState} from 'react';
+import {FormEvent, useEffect, useState} from 'react';
 import {
   inviteAdmin,
   isApiError,
@@ -98,20 +98,10 @@ export function AdminsScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  const counts = useMemo(
-    () => ({
-      total: admins.length,
-      active: admins.filter(admin => admin.active).length,
-    }),
-    [admins],
-  );
-
   return (
     <>
       <PageHeader
         title="Admins"
-        module="M1"
-        description="Invite operators and assign super / reviewer / support roles."
         actions={
           canWrite ? (
             <Button onClick={() => setShowInvite(open => !open)}>
@@ -120,11 +110,6 @@ export function AdminsScreen({actor}: {actor: SessionUser}) {
           ) : null
         }
       />
-
-      <div className="mb-4 flex gap-2 text-sm text-muted-foreground">
-        <Badge tone="primary">{counts.active} active</Badge>
-        <Badge>{counts.total} total</Badge>
-      </div>
 
       {showInvite && canWrite ? (
         <Card className="mb-6">

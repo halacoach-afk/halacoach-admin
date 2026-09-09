@@ -1,5 +1,4 @@
 import type {Client, ClientSummary} from '@/api/types';
-import type {LookupOption} from '@/api/lookups';
 
 export function toClientSummary(client: Client): ClientSummary {
   return {
@@ -24,16 +23,22 @@ type MatchPrefRow = {
   value: string;
 };
 
-function labelFor(lookups: LookupOption[], groupId: string, value: string) {
-  return lookups.find(item => item.groupId === groupId && item.value === value)?.label ?? value;
+function displayValue(value: string | null | undefined) {
+  if (!value) {
+    return '';
+  }
+  return value;
 }
 
-function labelsFor(lookups: LookupOption[], groupId: string, values: string[]) {
-  return values.map(value => labelFor(lookups, groupId, value)).join(', ');
+function displayList(values: string[] | undefined) {
+  if (!values?.length) {
+    return '';
+  }
+  return values.map(displayValue).filter(Boolean).join(', ');
 }
 
 /** Steps aligned with live mobile MatchScreen onboarding. */
-export function clientMatchPrefRows(client: Client, lookups: LookupOption[]): MatchPrefRow[] {
+export function clientMatchPrefRows(client: Client): MatchPrefRow[] {
   const prefs = client.matchPrefs ?? {
     services: [],
     formats: [],
@@ -44,55 +49,51 @@ export function clientMatchPrefRows(client: Client, lookups: LookupOption[]): Ma
   };
   const profile = client.profile ?? {};
   return [
-    {step: 1, label: 'Services', value: labelsFor(lookups, 'services', prefs.services) || '—'},
+    {step: 1, label: 'Services', value: displayList(prefs.services) || '—'},
     {
       step: 2,
       label: 'Training formats',
-      value: prefs.formats.length
-        ? labelsFor(lookups, 'formats', prefs.formats)
-        : '—',
+      value: displayList(prefs.formats) || '—',
     },
     {
       step: 3,
       label: 'Frequency',
-      value: prefs.frequency ? labelFor(lookups, 'frequency', prefs.frequency) : '—',
+      value: displayValue(prefs.frequency) || '—',
     },
-    {step: 4, label: 'Preferred days', value: labelsFor(lookups, 'days', prefs.days) || '—'},
+    {step: 4, label: 'Preferred days', value: displayList(prefs.days) || '—'},
     {
       step: 5,
       label: 'Preferred times',
       value:
-        (labelsFor(lookups, 'times', prefs.times) || '—') +
+        (displayList(prefs.times) || '—') +
         (prefs.timesOther ? ` (${prefs.timesOther})` : ''),
     },
     {
       step: 6,
       label: 'Current routine',
       value:
-        (prefs.routine ? labelFor(lookups, 'routine', prefs.routine) : '—') +
+        (displayValue(prefs.routine) || '—') +
         (prefs.routineOther ? ` (${prefs.routineOther})` : ''),
     },
     {
       step: 7,
       label: 'Gender preference',
-      value: prefs.gender
-        ? labelFor(lookups, 'genderPreference', prefs.gender)
-        : '—',
+      value: displayValue(prefs.gender) || '—',
     },
     {
       step: 8,
       label: 'Coaching style',
-      value: prefs.style ? labelFor(lookups, 'style', prefs.style) : '—',
+      value: displayValue(prefs.style) || '—',
     },
     {
       step: 9,
       label: 'Personal details',
       value: [
-        profile.gender ? labelFor(lookups, 'gender', profile.gender) : null,
-        profile.age ? labelFor(lookups, 'age', profile.age) : null,
-        profile.gymAccess ? labelFor(lookups, 'gymAccess', profile.gymAccess) : null,
+        displayValue(profile.gender) || null,
+        displayValue(profile.age) || null,
+        displayValue(profile.gymAccess) || null,
         profile.location || null,
-        profile.ethnicity ? labelFor(lookups, 'ethnicity', profile.ethnicity) : null,
+        displayValue(profile.ethnicity) || null,
       ]
         .filter(Boolean)
         .join(' · ') || '—',
@@ -100,14 +101,12 @@ export function clientMatchPrefRows(client: Client, lookups: LookupOption[]): Ma
     {
       step: 10,
       label: 'Languages',
-      value: labelsFor(lookups, 'languages', prefs.languages) || '—',
+      value: displayList(prefs.languages) || '—',
     },
     {
       step: 11,
       label: 'When to start',
-      value: prefs.startTraining
-        ? labelFor(lookups, 'startTraining', prefs.startTraining)
-        : '—',
+      value: displayValue(prefs.startTraining) || '—',
     },
     {
       step: 12,

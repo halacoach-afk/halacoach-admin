@@ -18,8 +18,6 @@ export type Permission =
   | 'support:read'
   | 'support:write'
   | 'messages:read'
-  | 'settings:read'
-  | 'settings:write'
   | 'admins:read'
   | 'admins:write';
 
@@ -41,8 +39,6 @@ const ALL: Permission[] = [
   'support:read',
   'support:write',
   'messages:read',
-  'settings:read',
-  'settings:write',
   'admins:read',
   'admins:write',
 ];
@@ -85,7 +81,6 @@ export function permissionForPath(pathname: string): Permission {
     services: 'services:read',
     support: 'support:read',
     messages: 'messages:read',
-    settings: 'settings:read',
     admins: 'admins:read',
   };
   return map[segment ?? ''] ?? 'dashboard:read';

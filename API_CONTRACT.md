@@ -29,7 +29,7 @@ Session cookie (client): `hc_admin_session` — JSON `{ id, name, email, role }`
 | Permission | Super | Reviewer | Support |
 |---|---|---|---|
 | Full module access | ✓ | verification, professionals | clients, support, credits (read/adjust) |
-| Settings / admins / content / leads | ✓ | — | — |
+| Admins / leads | ✓ | — | — |
 
 ---
 
@@ -126,41 +126,6 @@ Invite admin. **Body:** `{ name, email, role, password }` · **Super only.**
 ### `PATCH /v1/admins/:id`
 
 **Body:** `{ name?, role?, active?, actorId }` — cannot disable self or last active super.
-
----
-
-## Settings & lookups (M2)
-
-### `GET /admin/settings`
-
-**Response**
-
-```json
-{
-  "settings": {
-    "otpLength": 4,
-    "otpResendSeconds": 30,
-    "defaultPhonePrefix": "+971",
-    "vatRate": 0.05,
-    "maxGoals": 2,
-    "defaultLeadUnlockCost": 3
-  },
-  "lookups": [{ "id", "groupId", "value", "label", "sortOrder", "active", "system" }],
-  "groups": [{ "id", "title", "hint", "locked" }]
-}
-```
-
-### `PATCH /admin/settings`
-
-Partial `AppSettings`. **Super only.**
-
-### `POST /admin/lookups`
-
-Add option to unlocked group. **Body:** `{ groupId, label, value? }`
-
-### `PATCH /admin/lookups/:id`
-
-**Body:** `{ label?, active? }`
 
 ---
 
@@ -317,7 +282,7 @@ Key enums used across modules:
 | Support ticket | `new`, `replied`, `closed` |
 | Payment method | `card`, `applepay` |
 
-TypeScript source of truth: `src/api/types.ts`, `src/api/lookups.ts`.
+TypeScript source of truth: `src/api/types.ts`.
 
 ---
 
@@ -327,7 +292,6 @@ TypeScript source of truth: `src/api/types.ts`, `src/api/lookups.ts`.
 |---|---|---|
 | M0 Foundation | — | shell, shared UI |
 | M1 Auth | `/v1/auth`, `/v1/admins` | `/login`, `/admins` |
-| M2 Settings | `/admin/settings`, `/admin/lookups` | `/settings` |
 | M3 Services | `/admin/services` | `/services` |
 | M4 Professionals | `/admin/professionals` | `/professionals` |
 | M5 Verification | `/admin/verification` | `/verification` |
