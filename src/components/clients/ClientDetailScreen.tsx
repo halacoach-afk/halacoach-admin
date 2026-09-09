@@ -88,7 +88,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
       return [];
     }
     return client.savedCoachIds
-      .map(coachId => coaches.find(item => item.id === coachId))
+      .map(coachId => coaches.find(item => item.id === String(coachId)))
       .filter(Boolean) as ProfessionalSummary[];
   }, [client, coaches]);
 
