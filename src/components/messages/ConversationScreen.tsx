@@ -17,7 +17,7 @@ function conversationGoal(conversation: ConversationDetail) {
   return (conversation.goal || conversation.professionalSpecialty || '').trim();
 }
 
-export function MessageThreadScreen({id}: {id: string}) {
+export function ConversationScreen({id}: {id: string}) {
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -569,11 +569,10 @@ export type ConversationSummary = {
   clientName: string;
   professionalId: string;
   professionalName: string;
-  /** Goal / catalog service for the thread (lead service or title). */
+  /** Goal / catalog service for the conversation. */
   goal?: string;
   /** @deprecated Prefer `goal`. */
   professionalSpecialty: string;
-  kind?: string;
   leadId?: number | null;
   lastMessage: string;
   lastMessageAt: string;
@@ -585,11 +584,10 @@ export type ConversationDetail = Conversation & {
   clientEmail: string;
   professionalName: string;
   professionalEmail: string;
-  /** Goal / catalog service for the thread (lead service or title). */
+  /** Goal / catalog service for the conversation. */
   goal?: string;
   /** @deprecated Prefer `goal`. */
   professionalSpecialty: string;
-  kind?: string;
   leadId?: number | null;
 };
 
