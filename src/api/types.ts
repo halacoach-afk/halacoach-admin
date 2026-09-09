@@ -593,39 +593,6 @@ export type ConversationDetail = Conversation & {
   leadId?: number | null;
 };
 
-export type LegalDocId = 'terms' | 'privacy' | 'professional';
-
-export type ContentLang = 'en' | 'ar';
-
-export type LegalSection = {
-  heading: string;
-  body: string;
-};
-
-export type LegalDocument = {
-  id: LegalDocId;
-  lang: ContentLang;
-  title: string;
-  intro: string;
-  sections: LegalSection[];
-  updatedAt: string;
-};
-
-export type LegalDocumentSummary = {
-  id: LegalDocId;
-  label: string;
-  enTitle: string;
-  arTitle: string;
-  sectionCount: number;
-  updatedAt: string;
-};
-
-export type UpdateLegalDocumentInput = {
-  title?: string;
-  intro?: string;
-  sections?: LegalSection[];
-};
-
 export type DashboardActivityKind =
   | 'client_signup'
   | 'pro_signup'

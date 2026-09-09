@@ -3,7 +3,6 @@ import {
   BadgeCheck,
   ClipboardList,
   Coins,
-  FileText,
   Headset,
   LayoutDashboard,
   LifeBuoy,
@@ -98,14 +97,6 @@ export const navItems: NavItem[] = [
     icon: LifeBuoy,
     module: 'M3',
     permission: 'services:read',
-  },
-  {
-    href: '/content',
-    label: 'Content',
-    description: 'Terms, Privacy, and Professional Agreement (EN / AR).',
-    icon: FileText,
-    module: 'M10',
-    permission: 'content:read',
   },
   {
     href: '/support',

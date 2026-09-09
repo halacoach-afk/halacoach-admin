@@ -23,16 +23,11 @@ import type {
   UpdateAdminInput,
   UpdateClientInput,
   UpdateLeadInput,
-  UpdateLegalDocumentInput,
   UpdateProfessionalInput,
   UpdateQuoteRequestInput,
   UpdateServiceInput,
   VerificationQueueItem,
   AdjustCreditsInput,
-  ContentLang,
-  LegalDocId,
-  LegalDocument,
-  LegalDocumentSummary,
   SupportTicketDetail,
   SupportTicketSummary,
   UpdateSupportTicketInput,
@@ -53,7 +48,6 @@ export type {
   ClientConsents,
   ClientSummary,
   ChatMessage,
-  ContentLang,
   ConversationDetail,
   ConversationSummary,
   CreateCreditPackageInput,
@@ -74,10 +68,6 @@ export type {
   LeadStatus,
   LeadSummary,
   LeadUnlock,
-  LegalDocId,
-  LegalDocument,
-  LegalDocumentSummary,
-  LegalSection,
   LookupGroupId,
   LookupGroupMeta,
   LookupOption,
@@ -107,7 +97,6 @@ export type {
   UpdateClientInput,
   UpdateCreditPackageInput,
   UpdateLeadInput,
-  UpdateLegalDocumentInput,
   UpdateProfessionalInput,
   UpdatePromoInput,
   UpdateQuoteRequestInput,
@@ -285,25 +274,6 @@ export function getQuoteRequest(id: string) {
 
 export function updateQuoteRequest(id: string, input: UpdateQuoteRequestInput) {
   return request<QuoteRequestDetail>(`/v1/requests/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(input),
-  });
-}
-
-export function listLegalDocuments() {
-  return request<LegalDocumentSummary[]>('/v1/content');
-}
-
-export function getLegalDocument(id: LegalDocId, lang: ContentLang) {
-  return request<LegalDocument>(`/v1/content/${id}/${lang}`);
-}
-
-export function updateLegalDocument(
-  id: LegalDocId,
-  lang: ContentLang,
-  input: UpdateLegalDocumentInput,
-) {
-  return request<LegalDocument>(`/v1/content/${id}/${lang}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   });

@@ -286,24 +286,6 @@ Overview: packs, promos, VAT rate, ledger `transactions`, wallet stats.
 
 ---
 
-## Legal content (M10)
-
-### `GET /admin/content`
-
-Summaries for `terms`, `privacy`, `professional` (EN/AR titles, section counts).
-
-### `GET /admin/content/:docId/:lang`
-
-`docId`: `terms` \| `privacy` \| `professional` · `lang`: `en` \| `ar`
-
-Full document: `{ title, intro, sections[], updatedAt }`.
-
-### `PATCH /admin/content/:docId/:lang`
-
-**Body:** `{ title?, intro?, sections? }` — **Super only.**
-
----
-
 ## Support (M11)
 
 ### `GET /admin/support`
@@ -365,7 +347,6 @@ TypeScript source of truth: `src/api/types.ts`, `src/api/lookups.ts`.
 | M7 Leads | `/admin/leads` | `/leads` |
 | M8 Requests | `/admin/requests` | `/requests` |
 | M9 Credits | `/admin/credits`, packs, promos, adjustments | `/credits` |
-| M10 Content | `/admin/content` | `/content` |
 | M11 Support | `/admin/support` | `/support` |
 | M12 Messages | `/admin/messages` | `/messages` |
 | M13 Dashboard | `/admin/dashboard` | `/` |
