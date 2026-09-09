@@ -16,7 +16,6 @@ export type LookupGroupId =
   | 'proLocationTypes'
   | 'docTypes'
   | 'verificationStatus'
-  | 'quoteRequestStatus'
   | 'creditTxnType'
   | 'paymentMethod';
 

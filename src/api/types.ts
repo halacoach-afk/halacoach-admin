@@ -351,7 +351,6 @@ export type Client = {
   consents: ClientConsents;
   savedCoachIds: number[];
   onlinePlans?: OnlinePlanSummary[];
-  requests?: QuoteRequestSummary[];
   note?: string;
   notificationPrefs: NotificationPrefs;
 };
@@ -450,45 +449,6 @@ export type LeadDetail = Omit<MarketplaceLead, 'unlocks'> & {
 
 export type UpdateLeadInput = {
   status?: LeadStatus;
-};
-
-export type QuoteRequestStatus = 'pending' | 'quoted' | 'closed';
-
-export type QuoteRequest = {
-  id: string;
-  clientId: string;
-  professionalId: string;
-  status: QuoteRequestStatus;
-  createdAt: string;
-  quotedAt: string | null;
-  closedAt: string | null;
-  quoteMessage: string | null;
-  quoteAmount: string | null;
-};
-
-export type QuoteRequestSummary = {
-  id: string;
-  clientId: string;
-  clientName: string;
-  professionalId: string;
-  professionalName: string;
-  professionalSpecialty: string;
-  status: QuoteRequestStatus;
-  createdAt: string;
-};
-
-export type QuoteRequestDetail = QuoteRequest & {
-  clientName: string;
-  clientEmail: string;
-  clientPhone: string;
-  professionalName: string;
-  professionalSpecialty: string;
-};
-
-export type UpdateQuoteRequestInput = {
-  status?: QuoteRequestStatus;
-  quoteMessage?: string;
-  quoteAmount?: string;
 };
 
 export type NotificationPrefs = {

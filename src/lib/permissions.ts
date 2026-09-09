@@ -10,8 +10,6 @@ export type Permission =
   | 'clients:write'
   | 'leads:read'
   | 'leads:write'
-  | 'requests:read'
-  | 'requests:write'
   | 'credits:read'
   | 'credits:write'
   | 'credits:adjust'
@@ -35,8 +33,6 @@ const ALL: Permission[] = [
   'clients:write',
   'leads:read',
   'leads:write',
-  'requests:read',
-  'requests:write',
   'credits:read',
   'credits:write',
   'credits:adjust',
@@ -85,7 +81,6 @@ export function permissionForPath(pathname: string): Permission {
     professionals: 'professionals:read',
     clients: 'clients:read',
     leads: 'leads:read',
-    requests: 'requests:read',
     credits: 'credits:read',
     services: 'services:read',
     support: 'support:read',

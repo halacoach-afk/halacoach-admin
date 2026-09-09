@@ -16,15 +16,12 @@ import type {
   LookupOption,
   Professional,
   ProfessionalSummary,
-  QuoteRequestDetail,
-  QuoteRequestSummary,
   RejectVerificationInput,
   SessionResponse,
   UpdateAdminInput,
   UpdateClientInput,
   UpdateLeadInput,
   UpdateProfessionalInput,
-  UpdateQuoteRequestInput,
   UpdateServiceInput,
   VerificationQueueItem,
   AdjustCreditsInput,
@@ -83,9 +80,6 @@ export type {
   MatchPrefs,
   PersonalProfile,
   PromoCode,
-  QuoteRequestDetail,
-  QuoteRequestStatus,
-  QuoteRequestSummary,
   RejectVerificationInput,
   SessionResponse,
   SessionUser,
@@ -99,7 +93,6 @@ export type {
   UpdateLeadInput,
   UpdateProfessionalInput,
   UpdatePromoInput,
-  UpdateQuoteRequestInput,
   UpdateServiceInput,
   UpdateSupportTicketInput,
   VerificationStatus,
@@ -259,21 +252,6 @@ export function getLead(id: number) {
 
 export function updateLead(id: number, input: UpdateLeadInput) {
   return request<LeadDetail>(`/v1/leads/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(input),
-  });
-}
-
-export function listQuoteRequests() {
-  return request<QuoteRequestSummary[]>('/v1/requests');
-}
-
-export function getQuoteRequest(id: string) {
-  return request<QuoteRequestDetail>(`/v1/requests/${id}`);
-}
-
-export function updateQuoteRequest(id: string, input: UpdateQuoteRequestInput) {
-  return request<QuoteRequestDetail>(`/v1/requests/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   });

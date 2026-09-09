@@ -46,7 +46,6 @@ Role-based nav: reviewers see verification + professionals; support sees clients
 | M5 | Verification | `/verification` |
 | M6 | Clients | `/clients` |
 | M7 | Leads | `/leads` |
-| M8 | Quote requests | `/requests` |
 | M9 | Credits | `/credits` |
 | M11 | Support inbox | `/support` |
 | M12 | Messages (read-only) | `/messages` |

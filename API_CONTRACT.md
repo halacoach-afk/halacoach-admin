@@ -29,7 +29,7 @@ Session cookie (client): `hc_admin_session` — JSON `{ id, name, email, role }`
 | Permission | Super | Reviewer | Support |
 |---|---|---|---|
 | Full module access | ✓ | verification, professionals | clients, support, credits (read/adjust) |
-| Settings / admins / content / leads / requests | ✓ | — | — |
+| Settings / admins / content / leads | ✓ | — | — |
 
 ---
 
@@ -242,18 +242,6 @@ Includes client snapshot, unlock history, contact visibility rules.
 
 ---
 
-## Quote requests (M8)
-
-### `GET /admin/requests`
-
-### `GET /admin/requests/:id`
-
-### `PATCH /admin/requests/:id`
-
-**Body:** `{ status?, quoteMessage?, quoteAmount? }` — mark quoted/closed.
-
----
-
 ## Credits (M9)
 
 ### `GET /admin/credit-packs`
@@ -345,7 +333,6 @@ TypeScript source of truth: `src/api/types.ts`, `src/api/lookups.ts`.
 | M5 Verification | `/admin/verification` | `/verification` |
 | M6 Clients | `/admin/clients` | `/clients` |
 | M7 Leads | `/admin/leads` | `/leads` |
-| M8 Requests | `/admin/requests` | `/requests` |
 | M9 Credits | `/admin/credits`, packs, promos, adjustments | `/credits` |
 | M11 Support | `/admin/support` | `/support` |
 | M12 Messages | `/admin/messages` | `/messages` |

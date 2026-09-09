@@ -10,7 +10,6 @@ import {
   MessageCircle,
   Settings2,
   Shield,
-  ShoppingBag,
   Users,
   UserRoundCog,
 } from 'lucide-react';
@@ -73,14 +72,6 @@ export const navItems: NavItem[] = [
     icon: MapPin,
     module: 'M7',
     permission: 'leads:read',
-  },
-  {
-    href: '/requests',
-    label: 'Requests',
-    description: 'Quote requests between clients and coaches (pending / quoted / closed).',
-    icon: ShoppingBag,
-    module: 'M8',
-    permission: 'requests:read',
   },
   {
     href: '/credits',
