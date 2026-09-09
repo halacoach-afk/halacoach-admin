@@ -569,6 +569,9 @@ export type ConversationSummary = {
   clientName: string;
   professionalId: string;
   professionalName: string;
+  /** Goal / catalog service for the thread (lead service or title). */
+  goal?: string;
+  /** @deprecated Prefer `goal`. */
   professionalSpecialty: string;
   kind?: string;
   leadId?: number | null;
@@ -582,6 +585,9 @@ export type ConversationDetail = Conversation & {
   clientEmail: string;
   professionalName: string;
   professionalEmail: string;
+  /** Goal / catalog service for the thread (lead service or title). */
+  goal?: string;
+  /** @deprecated Prefer `goal`. */
   professionalSpecialty: string;
   kind?: string;
   leadId?: number | null;

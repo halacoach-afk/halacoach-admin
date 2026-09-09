@@ -13,6 +13,10 @@ import {PageHeader} from '@/components/ui/PageHeader';
 import {cn} from '@/lib/cn';
 import {formatMessageTime, messageAuthorLabels} from '@/lib/message-utils';
 
+function conversationGoal(conversation: ConversationDetail) {
+  return (conversation.goal || conversation.professionalSpecialty || '').trim();
+}
+
 export function MessageThreadScreen({id}: {id: string}) {
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,12 +46,17 @@ export function MessageThreadScreen({id}: {id: string}) {
     return <ErrorState body={error ?? 'Conversation not found.'} onRetry={() => void load()} />;
   }
 
+  const goal = conversationGoal(conversation);
+
   return (
     <>
       <PageHeader
-        module="M12"
-        title={`${conversation.clientName} ↔ ${conversation.professionalName}`}
-        description={conversation.professionalSpecialty}
+        title={`Conversation ${conversation.id}`}
+        description={
+          goal
+            ? `${conversation.clientName} ↔ ${conversation.professionalName} · ${goal}`
+            : `${conversation.clientName} ↔ ${conversation.professionalName}`
+        }
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => void load()}>
@@ -64,36 +73,59 @@ export function MessageThreadScreen({id}: {id: string}) {
       />
 
       <Card className="mb-6">
-        <div className="flex flex-wrap items-center gap-3 text-sm">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              ID
+            </p>
+            <p className="mt-1 font-mono text-sm font-semibold text-foreground">
+              {conversation.id}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Client
+            </p>
+            <Link
+              href={`/clients/${conversation.clientId}`}
+              className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-primary">
+              {conversation.clientName}
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Coach
+            </p>
+            <Link
+              href={`/professionals/${conversation.professionalId}`}
+              className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-primary">
+              {conversation.professionalName}
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Goal
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{goal || '—'}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border pt-4 text-sm">
           <Badge tone="sky">Live thread</Badge>
           {conversation.leadId ? <Badge tone="primary">From lead unlock</Badge> : null}
           <span className="text-muted-foreground">
             {conversation.messages.length} messages · started{' '}
             {formatMessageTime(conversation.createdAt)}
           </span>
-          <Link
-            href={`/clients/${conversation.clientId}`}
-            className="inline-flex items-center gap-1 font-semibold text-primary">
-            {conversation.clientName}
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
-          <span className="text-muted-foreground">↔</span>
-          <Link
-            href={`/professionals/${conversation.professionalId}`}
-            className="inline-flex items-center gap-1 font-semibold text-primary">
-            {conversation.professionalName}
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
           {conversation.leadId ? (
-            <>
-              <span className="text-muted-foreground">·</span>
-              <Link
-                href={`/leads/${conversation.leadId}`}
-                className="inline-flex items-center gap-1 font-semibold text-primary">
-                View lead
-                <ExternalLink className="h-3.5 w-3.5" />
-              </Link>
-            </>
+            <Link
+              href={`/leads/${conversation.leadId}`}
+              className="inline-flex items-center gap-1 font-semibold text-primary">
+              View lead
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
           ) : null}
         </div>
       </Card>
