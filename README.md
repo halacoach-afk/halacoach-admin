@@ -16,7 +16,8 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` (see `.env.example`).
+`.env.example` has local-ready values — copying it to `.env.local` is enough for local dev.
+Use `.env.production` for production configs (not committed). Do not use a plain `.env`.
 
 Open [http://localhost:3000](http://localhost:3000).
 
@@ -53,7 +54,7 @@ Role-based nav: reviewers see verification + professionals; support sees clients
 
 ## Connect real API
 
-When `halacoach-apis` is ready, set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` (see `.env.example`).
+Set `NEXT_PUBLIC_API_BASE_URL` in `.env.local` for local, or `.env.production` for production (see `.env.example` for keys).
 
 ## Project layout
 
