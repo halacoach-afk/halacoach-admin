@@ -131,8 +131,8 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
       />
 
       <div className="mb-4 flex flex-wrap gap-2">
-        <Badge tone={lead.status === 'open' ? 'success' : 'neutral'}>{lead.status}</Badge>
-        <Badge tone="neutral">{lead.unlocks?.length ?? 0} unlocks</Badge>
+        <Badge tone={lead.status === 'open' ? 'primary' : 'muted'}>{lead.status}</Badge>
+        <Badge tone="muted">{lead.unlocks?.length ?? 0} unlocks</Badge>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
