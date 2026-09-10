@@ -42,10 +42,12 @@ export type UpdateAdminInput = {
 };
 
 export type CreditPackageBadge = 'popular' | 'value';
+export type CreditPackageType = 'one_time' | 'membership';
 
 export type CreditPackage = {
   id: number;
   name: string;
+  type?: CreditPackageType;
   credits: number;
   price: number;
   badge?: CreditPackageBadge;
@@ -55,6 +57,7 @@ export type CreditPackage = {
 
 export type CreateCreditPackageInput = {
   name: string;
+  type?: CreditPackageType;
   credits: number;
   price: number;
   badge?: CreditPackageBadge | null;
@@ -62,10 +65,34 @@ export type CreateCreditPackageInput = {
 
 export type UpdateCreditPackageInput = {
   name?: string;
+  type?: CreditPackageType;
   credits?: number;
   price?: number;
   badge?: CreditPackageBadge | null;
   active?: boolean;
+};
+
+export type CreditSubscriptionAdmin = {
+  id: string;
+  userId: number;
+  professionalId: string;
+  professionalName: string;
+  professionalEmail: string | null;
+  packageId: string;
+  status: string;
+  cancelAtPeriodEnd: boolean;
+  startedAt: string | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  canceledAt: string | null;
+  package: {
+    id: string;
+    name: string;
+    type?: string;
+    credits: number;
+    price: number;
+    badge?: CreditPackageBadge | null;
+  } | null;
 };
 
 export type PromoBenefitType = 'percent_off' | 'fixed_off' | 'bonus_credits';

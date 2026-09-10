@@ -2,6 +2,7 @@ import {request} from '@/lib/request';
 import type {
   CatalogService,
   CreditPackage,
+  CreditSubscriptionAdmin,
   CreateCreditPackageInput,
   CreatePromoInput,
   CreateServiceInput,
@@ -15,6 +16,10 @@ import type {
 
 export function listCreditPackages() {
   return request<CreditPackage[]>('/v1/credit-packages');
+}
+
+export function listCreditSubscriptions() {
+  return request<CreditSubscriptionAdmin[]>('/v1/credit-subscriptions');
 }
 
 export function createCreditPackage(input: CreateCreditPackageInput) {
