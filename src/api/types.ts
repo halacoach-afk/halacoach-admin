@@ -234,7 +234,6 @@ export type MatchPrefs = {
 export type PersonalProfile = {
   gender?: string | null;
   age?: string | null;
-  ethnicity?: string | null;
   gymAccess?: string | null;
   location?: string | null;
   locationLatitude?: number | null;
