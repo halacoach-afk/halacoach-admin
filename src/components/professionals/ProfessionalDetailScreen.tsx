@@ -57,7 +57,7 @@ function completionChecks(pro: Professional) {
     {label: 'Services selected', done: pro.serviceIds.length > 0},
     {label: 'Locations set', done: pro.locations.length > 0},
     {label: 'Pricing set', done: hasPricing},
-    {label: 'Documents uploaded', done: (pro.verificationFiles?.length ?? 0) > 0},
+    {label: 'Documents submitted', done: (pro.verificationFiles?.length ?? 0) > 0},
     {label: 'Verification submitted', done: pro.verificationStatus === 'pending' || pro.verificationStatus === 'verified'},
     {label: 'Profile activated', done: pro.activated},
   ];
@@ -602,7 +602,7 @@ export function ProfessionalDetailScreen({
                 </li>
               ))
             ) : (
-              <li className="text-muted-foreground">None uploaded</li>
+              <li className="text-muted-foreground">None submitted</li>
             )}
           </ul>
         </Section>

@@ -183,12 +183,43 @@ export type UpdateServiceInput = {
 
 export type VerificationStatus = 'none' | 'pending' | 'verified' | 'rejected';
 
+export type VerificationDocType =
+  | 'reps_uae'
+  | 'muahal'
+  | 'ministry_or_federation'
+  | 'cpr_aed'
+  | 'insurance'
+  | 'additional_certs'
+  | 'trade_licence';
+
+export type VerificationDocStatus =
+  | 'submitted'
+  | 'under_review'
+  | 'approved'
+  | 'rejected';
+
+export type VerificationDisplayStatus = VerificationDocStatus | 'expiring_soon';
+
+export type VerificationDocTypeMeta = {
+  id: VerificationDocType;
+  label: string;
+  description: string;
+  required: boolean;
+};
+
 export type VerificationFile = {
   id: string;
   originalName: string;
   storedName: string;
   mime: string;
   size: number;
+  docType?: VerificationDocType | null;
+  status?: VerificationDocStatus;
+  displayStatus?: VerificationDisplayStatus;
+  expiresAt?: string | null;
+  rejectedReason?: string | null;
+  reviewedAt?: string | null;
+  expiringSoon?: boolean;
 };
 
 export type ProfessionalTxn = {
@@ -411,14 +442,25 @@ export type VerificationQueueItem = {
   specialty: string;
   location: string;
   submittedAt: string;
+  verificationStatus?: VerificationStatus;
+  verificationRejectedReason?: string | null;
   verificationFiles: VerificationFile[];
   serviceIds: number[];
   profileCompletion: number;
   profileCertifications: string[];
 };
 
+export type VerificationQueueResponse = {
+  documentTypes: VerificationDocTypeMeta[];
+  items: VerificationQueueItem[];
+};
+
 export type RejectVerificationInput = {
   reason?: string;
+  reasons?: Array<{
+    fileId: string;
+    reason: string;
+  }>;
 };
 
 export type LeadStatus = 'open' | 'closed';

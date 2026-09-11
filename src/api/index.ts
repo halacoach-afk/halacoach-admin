@@ -20,6 +20,8 @@ import type {
   UpdateProfessionalInput,
   UpdateServiceInput,
   VerificationQueueItem,
+  VerificationQueueResponse,
+  VerificationDocTypeMeta,
   AdjustCreditsInput,
   SupportTicketDetail,
   SupportTicketSummary,
@@ -89,6 +91,8 @@ export type {
   UpdateSupportTicketInput,
   VerificationStatus,
   VerificationQueueItem,
+  VerificationQueueResponse,
+  VerificationDocTypeMeta,
   VerificationFile,
 } from './types';
 export {ApiError, isApiError} from './errors';
@@ -161,8 +165,17 @@ export function updateProfessional(id: string, input: UpdateProfessionalInput) {
   });
 }
 
-export function listVerificationQueue() {
-  return request<VerificationQueueItem[]>('/v1/verification');
+export async function listVerificationQueue(): Promise<VerificationQueueResponse> {
+  const data = await request<VerificationQueueResponse | VerificationQueueItem[]>(
+    '/v1/verification',
+  );
+  if (Array.isArray(data)) {
+    return {documentTypes: [], items: data};
+  }
+  return {
+    documentTypes: data.documentTypes ?? [],
+    items: data.items ?? [],
+  };
 }
 
 export function approveVerification(id: string) {
@@ -174,6 +187,34 @@ export function rejectVerification(id: string, input: RejectVerificationInput = 
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export function approveVerificationFile(professionalId: string, fileId: string) {
+  return request<Professional>(
+    `/v1/verification/${encodeURIComponent(professionalId)}/files/${encodeURIComponent(fileId)}/approve`,
+    {method: 'POST'},
+  );
+}
+
+export function rejectVerificationFile(
+  professionalId: string,
+  fileId: string,
+  input: RejectVerificationInput = {},
+) {
+  return request<Professional>(
+    `/v1/verification/${encodeURIComponent(professionalId)}/files/${encodeURIComponent(fileId)}/reject`,
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function markVerificationFileUnderReview(professionalId: string, fileId: string) {
+  return request<Professional>(
+    `/v1/verification/${encodeURIComponent(professionalId)}/files/${encodeURIComponent(fileId)}/under-review`,
+    {method: 'POST'},
+  );
 }
 
 export async function openVerificationFile(professionalId: string, fileId: string) {
