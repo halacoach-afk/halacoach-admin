@@ -71,5 +71,9 @@ export async function requestBlob(path: string): Promise<Blob> {
     throw new ApiError(res.status, await readErrorMessage(res));
   }
 
-  return res.blob();
+  const contentType = (res.headers.get('content-type') || 'application/octet-stream')
+    .split(';')[0]
+    .trim();
+  const buffer = await res.arrayBuffer();
+  return new Blob([buffer], {type: contentType});
 }

@@ -1,16 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import {useEffect, useMemo, useState, type ReactNode} from 'react';
+import {useCallback, useEffect, useMemo, useState, type ReactNode} from 'react';
 import {ExternalLink, Eye, FileText} from 'lucide-react';
 import {
   approveVerification,
   approveVerificationFile,
+  fetchVerificationFileBlob,
   isApiError,
   listServices,
   listVerificationQueue,
   markVerificationFileUnderReview,
-  openVerificationFile,
   rejectVerification,
   rejectVerificationFile,
   type CatalogService,
@@ -26,6 +26,7 @@ import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
+import {FileViewerModal} from '@/components/ui/FileViewerModal';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {can} from '@/lib/permissions';
@@ -243,6 +244,18 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     file: VerificationFile;
   } | null>(null);
   const [acting, setActing] = useState(false);
+  const [viewer, setViewer] = useState<{
+    professionalId: string;
+    fileId: string;
+    name: string;
+  } | null>(null);
+
+  const loadViewerFile = useCallback(async () => {
+    if (!viewer) {
+      throw new Error('Unable to open file.');
+    }
+    return fetchVerificationFileBlob(viewer.professionalId, viewer.fileId);
+  }, [viewer]);
 
   const load = async () => {
     setLoading(true);
@@ -690,11 +703,16 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                         file={file}
                         canWrite={canWrite}
                         acting={acting}
-                        onView={
-                          file
-                            ? () => void openVerificationFile(selected.id, file.id)
-                            : undefined
-                        }
+                      onView={
+                        file
+                          ? () =>
+                              setViewer({
+                                professionalId: selected.id,
+                                fileId: file.id,
+                                name: file.originalName,
+                              })
+                          : undefined
+                      }
                         onUnderReview={
                           file
                             ? () => void onFileAction('under_review', selected, file)
@@ -736,11 +754,16 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                         file={file}
                         canWrite={canWrite}
                         acting={acting}
-                        onView={
-                          file
-                            ? () => void openVerificationFile(selected.id, file.id)
-                            : undefined
-                        }
+                      onView={
+                        file
+                          ? () =>
+                              setViewer({
+                                professionalId: selected.id,
+                                fileId: file.id,
+                                name: file.originalName,
+                              })
+                          : undefined
+                      }
                         onUnderReview={
                           file
                             ? () => void onFileAction('under_review', selected, file)
@@ -767,7 +790,13 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                       file={file}
                       canWrite={canWrite}
                       acting={acting}
-                      onView={() => void openVerificationFile(selected.id, file.id)}
+                      onView={() =>
+                        setViewer({
+                          professionalId: selected.id,
+                          fileId: file.id,
+                          name: file.originalName,
+                        })
+                      }
                       onUnderReview={() => void onFileAction('under_review', selected, file)}
                       onApprove={() => void onFileAction('approve', selected, file)}
                       onReject={() => {
@@ -798,6 +827,13 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
         confirmLabel="Approve all"
         onClose={() => setPendingApprove(null)}
         onConfirm={() => void onApprove()}
+      />
+
+      <FileViewerModal
+        open={viewer !== null}
+        title={viewer?.name ?? ''}
+        onClose={() => setViewer(null)}
+        load={loadViewerFile}
       />
 
       {pendingReject ? (

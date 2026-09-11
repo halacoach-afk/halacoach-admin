@@ -217,10 +217,14 @@ export function markVerificationFileUnderReview(professionalId: string, fileId: 
   );
 }
 
-export async function openVerificationFile(professionalId: string, fileId: string) {
-  const blob = await requestBlob(
+export async function fetchVerificationFileBlob(professionalId: string, fileId: string) {
+  return requestBlob(
     `/v1/verification/${encodeURIComponent(professionalId)}/files/${encodeURIComponent(fileId)}`,
   );
+}
+
+export async function openVerificationFile(professionalId: string, fileId: string) {
+  const blob = await fetchVerificationFileBlob(professionalId, fileId);
   const url = URL.createObjectURL(blob);
   window.open(url, '_blank', 'noopener,noreferrer');
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
