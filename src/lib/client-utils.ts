@@ -93,7 +93,6 @@ export function clientMatchPrefRows(client: Client): MatchPrefRow[] {
         displayValue(profile.age) || null,
         displayValue(profile.gymAccess) || null,
         profile.location || null,
-        displayValue(profile.ethnicity) || null,
       ]
         .filter(Boolean)
         .join(' · ') || '—',
