@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import {FormEvent, useEffect, useMemo, useState, type ReactNode} from 'react';
+import {FormEvent, useCallback, useEffect, useMemo, useState, type ReactNode} from 'react';
 import {ArrowLeft} from 'lucide-react';
 import {
+  fetchVerificationFileBlob,
   getProfessional,
   isApiError,
   listServices,
-  openVerificationFile,
   updateProfessional,
   type CatalogService,
   type Professional,
@@ -18,6 +18,7 @@ import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
 import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {ErrorState} from '@/components/ui/ErrorState';
+import {FileViewerModal} from '@/components/ui/FileViewerModal';
 import {Input} from '@/components/ui/Input';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
@@ -57,7 +58,7 @@ function completionChecks(pro: Professional) {
     {label: 'Services selected', done: pro.serviceIds.length > 0},
     {label: 'Locations set', done: pro.locations.length > 0},
     {label: 'Pricing set', done: hasPricing},
-    {label: 'Documents uploaded', done: (pro.verificationFiles?.length ?? 0) > 0},
+    {label: 'Documents submitted', done: (pro.verificationFiles?.length ?? 0) > 0},
     {label: 'Verification submitted', done: pro.verificationStatus === 'pending' || pro.verificationStatus === 'verified'},
     {label: 'Profile activated', done: pro.activated},
   ];
@@ -119,6 +120,14 @@ export function ProfessionalDetailScreen({
   const [saving, setSaving] = useState(false);
   const [pendingSuspend, setPendingSuspend] = useState(false);
   const [pendingActivate, setPendingActivate] = useState<boolean | null>(null);
+  const [viewer, setViewer] = useState<{fileId: string; name: string} | null>(null);
+
+  const loadViewerFile = useCallback(async () => {
+    if (!viewer) {
+      throw new Error('Unable to open file.');
+    }
+    return fetchVerificationFileBlob(id, viewer.fileId);
+  }, [id, viewer]);
 
   const load = async () => {
     setLoading(true);
@@ -596,13 +605,15 @@ export function ProfessionalDetailScreen({
                   <button
                     type="button"
                     className="text-primary hover:underline"
-                    onClick={() => void openVerificationFile(pro.id, file.id)}>
+                    onClick={() =>
+                      setViewer({fileId: file.id, name: file.originalName})
+                    }>
                     {file.originalName}
                   </button>
                 </li>
               ))
             ) : (
-              <li className="text-muted-foreground">None uploaded</li>
+              <li className="text-muted-foreground">None submitted</li>
             )}
           </ul>
         </Section>
@@ -644,6 +655,13 @@ export function ProfessionalDetailScreen({
         destructive={!pro.suspended}
         onClose={() => setPendingSuspend(false)}
         onConfirm={() => void toggleSuspended()}
+      />
+
+      <FileViewerModal
+        open={viewer !== null}
+        title={viewer?.name ?? ''}
+        onClose={() => setViewer(null)}
+        load={loadViewerFile}
       />
 
       <ConfirmDialog

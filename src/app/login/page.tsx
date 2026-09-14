@@ -7,13 +7,9 @@ import {Button} from '@/components/ui/Button';
 import {Input} from '@/components/ui/Input';
 import {writeApiTokenCookie, writeSessionCookie} from '@/lib/session';
 
-const demos = [
-  {role: 'Super admin', email: 'admin@halacoach.local', password: 'Admin123!'},
-];
-
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@halacoach.local');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,9 +38,6 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-sm">
         <p className="text-2xl font-bold text-primary">HalaCoach</p>
         <h1 className="mt-2 text-xl font-semibold text-foreground">Sign in to admin</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Sign in with your admin account. Demo credentials below work when the API is seeded.
-        </p>
 
         <form className="mt-8 space-y-4" onSubmit={e => void onSubmit(e)}>
           <Input
@@ -70,31 +63,6 @@ export default function LoginPage() {
             {loading ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
-
-        <div className="mt-8 rounded-2xl bg-muted/70 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Demo accounts
-          </p>
-          <ul className="mt-3 space-y-2 text-sm">
-            {demos.map(demo => (
-              <li key={demo.email}>
-                <button
-                  type="button"
-                  className="w-full rounded-xl px-2 py-1.5 text-start hover:bg-card"
-                  onClick={() => {
-                    setEmail(demo.email);
-                    setPassword(demo.password);
-                    setError(null);
-                  }}>
-                  <span className="font-medium text-foreground">{demo.role}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {demo.email} · {demo.password}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
     </div>
   );
