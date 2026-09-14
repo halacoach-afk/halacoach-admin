@@ -4,7 +4,7 @@ import {join} from 'node:path';
 
 const root = join(import.meta.dirname, '..');
 
-for (const dir of ['.next', '.next-build']) {
+for (const dir of ['.next', '.next-dev', '.next-build']) {
   try {
     rmSync(join(root, dir), {recursive: true, force: true});
     console.log(`removed ${dir}`);
