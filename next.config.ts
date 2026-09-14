@@ -1,12 +1,10 @@
 import type {NextConfig} from 'next';
 
-/**
- * Dev (`next dev`) writes to `.next`.
- * Production build (`next build` / `next start`) writes to `.next-build`.
- * Keeping them separate stops ENOENT crashes when a build runs while dev is up.
- */
+/** Dev (`npm run dev`) writes to `.next-dev` so production builds never corrupt the live dev cache on Windows. */
+const distDir = process.env.NEXT_DEV === '1' ? '.next-dev' : '.next';
+
 const nextConfig: NextConfig = {
-  distDir: process.env.NODE_ENV === 'production' ? '.next-build' : '.next',
+  distDir,
 };
 
 export default nextConfig;
