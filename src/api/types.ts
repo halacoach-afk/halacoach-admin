@@ -318,10 +318,10 @@ export type Professional = {
   roi?: {
     creditsSpent: number;
     leadsUnlocked: number;
-    clientsWon: number;
-    revenue: number;
+    leadsWon: number;
+    leadsWonUnlocked: number;
+    leadsWonQuoted: number;
     conversionWeeks: number[];
-    responseRateWeeks: number[];
   } | null;
   notificationPrefs: NotificationPrefs;
 };

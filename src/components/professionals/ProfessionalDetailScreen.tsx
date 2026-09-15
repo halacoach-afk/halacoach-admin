@@ -581,15 +581,13 @@ export function ProfessionalDetailScreen({
             <dl className="grid gap-3 sm:grid-cols-2">
               <Field label="Credits spent" value={pro.roi.creditsSpent} />
               <Field label="Leads unlocked" value={pro.roi.leadsUnlocked} />
-              <Field label="Clients won" value={pro.roi.clientsWon} />
-              <Field label="Revenue booked (est.)" value={`AED ${pro.roi.revenue}`} />
+              <Field
+                label="Leads won"
+                value={`${pro.roi.leadsWon} (unlocked: ${pro.roi.leadsWonUnlocked ?? 0}, quoted: ${pro.roi.leadsWonQuoted ?? 0})`}
+              />
               <Field
                 label="Conversion trend"
                 value={pro.roi.conversionWeeks.join(' → ') + '%'}
-              />
-              <Field
-                label="Response trend"
-                value={pro.roi.responseRateWeeks.join(' → ') + '%'}
               />
             </dl>
           ) : (

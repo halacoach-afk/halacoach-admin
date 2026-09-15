@@ -284,9 +284,9 @@ export function getConversation(id: string) {
 }
 
 export function listOnlinePlans() {
-  return request<OnlinePlanSummary[]>('/v1/online-clients');
+  return request<OnlinePlanSummary[]>('/v1/online-plans');
 }
 
 export function getOnlinePlan(id: number) {
-  return request<OnlinePlanDetail>(`/v1/online-clients/${id}`);
+  return request<OnlinePlanDetail>(`/v1/online-plans/${id}`);
 }
