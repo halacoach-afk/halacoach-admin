@@ -31,7 +31,7 @@ import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {can} from '@/lib/permissions';
 import {cn} from '@/lib/cn';
-import {verificationLabels} from '@/lib/professional-utils';
+import {completionPercent, verificationLabels} from '@/lib/professional-utils';
 
 const REJECT_REASON_OPTIONS = [
   'Document is blurry or unreadable',
@@ -607,7 +607,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {requiredProgress.submitted}/{requiredProgress.total} submitted ·{' '}
-                      {selected.profileCompletion}% profile
+                      {completionPercent(selected.profileCompletion)}% profile
                     </p>
                   </div>
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">

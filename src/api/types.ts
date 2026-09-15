@@ -324,6 +324,12 @@ export type Professional = {
     conversionWeeks: number[];
   } | null;
   notificationPrefs: NotificationPrefs;
+  profileCompletion?: number | ProfileCompletionPayload;
+};
+
+export type ProfileCompletionPayload = {
+  percent: number;
+  items: Array<{ id: string; done: boolean }>;
 };
 
 export type ProfessionalSummary = {
@@ -339,7 +345,7 @@ export type ProfessionalSummary = {
   activated: boolean;
   onboarded: boolean;
   suspended: boolean;
-  profileCompletion: number;
+  profileCompletion: number | ProfileCompletionPayload;
 };
 
 export type UpdateProfessionalInput = {
@@ -446,7 +452,7 @@ export type VerificationQueueItem = {
   verificationRejectedReason?: string | null;
   verificationFiles: VerificationFile[];
   serviceIds: number[];
-  profileCompletion: number;
+  profileCompletion: number | ProfileCompletionPayload;
   profileCertifications: string[];
 };
 

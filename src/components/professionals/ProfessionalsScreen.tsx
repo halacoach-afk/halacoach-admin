@@ -11,7 +11,7 @@ import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
-import {verificationLabels} from '@/lib/professional-utils';
+import {completionPercent, verificationLabels} from '@/lib/professional-utils';
 
 type Filter = 'all' | 'onboarded' | 'verified' | 'pending' | 'inactive' | 'suspended';
 
@@ -189,10 +189,12 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
                   <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
                     <div
                       className="h-full rounded-full bg-primary"
-                      style={{width: `${row.profileCompletion}%`}}
+                      style={{width: `${completionPercent(row.profileCompletion)}%`}}
                     />
                   </div>
-                  <span className="text-xs text-muted-foreground">{row.profileCompletion}%</span>
+                  <span className="text-xs text-muted-foreground">
+                    {completionPercent(row.profileCompletion)}%
+                  </span>
                 </div>
               </td>
               <td className="px-4 py-3 text-end">
