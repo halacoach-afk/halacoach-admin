@@ -529,8 +529,7 @@ export type NotificationPrefs = {
   push: boolean;
   email: boolean;
   sms: boolean;
-  matchUpdates: boolean;
-  messages: boolean;
+  whatsapp: boolean;
   marketing: boolean;
 };
 
