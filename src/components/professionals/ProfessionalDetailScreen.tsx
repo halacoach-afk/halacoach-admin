@@ -161,6 +161,11 @@ export function ProfessionalDetailScreen({
     if (!form || !pro) {
       return;
     }
+    const about = form.about.trim();
+    if (about.length < 50 || about.length > 500) {
+      setFormError('About must be between 50 and 500 characters.');
+      return;
+    }
     setSaving(true);
     setFormError(null);
     try {
@@ -170,7 +175,7 @@ export function ProfessionalDetailScreen({
         phone: form.phone,
         specialty: form.specialty,
         location: form.location,
-        about: form.about,
+        about,
         years: Number(form.years) || 0,
         style: form.style,
         availability: form.availability,
@@ -315,7 +320,16 @@ export function ProfessionalDetailScreen({
               <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
               <Input label="Public location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
               <Input label="Specialty" value={form.specialty} onChange={e => setForm({...form, specialty: e.target.value})} />
-              <Input label="Years experience" value={form.years} onChange={e => setForm({...form, years: e.target.value})} />
+              <Input
+                label="Years experience"
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={form.years}
+                onChange={e =>
+                  setForm({...form, years: e.target.value.replace(/[^\d]/g, '')})
+                }
+              />
               <Input label="Coaching style" value={form.style} onChange={e => setForm({...form, style: e.target.value})} />
               <Input label="Availability" value={form.availability} onChange={e => setForm({...form, availability: e.target.value})} />
               <Input label="Price from" value={form.priceFrom} onChange={e => setForm({...form, priceFrom: e.target.value})} />
@@ -359,12 +373,18 @@ export function ProfessionalDetailScreen({
             </div>
             <label className="block text-sm">
               <span className="font-medium">About</span>
-              <textarea
-                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
-                rows={4}
-                value={form.about}
-                onChange={e => setForm({...form, about: e.target.value})}
-              />
+              <span className="relative mt-1 block">
+                <textarea
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 pb-8 text-sm"
+                  rows={4}
+                  maxLength={500}
+                  value={form.about}
+                  onChange={e => setForm({...form, about: e.target.value})}
+                />
+                <span className="pointer-events-none absolute bottom-2.5 end-3 text-xs tabular-nums text-muted-foreground">
+                  {form.about.length}/500
+                </span>
+              </span>
             </label>
             {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
             <Button type="submit" disabled={saving}>
