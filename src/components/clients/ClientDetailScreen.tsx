@@ -184,7 +184,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
           <form onSubmit={saveEdit} className="grid gap-4 sm:grid-cols-2">
             <Input label="Name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
             <Input label="Email" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
-            <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+            <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} required />
             {formError ? <p className="text-sm text-destructive sm:col-span-2">{formError}</p> : null}
             <Button type="submit" disabled={saving}>
               {saving ? 'Saving…' : 'Save changes'}

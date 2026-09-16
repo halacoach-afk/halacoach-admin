@@ -317,7 +317,7 @@ export function ProfessionalDetailScreen({
             <div className="grid gap-4 sm:grid-cols-2">
               <Input label="Name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
               <Input label="Email" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
-              <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+              <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} required />
               <Input label="Public location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
               <Input label="Specialty" value={form.specialty} onChange={e => setForm({...form, specialty: e.target.value})} />
               <Input
