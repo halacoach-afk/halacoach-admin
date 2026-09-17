@@ -58,5 +58,6 @@ export const verificationLabels = {
 export const locationLabels: Record<string, string> = {
   coach: 'My location',
   client: 'Client location',
+  online_live: 'Live virtual coaching',
   online: 'Online',
 };

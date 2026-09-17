@@ -370,7 +370,7 @@ export type Professional = {
   onboarded: boolean;
   createdAt: string;
   serviceIds: number[];
-  locations: ('coach' | 'client' | 'online')[];
+  locations: ('coach' | 'client' | 'online' | 'online_live')[];
   radiusKm: number;
   verificationFiles: VerificationFile[];
   verificationStatus: VerificationStatus;
