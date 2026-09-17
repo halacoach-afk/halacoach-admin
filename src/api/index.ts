@@ -1,6 +1,7 @@
 import {request, requestBlob} from './client';
 import type {
   AdminUser,
+  AdminUserDetail,
   CatalogService,
   Client,
   ClientSummary,
@@ -34,8 +35,14 @@ import type {
 } from './types';
 
 export type {
+  AdminPermission,
+  AdminPermissionCatalogItem,
   AdminRole,
+  AdminRoleRecord,
+  AdminRolesResponse,
   AdminUser,
+  AdminUserDetail,
+
   AdjustCreditsInput,
   CatalogService,
   Client,
@@ -116,6 +123,10 @@ export function listAdmins() {
   return request<AdminUser[]>('/v1/admins');
 }
 
+export function getAdmin(id: number | string) {
+  return request<AdminUserDetail>(`/v1/admins/${id}`);
+}
+
 export function inviteAdmin(input: InviteAdminInput) {
   return request<AdminUser>('/v1/admins', {
     method: 'POST',
@@ -124,7 +135,7 @@ export function inviteAdmin(input: InviteAdminInput) {
 }
 
 export function updateAdmin(id: number, input: UpdateAdminInput & {actorId: number}) {
-  return request<AdminUser>(`/v1/admins/${id}`, {
+  return request<AdminUserDetail>(`/v1/admins/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   });

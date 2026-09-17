@@ -1,5 +1,7 @@
 import {request} from '@/lib/request';
 import type {
+  AdminRolesResponse,
+  AdminRoleRecord,
   CatalogService,
   CreditPackage,
   CreditSubscriptionAdmin,
@@ -12,6 +14,37 @@ import type {
   UpdatePromoInput,
   UpdateServiceInput,
 } from '@/api/types';
+
+// ── Admin roles ───────────────────────────────────────────────────────────────
+
+export function listAdminRoles() {
+  return request<AdminRolesResponse>('/v1/admin-roles');
+}
+
+export function createAdminRole(input: {
+  name: string;
+  slug: string;
+  permissions: string[];
+}) {
+  return request<AdminRoleRecord>('/v1/admin-roles', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateAdminRole(
+  id: number,
+  input: {name?: string; permissions?: string[]},
+) {
+  return request<AdminRoleRecord>(`/v1/admin-roles/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteAdminRole(id: number) {
+  return request<void>(`/v1/admin-roles/${id}`, {method: 'DELETE'});
+}
 
 // ── Credit Packages ───────────────────────────────────────────────────────────
 

@@ -69,7 +69,6 @@ export function OnlineClientsScreen() {
   return (
     <>
       <PageHeader
-        module="M6b"
         title="Online plans"
         description="Live coaching plans from the coach Clients tab — intake, drafts, and published programs."
         actions={

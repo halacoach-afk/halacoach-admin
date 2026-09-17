@@ -102,7 +102,6 @@ export function SubscriptionDetailScreen({
       </div>
 
       <PageHeader
-        module="M9b"
         title={sub.package?.name ?? `Subscription #${sub.id}`}
         description={`${sub.professionalName} - ${sub.professionalEmail ?? sub.professionalId}`}
         actions={<Badge tone={statusTone(sub.status)}>{sub.status}</Badge>}

@@ -81,7 +81,6 @@ export function SupportScreen(_props: {actor: SessionUser}) {
   return (
     <>
       <PageHeader
-        module="M11"
         title="Support"
         description="Contact-us messages from clients and professionals in the mobile app."
       />

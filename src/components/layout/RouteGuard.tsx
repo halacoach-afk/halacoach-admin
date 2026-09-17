@@ -2,24 +2,22 @@
 
 import type {ReactNode} from 'react';
 import {usePathname} from 'next/navigation';
-import type {AdminRole} from '@/api/types';
+import type {SessionUser} from '@/api/types';
 import {can, permissionForPath} from '@/lib/permissions';
 import {Forbidden} from './Forbidden';
 
 export function RouteGuard({
-  role,
+  actor,
   children,
 }: {
-  role: AdminRole;
+  actor: SessionUser;
   children: ReactNode;
 }) {
   const pathname = usePathname();
   const permission = permissionForPath(pathname);
-  if (!can(role, permission)) {
+  if (!can(actor, permission)) {
     return (
-      <Forbidden
-        body="Your role cannot open this page. Super admins have full access; reviewers handle verification; support handles clients, credits, and the support inbox."
-      />
+      <Forbidden body="Your role cannot open this page. Ask a super admin to update role permissions." />
     );
   }
   return children;

@@ -65,7 +65,7 @@ function CatalogActions({
       )}
       {isEditing ? (
         <Button size="sm" className={actionButtonClass} disabled={saving} onClick={onSave}>
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'Savingâ€¦' : 'Save'}
         </Button>
       ) : (
         <Button size="sm" variant="outline" className={actionButtonClass} onClick={onEdit}>
@@ -80,7 +80,7 @@ function CatalogActions({
 }
 
 export function ServicesScreen({actor}: {actor: SessionUser}) {
-  const canWrite = can(actor.role, 'services:write');
+  const canWrite = can(actor, 'services:write');
   const [services, setServices] = useState<{
     items: CatalogService[];
     isLoading: boolean;
@@ -181,7 +181,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
 
       {!canWrite ? (
         <p className="mb-4 rounded-xl bg-primary-soft px-4 py-3 text-sm text-primary-deep">
-          View only — adding or editing services requires super admin.
+          View only â€” adding or editing services requires super admin.
         </p>
       ) : null}
 

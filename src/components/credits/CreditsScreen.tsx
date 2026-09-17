@@ -174,7 +174,7 @@ function CatalogActions({
       )}
       {isEditing ? (
         <Button size="sm" className={creditPackageActionButtonClass} disabled={saving} onClick={onSave}>
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'Savingâ€¦' : 'Save'}
         </Button>
       ) : (
         <Button size="sm" variant="outline" className={creditPackageActionButtonClass} onClick={onEdit}>
@@ -189,7 +189,7 @@ function CatalogActions({
 }
 
 export function CreditsScreen({actor}: {actor: SessionUser}) {
-  const canWrite = can(actor.role, 'credits:write');
+  const canWrite = can(actor, 'credits:write');
   const [overview, setOverview] = useState<CreditsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -365,7 +365,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
             const displayPrice = Number(isEditing ? draft.price : pack.price);
             const inclVat = Number.isFinite(displayPrice)
               ? formatAed(displayPrice * (1 + vatRate))
-              : '—';
+              : 'â€”';
 
             return (
               <tr
@@ -455,7 +455,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                     ) : pack.badge ? (
                       <Badge tone={pack.badge === 'popular' ? 'coral' : 'sky'}>{pack.badge}</Badge>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">â€”</span>
                     )}
                   </CreditPackageTableCell>
                 </td>
@@ -538,7 +538,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                   <span className="text-muted-foreground">
                     {Number.isFinite(Number(form.price)) && form.price
                       ? formatAed(Number(form.price) * (1 + vatRate))
-                      : '—'}
+                      : 'â€”'}
                   </span>
                 </CreditPackageTableCell>
               </td>
@@ -775,7 +775,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   };
 
   if (loading && !overview && packages.items.length === 0 && promos.items.length === 0) {
-    return <LoadingState label="Loading credits…" />;
+    return <LoadingState label="Loading creditsâ€¦" />;
   }
 
   return (
@@ -791,7 +791,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
 
       {!canWrite ? (
         <p className="mb-4 rounded-xl bg-primary-soft px-4 py-3 text-sm text-primary-deep">
-          View only — credit package prices and promo codes require super admin.
+          View only â€” credit package prices and promo codes require super admin.
         </p>
       ) : null}
 
@@ -1087,15 +1087,15 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                 </Badge>
               </td>
               <td className="px-4 py-3 font-medium">
-                {txn.type === 'spend' ? '−' : '+'}
+                {txn.type === 'spend' ? 'âˆ’' : '+'}
                 {txn.credits}
               </td>
               <td className="px-4 py-3 text-sm text-muted-foreground">
                 {txn.label}
-                {txn.orderId ? ` · ${txn.orderId}` : ''}
+                {txn.orderId ? ` Â· ${txn.orderId}` : ''}
               </td>
               <td className="px-4 py-3 text-sm">
-                {txn.totalAed ? formatAed(txn.totalAed) : '—'}
+                {txn.totalAed ? formatAed(txn.totalAed) : 'â€”'}
               </td>
             </tr>
           ))}

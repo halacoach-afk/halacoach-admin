@@ -99,7 +99,6 @@ export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
   return (
     <>
       <PageHeader
-        module="M9b"
         title="Subscriptions"
         description="Membership plans, period usage, wallet balance, and renewal status for coaches."
       />

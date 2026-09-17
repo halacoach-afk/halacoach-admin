@@ -14,7 +14,10 @@ export function decodeSession(value: string | undefined | null): SessionUser | n
     if (!parsed?.id || !parsed.email || !parsed.role) {
       return null;
     }
-    return parsed;
+    return {
+      ...parsed,
+      permissions: Array.isArray(parsed.permissions) ? parsed.permissions : undefined,
+    };
   } catch {
     return null;
   }

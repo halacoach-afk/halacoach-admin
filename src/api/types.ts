@@ -1,4 +1,25 @@
-export type AdminRole = 'super' | 'reviewer' | 'support';
+export type AdminPermission =
+  | 'dashboard:read'
+  | 'verification:read'
+  | 'verification:write'
+  | 'professionals:read'
+  | 'professionals:write'
+  | 'clients:read'
+  | 'clients:write'
+  | 'leads:read'
+  | 'leads:write'
+  | 'credits:read'
+  | 'credits:write'
+  | 'credits:adjust'
+  | 'services:read'
+  | 'services:write'
+  | 'support:read'
+  | 'support:write'
+  | 'messages:read'
+  | 'admins:read'
+  | 'admins:write';
+
+export type AdminRole = string;
 
 export type AdminUser = {
   id: number;
@@ -8,9 +29,47 @@ export type AdminUser = {
   active: boolean;
   lastLogin: string | null;
   createdAt: string;
+  customPermissions?: AdminPermission[] | null;
+  usesCustomPermissions?: boolean;
 };
 
-export type SessionUser = Pick<AdminUser, 'id' | 'name' | 'email' | 'role'>;
+export type AdminUserDetail = AdminUser & {
+  rolePermissions: AdminPermission[];
+  effectivePermissions: AdminPermission[];
+  catalog: AdminPermissionCatalogItem[];
+};
+
+export type SessionUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: AdminRole;
+  permissions?: AdminPermission[];
+};
+
+export type AdminRoleRecord = {
+  id: number;
+  slug: string;
+  name: string;
+  permissions: AdminPermission[];
+  isSystem: boolean;
+  /** Super admin — cannot be edited or deleted. */
+  isLocked?: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type AdminPermissionCatalogItem = {
+  key: AdminPermission;
+  module: string;
+  action: string;
+  label: string;
+};
+
+export type AdminRolesResponse = {
+  roles: AdminRoleRecord[];
+  catalog: AdminPermissionCatalogItem[];
+};
 
 export type HealthResponse = {
   ok: boolean;
@@ -39,6 +98,8 @@ export type UpdateAdminInput = {
   name?: string;
   role?: AdminRole;
   active?: boolean;
+  /** null = inherit role; array = custom override */
+  permissions?: AdminPermission[] | null;
 };
 
 export type CreditPackageBadge = 'popular' | 'value';

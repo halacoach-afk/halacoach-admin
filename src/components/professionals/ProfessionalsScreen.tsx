@@ -104,7 +104,6 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
   return (
     <>
       <PageHeader
-        module="M4"
         title="Professionals"
         description="Coach profiles from mobile onboarding (services, location, pricing, docs). Reviewers can browse; super admins can edit and suspend."
       />
