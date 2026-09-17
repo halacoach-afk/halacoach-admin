@@ -10,7 +10,6 @@ import {
   createCreditPackage,
   createPromoCode,
   listCreditPackages,
-  listCreditSubscriptions,
   listPromoCodes,
   updateCreditPackage,
   updatePromoCode,
@@ -20,7 +19,6 @@ import type {
   CreditPackage,
   CreditPackageBadge,
   CreditPackageType,
-  CreditSubscriptionAdmin,
   PromoBenefitType,
   PromoCode,
 } from '@/api/types';
@@ -201,11 +199,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     isLoading: true,
     error: null,
   });
-  const [subscriptions, setSubscriptions] = useState<{
-    items: CreditSubscriptionAdmin[];
-    isLoading: boolean;
-    error: string | null;
-  }>({items: [], isLoading: true, error: null});
   const [promos, setPromos] = useState<{items: PromoCode[]; isLoading: boolean; error: string | null}>({
     items: [],
     isLoading: true,
@@ -256,20 +249,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  const loadSubscriptions = async () => {
-    setSubscriptions(s => ({...s, isLoading: true, error: null}));
-    try {
-      const items = await listCreditSubscriptions();
-      setSubscriptions({items, isLoading: false, error: null});
-    } catch (err) {
-      setSubscriptions(s => ({
-        ...s,
-        isLoading: false,
-        error: isApiError(err) ? err.message : 'Could not load subscriptions.',
-      }));
-    }
-  };
-
   const loadPromos = async () => {
     setPromos(s => ({...s, isLoading: true, error: null}));
     try {
@@ -296,7 +275,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
 
   useEffect(() => {
     void loadPackages();
-    void loadSubscriptions();
     void loadPromos();
     void load();
   }, []);
@@ -817,27 +795,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         </p>
       ) : null}
 
-      {loading && !overview ? (
-        <LoadingState label="Loading stats and transactions…" />
-      ) : overview ? (
-        <div className="mb-6 grid gap-4 sm:grid-cols-3">
-          <Card>
-            <p className="text-xs font-medium uppercase text-muted-foreground">In wallets</p>
-            <p className="mt-1 text-2xl font-bold text-foreground">
-              {overview.stats.totalCreditsInWallets} credits
-            </p>
-          </Card>
-          <Card>
-            <p className="text-xs font-medium uppercase text-muted-foreground">Purchases</p>
-            <p className="mt-1 text-2xl font-bold text-foreground">{overview.stats.purchaseCount}</p>
-          </Card>
-          <Card>
-            <p className="text-xs font-medium uppercase text-muted-foreground">Lead unlocks</p>
-            <p className="mt-1 text-2xl font-bold text-foreground">{overview.stats.spendCount}</p>
-          </Card>
-        </div>
-      ) : null}
-
       <h2 className="mb-3 text-lg font-semibold text-foreground">Credit packages</h2>
       {renderPackageCatalog(
         'one_time',
@@ -858,69 +815,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         '149',
       )}
       {creditPackageError ? <p className="mb-6 text-sm text-destructive">{creditPackageError}</p> : null}
-
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Subscriptions</h2>
-      <div className="mb-8">
-        <DataTable
-          columns={['Coach', 'Plan', 'Status', 'Period end', 'Cancel at end']}
-          columnWidths={['28%', '18%', '16%', '22%', '16%']}>
-          {subscriptions.isLoading && subscriptions.items.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="px-4 py-8 text-center">
-                <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
-              </td>
-            </tr>
-          ) : null}
-          {subscriptions.error ? (
-            <tr>
-              <td colSpan={5} className="px-4 py-6 text-center">
-                <p className="mb-2 text-sm text-destructive">{subscriptions.error}</p>
-                <button
-                  className="text-xs text-primary underline"
-                  onClick={() => void loadSubscriptions()}>
-                  Retry
-                </button>
-              </td>
-            </tr>
-          ) : null}
-          {!subscriptions.isLoading && !subscriptions.error && subscriptions.items.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="px-4 py-6 text-center text-sm text-muted-foreground">
-                No subscriptions yet.
-              </td>
-            </tr>
-          ) : null}
-          {subscriptions.items.map(sub => (
-            <tr key={sub.id} className="border-b border-border last:border-0">
-              <td className="px-4 py-3">
-                <p className="font-medium text-foreground">{sub.professionalName}</p>
-                <p className="text-xs text-muted-foreground">
-                  {sub.professionalEmail ?? sub.professionalId}
-                </p>
-              </td>
-              <td className="px-4 py-3">
-                <p className="text-sm text-foreground">{sub.package?.name ?? '—'}</p>
-                <p className="text-xs text-muted-foreground">
-                  {sub.package
-                    ? `${sub.package.credits} credits · ${formatAed(sub.package.price)}`
-                    : ''}
-                </p>
-              </td>
-              <td className="px-4 py-3">
-                <Badge tone={sub.status === 'active' ? 'sky' : 'muted'}>{sub.status}</Badge>
-              </td>
-              <td className="px-4 py-3 text-sm text-muted-foreground">
-                {sub.currentPeriodEnd
-                  ? new Date(sub.currentPeriodEnd).toLocaleDateString()
-                  : '—'}
-              </td>
-              <td className="px-4 py-3 text-sm text-muted-foreground">
-                {sub.cancelAtPeriodEnd ? 'Yes' : 'No'}
-              </td>
-            </tr>
-          ))}
-        </DataTable>
-      </div>
 
       <h2 className="mb-3 text-lg font-semibold text-foreground">Promo codes</h2>
       <div className="mb-8">

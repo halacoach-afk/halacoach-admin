@@ -8,6 +8,7 @@ import {
   LifeBuoy,
   MapPin,
   MessageCircle,
+  Repeat,
   Shield,
   Users,
   UserRoundCog,
@@ -78,6 +79,14 @@ export const navItems: NavItem[] = [
     description: 'Packs, promo codes, VAT, transactions, and wallet adjustments.',
     icon: Coins,
     module: 'M9',
+    permission: 'credits:read',
+  },
+  {
+    href: '/subscriptions',
+    label: 'Subscriptions',
+    description: 'Membership plans, period usage, wallet balance, and renewals.',
+    icon: Repeat,
+    module: 'M9b',
     permission: 'credits:read',
   },
   {

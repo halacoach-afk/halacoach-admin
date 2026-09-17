@@ -3,6 +3,7 @@ import type {
   CatalogService,
   CreditPackage,
   CreditSubscriptionAdmin,
+  CreditSubscriptionDetail,
   CreateCreditPackageInput,
   CreatePromoInput,
   CreateServiceInput,
@@ -20,6 +21,10 @@ export function listCreditPackages() {
 
 export function listCreditSubscriptions() {
   return request<CreditSubscriptionAdmin[]>('/v1/credit-subscriptions');
+}
+
+export function getCreditSubscription(id: string) {
+  return request<CreditSubscriptionDetail>(`/v1/credit-subscriptions/${id}`);
 }
 
 export function createCreditPackage(input: CreateCreditPackageInput) {

@@ -78,6 +78,7 @@ export function permissionForPath(pathname: string): Permission {
     clients: 'clients:read',
     leads: 'leads:read',
     credits: 'credits:read',
+    subscriptions: 'credits:read',
     services: 'services:read',
     support: 'support:read',
     messages: 'messages:read',
