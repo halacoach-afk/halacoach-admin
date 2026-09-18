@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-import type {AdminRole} from '@/api/types';
+import type {SessionUser} from '@/api/types';
 import {cn} from '@/lib/cn';
 import {navItems} from '@/lib/nav';
 import {can} from '@/lib/permissions';
 
-export function Sidebar({role}: {role: AdminRole}) {
+export function Sidebar({actor}: {actor: SessionUser}) {
   const pathname = usePathname();
-  const items = navItems.filter(item => can(role, item.permission));
+  const items = navItems.filter(item => can(actor, item.permission));
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-e border-border bg-card">

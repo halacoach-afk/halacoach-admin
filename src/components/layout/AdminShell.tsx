@@ -13,11 +13,11 @@ export async function AdminShell({children}: {children: ReactNode}) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar role={user.role} />
+      <Sidebar actor={user} />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <TopBar name={user.name} email={user.email} role={user.role} />
         <main className="min-h-0 flex-1 overflow-y-auto p-6">
-          <RouteGuard role={user.role}>{children}</RouteGuard>
+          <RouteGuard actor={user}>{children}</RouteGuard>
         </main>
       </div>
     </div>

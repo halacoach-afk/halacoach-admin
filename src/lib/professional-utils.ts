@@ -1,22 +1,17 @@
 import type {Professional, ProfessionalSummary, VerificationQueueItem} from '@/api/types';
 
+export function completionPercent(
+  value: number | {percent?: number} | null | undefined,
+): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (value && typeof value === 'object' && typeof value.percent === 'number') {
+    return value.percent;
+  }
+  return 0;
+}
+
 export function profileCompletion(pro: Professional): number {
-  const pricing = pro.pricing;
-  const hasPricing =
-    Object.keys(pricing?.rates ?? {}).length > 0 ||
-    Boolean(pricing?.onlineMonthly) ||
-    Boolean(pricing?.notes);
-  const checks = [
-    Boolean(pro.name && pro.email),
-    pro.onboarded,
-    pro.serviceIds.length > 0,
-    pro.locations.length > 0,
-    hasPricing,
-    (pro.verificationFiles?.length ?? 0) > 0,
-    pro.activated,
-    pro.verificationStatus === 'pending' || pro.verificationStatus === 'verified',
-  ];
-  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  return completionPercent(pro.profileCompletion);
 }
 
 export function toProfessionalSummary(pro: Professional): ProfessionalSummary {
@@ -33,7 +28,7 @@ export function toProfessionalSummary(pro: Professional): ProfessionalSummary {
     activated: pro.activated,
     onboarded: pro.onboarded,
     suspended: pro.suspended,
-    profileCompletion: profileCompletion(pro),
+    profileCompletion: completionPercent(pro.profileCompletion),
   };
 }
 
@@ -63,5 +58,6 @@ export const verificationLabels = {
 export const locationLabels: Record<string, string> = {
   coach: 'My location',
   client: 'Client location',
+  online_live: 'Live virtual coaching',
   online: 'Online',
 };

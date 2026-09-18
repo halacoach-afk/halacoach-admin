@@ -124,7 +124,7 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
   }, [pathname]);
 
   const statCards = useMemo(
-    () => (overview ? buildStatCards(overview).filter(card => can(actor.role, card.permission)) : []),
+    () => (overview ? buildStatCards(overview).filter(card => can(actor, card.permission)) : []),
     [overview, actor.role],
   );
 
@@ -132,11 +132,11 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
     if (!overview) {
       return [];
     }
-    return overview.recentActivity.filter(item => can(actor.role, activityPermission[item.kind]));
+    return overview.recentActivity.filter(item => can(actor, activityPermission[item.kind]));
   }, [overview, actor.role]);
 
   if (loading && !overview) {
-    return <LoadingState label="Loading dashboard…" />;
+    return <LoadingState label="Loading dashboardâ€¦" />;
   }
 
   if (error && !overview) {
@@ -150,9 +150,8 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
   return (
     <>
       <PageHeader
-        module="M13"
         title="Dashboard"
-        description={`Signed in as ${actor.name}. Counts refresh when you return here — approve Leila on Verification and the pending count drops automatically.`}
+        description={`Signed in as ${actor.name}. Counts refresh when you return here â€” approve Leila on Verification and the pending count drops automatically.`}
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
@@ -167,7 +166,7 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
       ) : null}
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <Badge tone="primary">API {apiSource ?? '…'}</Badge>
+        <Badge tone="primary">API {apiSource ?? 'â€¦'}</Badge>
         <span className="text-sm text-muted-foreground">
           Live counts from the API across verification, leads, credits, and support.
         </span>

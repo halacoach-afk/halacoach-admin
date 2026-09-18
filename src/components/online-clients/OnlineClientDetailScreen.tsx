@@ -67,7 +67,6 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
   return (
     <>
       <PageHeader
-        module="M6b"
         title={plan.name}
         description={`${plan.goal} · ${plan.frequency} · Coach ${plan.coachName}`}
         actions={

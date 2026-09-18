@@ -85,7 +85,6 @@ export function ClientsScreen({actor}: {actor: SessionUser}) {
   return (
     <>
       <PageHeader
-        module="M6"
         title="Clients"
         description="Onboarding questionnaire (14 steps), signup consent, and saved coaches. OTP is deferred in the mobile app."
       />

@@ -109,7 +109,7 @@ export function ProfessionalDetailScreen({
   actor: SessionUser;
   id: string;
 }) {
-  const canWrite = can(actor.role, 'professionals:write');
+  const canWrite = can(actor, 'professionals:write');
   const [pro, setPro] = useState<Professional | null>(null);
   const [services, setServices] = useState<CatalogService[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,6 +161,11 @@ export function ProfessionalDetailScreen({
     if (!form || !pro) {
       return;
     }
+    const about = form.about.trim();
+    if (about.length < 50 || about.length > 500) {
+      setFormError('About must be between 50 and 500 characters.');
+      return;
+    }
     setSaving(true);
     setFormError(null);
     try {
@@ -170,7 +175,7 @@ export function ProfessionalDetailScreen({
         phone: form.phone,
         specialty: form.specialty,
         location: form.location,
-        about: form.about,
+        about,
         years: Number(form.years) || 0,
         style: form.style,
         availability: form.availability,
@@ -240,7 +245,7 @@ export function ProfessionalDetailScreen({
   };
 
   if (loading) {
-    return <LoadingState label="Loading professional…" />;
+    return <LoadingState label="Loading professionalâ€¦" />;
   }
 
   if (error || !pro || !form) {
@@ -264,9 +269,8 @@ export function ProfessionalDetailScreen({
       </div>
 
       <PageHeader
-        module="M4"
         title={pro.name}
-        description={`${pro.specialty} · ${pro.location}`}
+        description={`${pro.specialty} Â· ${pro.location}`}
         actions={
           canWrite ? (
             <div className="flex flex-wrap gap-2">
@@ -312,10 +316,19 @@ export function ProfessionalDetailScreen({
             <div className="grid gap-4 sm:grid-cols-2">
               <Input label="Name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
               <Input label="Email" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
-              <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+              <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} required />
               <Input label="Public location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
               <Input label="Specialty" value={form.specialty} onChange={e => setForm({...form, specialty: e.target.value})} />
-              <Input label="Years experience" value={form.years} onChange={e => setForm({...form, years: e.target.value})} />
+              <Input
+                label="Years experience"
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={form.years}
+                onChange={e =>
+                  setForm({...form, years: e.target.value.replace(/[^\d]/g, '')})
+                }
+              />
               <Input label="Coaching style" value={form.style} onChange={e => setForm({...form, style: e.target.value})} />
               <Input label="Availability" value={form.availability} onChange={e => setForm({...form, availability: e.target.value})} />
               <Input label="Price from" value={form.priceFrom} onChange={e => setForm({...form, priceFrom: e.target.value})} />
@@ -342,7 +355,7 @@ export function ProfessionalDetailScreen({
             <div>
               <p className="mb-2 text-sm font-medium">Session locations</p>
               <div className="flex flex-wrap gap-2">
-                {(['coach', 'client', 'online'] as const).map(key => (
+                {(['coach', 'client', 'online_live', 'online'] as const).map(key => (
                   <button
                     key={key}
                     type="button"
@@ -359,16 +372,22 @@ export function ProfessionalDetailScreen({
             </div>
             <label className="block text-sm">
               <span className="font-medium">About</span>
-              <textarea
-                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm"
-                rows={4}
-                value={form.about}
-                onChange={e => setForm({...form, about: e.target.value})}
-              />
+              <span className="relative mt-1 block">
+                <textarea
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 pb-8 text-sm"
+                  rows={4}
+                  maxLength={500}
+                  value={form.about}
+                  onChange={e => setForm({...form, about: e.target.value})}
+                />
+                <span className="pointer-events-none absolute bottom-2.5 end-3 text-xs tabular-nums text-muted-foreground">
+                  {form.about.length}/500
+                </span>
+              </span>
             </label>
             {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : 'Save changes'}
+              {saving ? 'Savingâ€¦' : 'Save changes'}
             </Button>
           </form>
         </Card>
@@ -398,7 +417,7 @@ export function ProfessionalDetailScreen({
           <ul className="space-y-1.5 text-sm">
             {checks.map(item => (
               <li key={item.label} className={item.done ? 'text-foreground' : 'text-muted-foreground'}>
-                {item.done ? '✓' : '○'} {item.label}
+                {item.done ? 'âœ“' : 'â—‹'} {item.label}
               </li>
             ))}
           </ul>
@@ -420,7 +439,7 @@ export function ProfessionalDetailScreen({
             <Field label="Radius" value={`${pro.radiusKm} km`} />
             <Field
               label="Session types"
-              value={pro.locations.map(key => locationLabels[key]).join(', ') || '—'}
+              value={pro.locations.map(key => locationLabels[key]).join(', ') || 'â€”'}
             />
           </dl>
         </Section>
@@ -439,14 +458,14 @@ export function ProfessionalDetailScreen({
                   <div key={serviceId} className="rounded-xl border border-border p-3">
                     <p className="text-sm font-semibold text-foreground">{serviceName}</p>
                     <dl className="mt-2 grid gap-2 sm:grid-cols-2">
-                      <Field label="Per session (AED)" value={rate.session || '—'} />
-                      <Field label="10-session pack (AED)" value={rate.pack || '—'} />
+                      <Field label="Per session (AED)" value={rate.session || 'â€”'} />
+                      <Field label="10-session pack (AED)" value={rate.pack || 'â€”'} />
                     </dl>
                   </div>
                 );
               })}
               <dl className="grid gap-3 sm:grid-cols-2">
-                <Field label="Online monthly (AED)" value={pro.pricing?.onlineMonthly || '—'} />
+                <Field label="Online monthly (AED)" value={pro.pricing?.onlineMonthly || 'â€”'} />
                 <Field
                   label="Free intro consult"
                   value={pro.pricing?.freeConsult ? 'Yes' : 'No'}
@@ -517,7 +536,7 @@ export function ProfessionalDetailScreen({
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
+                        <span className="text-sm text-muted-foreground">â€”</span>
                       )}
                     </dd>
                   </div>
@@ -538,7 +557,7 @@ export function ProfessionalDetailScreen({
             <Field
               label="Formats"
               value={
-                pro.formats.map(id => locationLabels[id] ?? id).join(', ') || '—'
+                pro.formats.map(id => locationLabels[id] ?? id).join(', ') || 'â€”'
               }
             />
             <Field label="Languages" value={pro.languages.join(', ')} />
@@ -564,10 +583,10 @@ export function ProfessionalDetailScreen({
                     <div>
                       <p className="text-sm font-medium">{review.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {review.date} · {review.source}
+                        {review.date} Â· {review.source}
                       </p>
                     </div>
-                    <Badge tone="primary">{review.rating}★</Badge>
+                    <Badge tone="primary">{review.rating}â˜…</Badge>
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">{review.text}</p>
                 </li>
@@ -581,15 +600,13 @@ export function ProfessionalDetailScreen({
             <dl className="grid gap-3 sm:grid-cols-2">
               <Field label="Credits spent" value={pro.roi.creditsSpent} />
               <Field label="Leads unlocked" value={pro.roi.leadsUnlocked} />
-              <Field label="Clients won" value={pro.roi.clientsWon} />
-              <Field label="Revenue booked (est.)" value={`AED ${pro.roi.revenue}`} />
               <Field
-                label="Conversion trend"
-                value={pro.roi.conversionWeeks.join(' → ') + '%'}
+                label="Leads won"
+                value={`${pro.roi.leadsWon} (unlocked: ${pro.roi.leadsWonUnlocked ?? 0})`}
               />
               <Field
-                label="Response trend"
-                value={pro.roi.responseRateWeeks.join(' → ') + '%'}
+                label="Conversion trend"
+                value={pro.roi.conversionWeeks.join(' â†’ ') + '%'}
               />
             </dl>
           ) : (
@@ -633,7 +650,7 @@ export function ProfessionalDetailScreen({
                     </p>
                   </div>
                   <span className={txn.type === 'spend' ? 'text-destructive' : 'text-primary'}>
-                    {txn.type === 'spend' ? '−' : '+'}
+                    {txn.type === 'spend' ? 'âˆ’' : '+'}
                     {txn.credits}
                   </span>
                 </li>
