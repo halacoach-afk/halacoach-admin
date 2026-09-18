@@ -1,4 +1,5 @@
 import type {Client, ClientSummary} from '@/api/types';
+import {formatClientAgeDisplay} from '@/lib/age-display';
 
 export function toClientSummary(client: Client): ClientSummary {
   return {
@@ -90,7 +91,9 @@ export function clientMatchPrefRows(client: Client): MatchPrefRow[] {
       label: 'Personal details',
       value: [
         displayValue(profile.gender) || null,
-        displayValue(profile.age) || null,
+        formatClientAgeDisplay({
+          birth_date: profile.birth_date,
+        }) || null,
         displayValue(profile.gymAccess) || null,
         profile.location || null,
       ]
