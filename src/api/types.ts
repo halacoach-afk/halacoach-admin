@@ -499,7 +499,6 @@ export type Client = {
   matchPrefs: MatchPrefs;
   profile: PersonalProfile;
   consents: ClientConsents;
-  savedCoachIds: number[];
   onlinePlans?: OnlinePlanSummary[];
   note?: string;
   notificationPrefs: NotificationPrefs;
@@ -515,7 +514,6 @@ export type ClientSummary = {
   onboarded: boolean;
   otpVerified: boolean;
   suspended: boolean;
-  savedCount: number;
   createdAt: string;
   lastActiveAt: string;
 };

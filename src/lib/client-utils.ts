@@ -12,7 +12,6 @@ export function toClientSummary(client: Client): ClientSummary {
     onboarded: client.onboarded,
     otpVerified: client.otpVerified,
     suspended: client.suspended,
-    savedCount: client.savedCoachIds.length,
     createdAt: client.createdAt,
     lastActiveAt: client.lastActiveAt,
   };

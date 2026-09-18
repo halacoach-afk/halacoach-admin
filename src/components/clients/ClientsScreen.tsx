@@ -86,7 +86,7 @@ export function ClientsScreen({actor}: {actor: SessionUser}) {
     <>
       <PageHeader
         title="Clients"
-        description="Onboarding questionnaire (14 steps), signup consent, and saved coaches. OTP is deferred in the mobile app."
+        description="Onboarding questionnaire (14 steps) and signup consent. OTP is deferred in the mobile app."
       />
 
       <FilterBar>
@@ -117,7 +117,7 @@ export function ClientsScreen({actor}: {actor: SessionUser}) {
       {visible.length === 0 ? (
         <EmptyState title="No clients match" body="Try another filter or clear the search box." />
       ) : (
-        <DataTable columns={['Client', 'Location', 'Services', 'Onboarded', 'Saved', '']}>
+        <DataTable columns={['Client', 'Location', 'Services', 'Onboarded', '']}>
           {visible.map(row => (
             <tr key={row.id} className="border-b border-border last:border-0">
               <td className="px-4 py-3">
@@ -135,7 +135,6 @@ export function ClientsScreen({actor}: {actor: SessionUser}) {
                   <Badge tone="muted">Incomplete</Badge>
                 )}
               </td>
-              <td className="px-4 py-3">{row.savedCount}</td>
               <td className="px-4 py-3 text-end">
                 <Link
                   href={`/clients/${row.id}`}

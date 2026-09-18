@@ -6,10 +6,8 @@ import {ArrowLeft, ExternalLink} from 'lucide-react';
 import {
   getClient,
   isApiError,
-  listProfessionals,
   updateClient,
   type Client,
-  type ProfessionalSummary,
   type SessionUser,
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
@@ -47,7 +45,6 @@ function Field({label, value}: {label: string; value: ReactNode}) {
 export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}) {
   const canWrite = can(actor, 'clients:write');
   const [client, setClient] = useState<Client | null>(null);
-  const [coaches, setCoaches] = useState<ProfessionalSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -60,12 +57,8 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
     setLoading(true);
     setError(null);
     try {
-      const [detail, professionals] = await Promise.all([
-        getClient(id),
-        listProfessionals(),
-      ]);
+      const detail = await getClient(id);
       setClient(detail);
-      setCoaches(professionals);
       setForm({name: detail.name, email: detail.email, phone: detail.phone});
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load client.');
@@ -82,15 +75,6 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
     () => (client ? clientMatchPrefRows(client) : []),
     [client],
   );
-
-  const savedCoaches = useMemo(() => {
-    if (!client) {
-      return [];
-    }
-    return client.savedCoachIds
-      .map(coachId => coaches.find(item => item.id === String(coachId)))
-      .filter(Boolean) as ProfessionalSummary[];
-  }, [client, coaches]);
 
   const saveEdit = async (event: FormEvent) => {
     event.preventDefault();
@@ -249,25 +233,6 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
               </li>
             ))}
           </ul>
-        </Section>
-
-        <Section title="Saved coaches">
-          {savedCoaches.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No saved coaches yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {savedCoaches.map(coach => (
-                <li key={coach.id}>
-                  <Link
-                    href={`/professionals/${coach.id}`}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-                    {coach.name} Â· {coach.specialty}
-                    <ExternalLink size={14} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
         </Section>
 
         <Section title="Online coaching plans">
