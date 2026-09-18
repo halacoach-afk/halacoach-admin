@@ -602,7 +602,7 @@ export function ProfessionalDetailScreen({
               <Field label="Leads unlocked" value={pro.roi.leadsUnlocked} />
               <Field
                 label="Leads won"
-                value={`${pro.roi.leadsWon} (unlocked: ${pro.roi.leadsWonUnlocked ?? 0}, quoted: ${pro.roi.leadsWonQuoted ?? 0})`}
+                value={`${pro.roi.leadsWon} (unlocked: ${pro.roi.leadsWonUnlocked ?? 0})`}
               />
               <Field
                 label="Conversion trend"

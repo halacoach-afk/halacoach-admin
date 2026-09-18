@@ -408,7 +408,6 @@ export type Professional = {
     leadsUnlocked: number;
     leadsWon: number;
     leadsWonUnlocked: number;
-    leadsWonQuoted: number;
     conversionWeeks: number[];
   } | null;
   notificationPrefs: NotificationPrefs;
