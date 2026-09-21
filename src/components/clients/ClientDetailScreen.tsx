@@ -6,10 +6,8 @@ import {ArrowLeft, ExternalLink} from 'lucide-react';
 import {
   getClient,
   isApiError,
-  listProfessionals,
   updateClient,
   type Client,
-  type ProfessionalSummary,
   type SessionUser,
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
@@ -45,9 +43,8 @@ function Field({label, value}: {label: string; value: ReactNode}) {
 }
 
 export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}) {
-  const canWrite = can(actor.role, 'clients:write');
+  const canWrite = can(actor, 'clients:write');
   const [client, setClient] = useState<Client | null>(null);
-  const [coaches, setCoaches] = useState<ProfessionalSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -60,12 +57,8 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
     setLoading(true);
     setError(null);
     try {
-      const [detail, professionals] = await Promise.all([
-        getClient(id),
-        listProfessionals(),
-      ]);
+      const detail = await getClient(id);
       setClient(detail);
-      setCoaches(professionals);
       setForm({name: detail.name, email: detail.email, phone: detail.phone});
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load client.');
@@ -82,15 +75,6 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
     () => (client ? clientMatchPrefRows(client) : []),
     [client],
   );
-
-  const savedCoaches = useMemo(() => {
-    if (!client) {
-      return [];
-    }
-    return client.savedCoachIds
-      .map(coachId => coaches.find(item => item.id === String(coachId)))
-      .filter(Boolean) as ProfessionalSummary[];
-  }, [client, coaches]);
 
   const saveEdit = async (event: FormEvent) => {
     event.preventDefault();
@@ -126,7 +110,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
   };
 
   if (loading) {
-    return <LoadingState label="Loading client…" />;
+    return <LoadingState label="Loading clientâ€¦" />;
   }
 
   if (error || !client) {
@@ -145,9 +129,8 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
       </div>
 
       <PageHeader
-        module="M6"
         title={client.name}
-        description={`${client.email} · ${client.profile?.location ?? 'No location'} · mobile register + questionnaire`}
+        description={`${client.email} Â· ${client.profile?.location ?? 'No location'} Â· mobile register + questionnaire`}
         actions={
           canWrite ? (
             <div className="flex flex-wrap gap-2">
@@ -184,10 +167,10 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
           <form onSubmit={saveEdit} className="grid gap-4 sm:grid-cols-2">
             <Input label="Name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
             <Input label="Email" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
-            <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+            <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} required />
             {formError ? <p className="text-sm text-destructive sm:col-span-2">{formError}</p> : null}
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : 'Save changes'}
+              {saving ? 'Savingâ€¦' : 'Save changes'}
             </Button>
           </form>
         </Card>
@@ -228,7 +211,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
               <Badge tone="warning">Incomplete</Badge>
               <p className="mt-2 text-sm text-muted-foreground">
                 This user exists in the database but never finished signup. The mobile app no longer
-                resumes incomplete accounts — delete or ignore for local testing.
+                resumes incomplete accounts â€” delete or ignore for local testing.
               </p>
             </>
           )}
@@ -252,25 +235,6 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
           </ul>
         </Section>
 
-        <Section title="Saved coaches">
-          {savedCoaches.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No saved coaches yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {savedCoaches.map(coach => (
-                <li key={coach.id}>
-                  <Link
-                    href={`/professionals/${coach.id}`}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-                    {coach.name} · {coach.specialty}
-                    <ExternalLink size={14} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
-
         <Section title="Online coaching plans">
           {(client.onlinePlans ?? []).length === 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -283,7 +247,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
                   <div>
                     <p className="text-sm font-medium">{plan.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {plan.coachName} · {plan.goal}
+                      {plan.coachName} Â· {plan.goal}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

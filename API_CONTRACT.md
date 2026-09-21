@@ -185,7 +185,7 @@ Sets `verification: verified`, `activated: true`.
 
 ### `GET /admin/clients/:id`
 
-Includes `matchPrefs`, personal `profile`, `consents`, `savedCoachIds`, `notificationPrefs`.
+Includes `matchPrefs`, personal `profile`, `consents`, `notificationPrefs`.
 
 ### `PATCH /admin/clients/:id`
 

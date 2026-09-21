@@ -92,7 +92,6 @@ export function LeadsScreen({actor}: {actor: SessionUser}) {
   return (
     <>
       <PageHeader
-        module="M7"
         title="Leads"
         description="Client requests in the marketplace, credit unlock cost, and which coaches unlocked contact details. Closed leads stay here for ops but are hidden from the coach app."
         actions={

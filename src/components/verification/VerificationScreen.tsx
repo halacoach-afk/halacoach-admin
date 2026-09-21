@@ -31,7 +31,7 @@ import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {can} from '@/lib/permissions';
 import {cn} from '@/lib/cn';
-import {verificationLabels} from '@/lib/professional-utils';
+import {completionPercent, verificationLabels} from '@/lib/professional-utils';
 
 const REJECT_REASON_OPTIONS = [
   'Document is blurry or unreadable',
@@ -226,7 +226,7 @@ function DocumentRow({
 }
 
 export function VerificationScreen({actor}: {actor: SessionUser}) {
-  const canWrite = can(actor.role, 'verification:write');
+  const canWrite = can(actor, 'verification:write');
   const [queue, setQueue] = useState<VerificationQueueItem[]>([]);
   const [documentTypes, setDocumentTypes] = useState<VerificationDocTypeMeta[]>([]);
   const [services, setServices] = useState<CatalogService[]>([]);
@@ -436,7 +436,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   };
 
   if (loading) {
-    return <LoadingState label="Loading verification queue…" />;
+    return <LoadingState label="Loading verification queueâ€¦" />;
   }
 
   if (error && queue.length === 0) {
@@ -446,7 +446,6 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   return (
     <>
       <PageHeader
-        module="M5"
         title="Verification"
         description="Review coach documents one case at a time. Profiles go live when all required documents are approved."
         actions={
@@ -497,7 +496,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
         ))}
         <input
           className="ms-auto h-9 min-w-[200px] rounded-xl border border-border px-3 text-sm"
-          placeholder="Search name, email, location…"
+          placeholder="Search name, email, locationâ€¦"
           value={query}
           onChange={event => setQuery(event.target.value)}
         />
@@ -539,7 +538,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                             {item.name}
                           </p>
                           <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                            {item.specialty || 'Coach'} · {formatRelative(item.submittedAt)}
+                            {item.specialty || 'Coach'} Â· {formatRelative(item.submittedAt)}
                           </p>
                         </div>
                         <Badge tone={queueStatusTone(status)}>
@@ -594,20 +593,20 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
 
                 <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <Field label="Email" value={selected.email} />
-                  <Field label="Phone" value={selected.phone || '—'} />
-                  <Field label="Location" value={selected.location || '—'} />
+                  <Field label="Phone" value={selected.phone || 'â€”'} />
+                  <Field label="Location" value={selected.location || 'â€”'} />
                   <Field label="Submitted" value={formatSubmitted(selected.submittedAt)} />
                 </dl>
 
                 <div className="mt-4 rounded-xl bg-muted/50 px-4 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-medium text-foreground">
-                      Required docs · {requiredProgress.approved}/{requiredProgress.total}{' '}
+                      Required docs Â· {requiredProgress.approved}/{requiredProgress.total}{' '}
                       approved
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {requiredProgress.submitted}/{requiredProgress.total} submitted ·{' '}
-                      {selected.profileCompletion}% profile
+                      {requiredProgress.submitted}/{requiredProgress.total} submitted Â·{' '}
+                      {completionPercent(selected.profileCompletion)}% profile
                     </p>
                   </div>
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">

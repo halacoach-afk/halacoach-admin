@@ -1,6 +1,7 @@
 import {request, requestBlob} from './client';
 import type {
   AdminUser,
+  AdminUserDetail,
   CatalogService,
   Client,
   ClientSummary,
@@ -30,12 +31,19 @@ import type {
   ConversationSummary,
   DashboardOverview,
   OnlinePlanDetail,
+  OnlinePlanRevision,
   OnlinePlanSummary,
 } from './types';
 
 export type {
+  AdminPermission,
+  AdminPermissionCatalogItem,
   AdminRole,
+  AdminRoleRecord,
+  AdminRolesResponse,
   AdminUser,
+  AdminUserDetail,
+
   AdjustCreditsInput,
   CatalogService,
   Client,
@@ -65,6 +73,7 @@ export type {
   MessageAuthor,
   NotificationPrefs,
   OnlinePlanDetail,
+  OnlinePlanRevision,
   OnlinePlanSummary,
   Professional,
   ProfessionalSummary,
@@ -116,6 +125,10 @@ export function listAdmins() {
   return request<AdminUser[]>('/v1/admins');
 }
 
+export function getAdmin(id: number | string) {
+  return request<AdminUserDetail>(`/v1/admins/${id}`);
+}
+
 export function inviteAdmin(input: InviteAdminInput) {
   return request<AdminUser>('/v1/admins', {
     method: 'POST',
@@ -124,7 +137,7 @@ export function inviteAdmin(input: InviteAdminInput) {
 }
 
 export function updateAdmin(id: number, input: UpdateAdminInput & {actorId: number}) {
-  return request<AdminUser>(`/v1/admins/${id}`, {
+  return request<AdminUserDetail>(`/v1/admins/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   });
@@ -284,9 +297,9 @@ export function getConversation(id: string) {
 }
 
 export function listOnlinePlans() {
-  return request<OnlinePlanSummary[]>('/v1/online-clients');
+  return request<OnlinePlanSummary[]>('/v1/online-plans');
 }
 
 export function getOnlinePlan(id: number) {
-  return request<OnlinePlanDetail>(`/v1/online-clients/${id}`);
+  return request<OnlinePlanDetail>(`/v1/online-plans/${id}`);
 }

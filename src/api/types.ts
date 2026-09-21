@@ -1,4 +1,25 @@
-export type AdminRole = 'super' | 'reviewer' | 'support';
+export type AdminPermission =
+  | 'dashboard:read'
+  | 'verification:read'
+  | 'verification:write'
+  | 'professionals:read'
+  | 'professionals:write'
+  | 'clients:read'
+  | 'clients:write'
+  | 'leads:read'
+  | 'leads:write'
+  | 'credits:read'
+  | 'credits:write'
+  | 'credits:adjust'
+  | 'services:read'
+  | 'services:write'
+  | 'support:read'
+  | 'support:write'
+  | 'messages:read'
+  | 'admins:read'
+  | 'admins:write';
+
+export type AdminRole = string;
 
 export type AdminUser = {
   id: number;
@@ -8,9 +29,47 @@ export type AdminUser = {
   active: boolean;
   lastLogin: string | null;
   createdAt: string;
+  customPermissions?: AdminPermission[] | null;
+  usesCustomPermissions?: boolean;
 };
 
-export type SessionUser = Pick<AdminUser, 'id' | 'name' | 'email' | 'role'>;
+export type AdminUserDetail = AdminUser & {
+  rolePermissions: AdminPermission[];
+  effectivePermissions: AdminPermission[];
+  catalog: AdminPermissionCatalogItem[];
+};
+
+export type SessionUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: AdminRole;
+  permissions?: AdminPermission[];
+};
+
+export type AdminRoleRecord = {
+  id: number;
+  slug: string;
+  name: string;
+  permissions: AdminPermission[];
+  isSystem: boolean;
+  /** Super admin — cannot be edited or deleted. */
+  isLocked?: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+};
+
+export type AdminPermissionCatalogItem = {
+  key: AdminPermission;
+  module: string;
+  action: string;
+  label: string;
+};
+
+export type AdminRolesResponse = {
+  roles: AdminRoleRecord[];
+  catalog: AdminPermissionCatalogItem[];
+};
 
 export type HealthResponse = {
   ok: boolean;
@@ -39,6 +98,8 @@ export type UpdateAdminInput = {
   name?: string;
   role?: AdminRole;
   active?: boolean;
+  /** null = inherit role; array = custom override */
+  permissions?: AdminPermission[] | null;
 };
 
 export type CreditPackageBadge = 'popular' | 'value';
@@ -85,6 +146,13 @@ export type CreditSubscriptionAdmin = {
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   canceledAt: string | null;
+  nextGrantAt: string | null;
+  provider: string | null;
+  providerSubscriptionId: string | null;
+  walletBalance: number;
+  periodGrantedCredits: number;
+  periodSpentCredits: number;
+  periodRemainingCredits: number;
   package: {
     id: string;
     name: string;
@@ -93,6 +161,26 @@ export type CreditSubscriptionAdmin = {
     price: number;
     badge?: CreditPackageBadge | null;
   } | null;
+};
+
+export type CreditSubscriptionGrantTxn = {
+  id: number;
+  credits: number;
+  label: string;
+  createdAt: string | null;
+};
+
+export type CreditSubscriptionSpendTxn = {
+  id: number;
+  credits: number;
+  label: string;
+  createdAt: string | null;
+  meta: Record<string, unknown> | null;
+};
+
+export type CreditSubscriptionDetail = CreditSubscriptionAdmin & {
+  grants: CreditSubscriptionGrantTxn[];
+  periodSpends: CreditSubscriptionSpendTxn[];
 };
 
 export type PromoBenefitType = 'percent_off' | 'fixed_off' | 'bonus_credits';
@@ -264,7 +352,7 @@ export type MatchPrefs = {
 
 export type PersonalProfile = {
   gender?: string | null;
-  age?: string | null;
+  birth_date?: string | null;
   gymAccess?: string | null;
   location?: string | null;
   locationLatitude?: number | null;
@@ -282,7 +370,7 @@ export type Professional = {
   onboarded: boolean;
   createdAt: string;
   serviceIds: number[];
-  locations: ('coach' | 'client' | 'online')[];
+  locations: ('coach' | 'client' | 'online' | 'online_live')[];
   radiusKm: number;
   verificationFiles: VerificationFile[];
   verificationStatus: VerificationStatus;
@@ -318,12 +406,17 @@ export type Professional = {
   roi?: {
     creditsSpent: number;
     leadsUnlocked: number;
-    clientsWon: number;
-    revenue: number;
+    leadsWon: number;
+    leadsWonUnlocked: number;
     conversionWeeks: number[];
-    responseRateWeeks: number[];
   } | null;
   notificationPrefs: NotificationPrefs;
+  profileCompletion?: number | ProfileCompletionPayload;
+};
+
+export type ProfileCompletionPayload = {
+  percent: number;
+  items: Array<{ id: string; done: boolean }>;
 };
 
 export type ProfessionalSummary = {
@@ -339,7 +432,7 @@ export type ProfessionalSummary = {
   activated: boolean;
   onboarded: boolean;
   suspended: boolean;
-  profileCompletion: number;
+  profileCompletion: number | ProfileCompletionPayload;
 };
 
 export type UpdateProfessionalInput = {
@@ -382,14 +475,38 @@ export type OnlinePlanSummary = {
   coachName: string;
   clientUserId: string | null;
   clientUserEmail: string | null;
+  leadId: number;
   updatedAt: string;
+};
+
+export type OnlinePlanRevision = {
+  id: number;
+  onlinePlanId: number;
+  version: number;
+  publishedBy: number | null;
+  publishedAt: string | null;
+  program: unknown;
+  nutrition: unknown;
+  intake: unknown;
+  summary: {
+    trainingDays: number;
+    calories: number | null;
+    protein: number | null;
+    carbs: number | null;
+    fats: number | null;
+  };
 };
 
 export type OnlinePlanDetail = OnlinePlanSummary & {
   program: unknown;
   nutrition: unknown;
   progress: unknown;
+  intake: unknown;
+  approvedAt: string | null;
+  publishedAt: string | null;
   createdAt: string;
+  revisions: OnlinePlanRevision[];
+  parqQuestions: Array<{id: string; prompt: string}>;
 };
 
 export type Client = {
@@ -406,7 +523,6 @@ export type Client = {
   matchPrefs: MatchPrefs;
   profile: PersonalProfile;
   consents: ClientConsents;
-  savedCoachIds: number[];
   onlinePlans?: OnlinePlanSummary[];
   note?: string;
   notificationPrefs: NotificationPrefs;
@@ -422,7 +538,6 @@ export type ClientSummary = {
   onboarded: boolean;
   otpVerified: boolean;
   suspended: boolean;
-  savedCount: number;
   createdAt: string;
   lastActiveAt: string;
 };
@@ -446,7 +561,7 @@ export type VerificationQueueItem = {
   verificationRejectedReason?: string | null;
   verificationFiles: VerificationFile[];
   serviceIds: number[];
-  profileCompletion: number;
+  profileCompletion: number | ProfileCompletionPayload;
   profileCertifications: string[];
 };
 
@@ -523,8 +638,7 @@ export type NotificationPrefs = {
   push: boolean;
   email: boolean;
   sms: boolean;
-  matchUpdates: boolean;
-  messages: boolean;
+  whatsapp: boolean;
   marketing: boolean;
 };
 

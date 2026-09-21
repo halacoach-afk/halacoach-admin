@@ -46,7 +46,7 @@ function Field({label, value}: {label: string; value: ReactNode}) {
 }
 
 export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string}) {
-  const canWrite = can(actor.role, 'support:write');
+  const canWrite = can(actor, 'support:write');
   const [ticket, setTicket] = useState<SupportTicketDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,7 +124,7 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
   };
 
   if (loading) {
-    return <LoadingState label="Loading ticket…" />;
+    return <LoadingState label="Loading ticketâ€¦" />;
   }
 
   if (error && !ticket) {
@@ -138,9 +138,8 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
   return (
     <>
       <PageHeader
-        module="M11"
         title={ticket.subject}
-        description={`${supportUserTypeLabels[ticket.userType]} · ${ticket.userName}`}
+        description={`${supportUserTypeLabels[ticket.userType]} Â· ${ticket.userName}`}
         actions={
           <Link href="/support">
             <Button variant="outline">
@@ -182,7 +181,7 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
                 {ticket.replyNote}
               </p>
               <p className="mt-3 text-xs text-muted-foreground">
-                {ticket.repliedBy ?? 'Support'} · {formatSupportTimestamp(ticket.repliedAt)}
+                {ticket.repliedBy ?? 'Support'} Â· {formatSupportTimestamp(ticket.repliedAt)}
               </p>
             </Section>
           ) : null}
@@ -196,13 +195,13 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
                     value={replyNote}
                     onChange={event => setReplyNote(event.target.value)}
                     rows={5}
-                    placeholder="What support told the user…"
+                    placeholder="What support told the userâ€¦"
                     className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   />
                 </label>
                 <div className="flex flex-wrap gap-3">
                   <Button type="submit" disabled={saving}>
-                    {saving ? 'Saving…' : 'Save reply'}
+                    {saving ? 'Savingâ€¦' : 'Save reply'}
                   </Button>
                   <Button
                     type="button"
