@@ -31,6 +31,7 @@ import type {
   ConversationSummary,
   DashboardOverview,
   OnlinePlanDetail,
+  OnlinePlanRevision,
   OnlinePlanSummary,
 } from './types';
 
@@ -72,6 +73,7 @@ export type {
   MessageAuthor,
   NotificationPrefs,
   OnlinePlanDetail,
+  OnlinePlanRevision,
   OnlinePlanSummary,
   Professional,
   ProfessionalSummary,

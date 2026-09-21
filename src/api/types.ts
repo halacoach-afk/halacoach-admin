@@ -475,14 +475,38 @@ export type OnlinePlanSummary = {
   coachName: string;
   clientUserId: string | null;
   clientUserEmail: string | null;
+  leadId: number;
   updatedAt: string;
+};
+
+export type OnlinePlanRevision = {
+  id: number;
+  onlinePlanId: number;
+  version: number;
+  publishedBy: number | null;
+  publishedAt: string | null;
+  program: unknown;
+  nutrition: unknown;
+  intake: unknown;
+  summary: {
+    trainingDays: number;
+    calories: number | null;
+    protein: number | null;
+    carbs: number | null;
+    fats: number | null;
+  };
 };
 
 export type OnlinePlanDetail = OnlinePlanSummary & {
   program: unknown;
   nutrition: unknown;
   progress: unknown;
+  intake: unknown;
+  approvedAt: string | null;
+  publishedAt: string | null;
   createdAt: string;
+  revisions: OnlinePlanRevision[];
+  parqQuestions: Array<{id: string; prompt: string}>;
 };
 
 export type Client = {
