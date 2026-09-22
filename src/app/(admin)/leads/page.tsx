@@ -7,5 +7,5 @@ export default async function LeadsPage() {
   if (!user) {
     redirect('/login');
   }
-  return <LeadsScreen actor={user} />;
+  return <LeadsScreen />;
 }

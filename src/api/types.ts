@@ -578,6 +578,8 @@ export type RejectVerificationInput = {
   }>;
 };
 
+export type LeadLifecycleStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
+
 export type LeadStatus = 'open' | 'closed';
 
 export type LeadUnlock = {
@@ -609,13 +611,31 @@ export type LeadSummary = {
   clientId: string;
   clientName: string;
   goal: string;
+  goalDetail?: string | null;
   serviceId: number;
   service?: string;
   location: string;
   frequency?: string;
   format?: string;
+  days?: string;
+  time?: string;
+  formatId?: string | null;
+  frequencyId?: string | null;
+  dayIds?: string[];
+  timeIds?: string[];
+  timesOther?: string | null;
+  startTraining?: string | null;
+  routine?: string | null;
+  routineOther?: string | null;
+  gender?: string | null;
+  style?: string | null;
+  languages?: string[];
   status: LeadStatus;
+  leadStatus?: LeadLifecycleStatus;
   unlockCount: number;
+  unlockCreditsTotal?: number;
+  assignedCoachId?: string | null;
+  assignedCoachName?: string | null;
   postedAt: string;
 };
 
