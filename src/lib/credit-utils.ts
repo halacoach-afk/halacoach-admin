@@ -75,6 +75,6 @@ export function formatPromoBenefit(promo: Pick<PromoCode, 'benefitType' | 'benef
     case 'bonus_credits':
       return `+${promo.benefitValue} credits`;
     default:
-      return '—';
+      return '-';
   }
 }

@@ -110,7 +110,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
   };
 
   if (loading) {
-    return <LoadingState label="Loading clientâ€¦" />;
+    return <LoadingState label="Loading client..." />;
   }
 
   if (error || !client) {
@@ -130,7 +130,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
 
       <PageHeader
         title={client.name}
-        description={`${client.email} Â· ${client.profile?.location ?? 'No location'} Â· mobile register + questionnaire`}
+        description={`${client.email} | ${client.profile?.location ?? 'No location'} | mobile register + questionnaire`}
         actions={
           canWrite ? (
             <div className="flex flex-wrap gap-2">
@@ -170,7 +170,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
             <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} required />
             {formError ? <p className="text-sm text-destructive sm:col-span-2">{formError}</p> : null}
             <Button type="submit" disabled={saving}>
-              {saving ? 'Savingâ€¦' : 'Save changes'}
+              {saving ? 'Saving...' : 'Save changes'}
             </Button>
           </form>
         </Card>
@@ -211,7 +211,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
               <Badge tone="warning">Incomplete</Badge>
               <p className="mt-2 text-sm text-muted-foreground">
                 This user exists in the database but never finished signup. The mobile app no longer
-                resumes incomplete accounts â€” delete or ignore for local testing.
+                resumes incomplete accounts - delete or ignore for local testing.
               </p>
             </>
           )}
@@ -247,7 +247,7 @@ export function ClientDetailScreen({actor, id}: {actor: SessionUser; id: string}
                   <div>
                     <p className="text-sm font-medium">{plan.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {plan.coachName} Â· {plan.goal}
+                      {plan.coachName} | {plan.goal}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

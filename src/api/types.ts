@@ -53,7 +53,7 @@ export type AdminRoleRecord = {
   name: string;
   permissions: AdminPermission[];
   isSystem: boolean;
-  /** Super admin — cannot be edited or deleted. */
+  /** Super admin - cannot be edited or deleted. */
   isLocked?: boolean;
   createdAt: string | null;
   updatedAt: string | null;
@@ -333,7 +333,7 @@ export type ProPricing = {
 export type MatchPrefs = {
   /**
    * Shared catalog service ids.
-   * Client: services they want · Coach: services they provide.
+   * Client: services they want | Coach: services they provide.
    */
   services: string[];
   formats: string[];

@@ -15,7 +15,7 @@ import {PageHeader} from '@/components/ui/PageHeader';
 type Filter = 'all' | 'onboarded' | 'incomplete' | 'suspended';
 
 function servicesText(services: string[]) {
-  return services.length ? services.join(', ') : '—';
+  return services.length ? services.join(', ') : '-';
 }
 
 export function ClientsScreen({actor}: {actor: SessionUser}) {
@@ -75,7 +75,7 @@ export function ClientsScreen({actor}: {actor: SessionUser}) {
   );
 
   if (loading) {
-    return <LoadingState label="Loading clients…" />;
+    return <LoadingState label="Loading clients..." />;
   }
 
   if (error) {
@@ -108,7 +108,7 @@ export function ClientsScreen({actor}: {actor: SessionUser}) {
         ))}
         <input
           className="ms-auto h-9 min-w-[200px] rounded-xl border border-border px-3 text-sm"
-          placeholder="Search name, email, location…"
+          placeholder="Search name, email, location..."
           value={query}
           onChange={event => setQuery(event.target.value)}
         />

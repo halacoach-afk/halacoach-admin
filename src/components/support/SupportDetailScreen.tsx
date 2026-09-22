@@ -124,7 +124,7 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
   };
 
   if (loading) {
-    return <LoadingState label="Loading ticketâ€¦" />;
+    return <LoadingState label="Loading ticket..." />;
   }
 
   if (error && !ticket) {
@@ -139,7 +139,7 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
     <>
       <PageHeader
         title={ticket.subject}
-        description={`${supportUserTypeLabels[ticket.userType]} Â· ${ticket.userName}`}
+        description={`${supportUserTypeLabels[ticket.userType]} | ${ticket.userName}`}
         actions={
           <Link href="/support">
             <Button variant="outline">
@@ -181,7 +181,7 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
                 {ticket.replyNote}
               </p>
               <p className="mt-3 text-xs text-muted-foreground">
-                {ticket.repliedBy ?? 'Support'} Â· {formatSupportTimestamp(ticket.repliedAt)}
+                {ticket.repliedBy ?? 'Support'} | {formatSupportTimestamp(ticket.repliedAt)}
               </p>
             </Section>
           ) : null}
@@ -195,13 +195,13 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
                     value={replyNote}
                     onChange={event => setReplyNote(event.target.value)}
                     rows={5}
-                    placeholder="What support told the userâ€¦"
+                    placeholder="What support told the user..."
                     className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                   />
                 </label>
                 <div className="flex flex-wrap gap-3">
                   <Button type="submit" disabled={saving}>
-                    {saving ? 'Savingâ€¦' : 'Save reply'}
+                    {saving ? 'Saving...' : 'Save reply'}
                   </Button>
                   <Button
                     type="button"

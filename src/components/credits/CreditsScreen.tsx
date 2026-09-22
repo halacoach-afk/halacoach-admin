@@ -174,7 +174,7 @@ function CatalogActions({
       )}
       {isEditing ? (
         <Button size="sm" className={creditPackageActionButtonClass} disabled={saving} onClick={onSave}>
-          {saving ? 'Savingâ€¦' : 'Save'}
+          {saving ? 'Saving...' : 'Save'}
         </Button>
       ) : (
         <Button size="sm" variant="outline" className={creditPackageActionButtonClass} onClick={onEdit}>
@@ -365,7 +365,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
             const displayPrice = Number(isEditing ? draft.price : pack.price);
             const inclVat = Number.isFinite(displayPrice)
               ? formatAed(displayPrice * (1 + vatRate))
-              : 'â€”';
+              : '-';
 
             return (
               <tr
@@ -455,7 +455,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                     ) : pack.badge ? (
                       <Badge tone={pack.badge === 'popular' ? 'coral' : 'sky'}>{pack.badge}</Badge>
                     ) : (
-                      <span className="text-muted-foreground">â€”</span>
+                      <span className="text-muted-foreground">-</span>
                     )}
                   </CreditPackageTableCell>
                 </td>
@@ -538,7 +538,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                   <span className="text-muted-foreground">
                     {Number.isFinite(Number(form.price)) && form.price
                       ? formatAed(Number(form.price) * (1 + vatRate))
-                      : 'â€”'}
+                      : '-'}
                   </span>
                 </CreditPackageTableCell>
               </td>
@@ -775,7 +775,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   };
 
   if (loading && !overview && packages.items.length === 0 && promos.items.length === 0) {
-    return <LoadingState label="Loading creditsâ€¦" />;
+    return <LoadingState label="Loading credits..." />;
   }
 
   return (
@@ -791,7 +791,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
 
       {!canWrite ? (
         <p className="mb-4 rounded-xl bg-primary-soft px-4 py-3 text-sm text-primary-deep">
-          View only â€” credit package prices and promo codes require super admin.
+          View only - credit package prices and promo codes require super admin.
         </p>
       ) : null}
 
@@ -1087,15 +1087,15 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                 </Badge>
               </td>
               <td className="px-4 py-3 font-medium">
-                {txn.type === 'spend' ? 'âˆ’' : '+'}
+                {txn.type === 'spend' ? '-' : '+'}
                 {txn.credits}
               </td>
               <td className="px-4 py-3 text-sm text-muted-foreground">
                 {txn.label}
-                {txn.orderId ? ` Â· ${txn.orderId}` : ''}
+                {txn.orderId ? ` | ${txn.orderId}` : ''}
               </td>
               <td className="px-4 py-3 text-sm">
-                {txn.totalAed ? formatAed(txn.totalAed) : 'â€”'}
+                {txn.totalAed ? formatAed(txn.totalAed) : '-'}
               </td>
             </tr>
           ))}

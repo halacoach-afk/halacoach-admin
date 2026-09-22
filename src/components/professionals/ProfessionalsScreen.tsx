@@ -94,7 +94,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
   );
 
   if (loading) {
-    return <LoadingState label="Loading professionals…" />;
+    return <LoadingState label="Loading professionals..." />;
   }
 
   if (error) {
@@ -129,7 +129,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
         ))}
         <input
           className="ms-auto h-9 min-w-[200px] rounded-xl border border-border px-3 text-sm"
-          placeholder="Search name, email, location…"
+          placeholder="Search name, email, location..."
           value={query}
           onChange={event => setQuery(event.target.value)}
         />

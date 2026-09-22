@@ -59,7 +59,7 @@ export function OnlineClientsScreen() {
   }, [rows, query]);
 
   if (loading) {
-    return <LoadingState label="Loading online plans…" />;
+    return <LoadingState label="Loading online plans..." />;
   }
 
   if (error) {
@@ -70,7 +70,7 @@ export function OnlineClientsScreen() {
     <>
       <PageHeader
         title="Online plans"
-        description="Live coaching plans from the coach Clients tab — intake, drafts, and published programs."
+        description="Live coaching plans from the coach Clients tab - intake, drafts, and published programs."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
@@ -81,12 +81,12 @@ export function OnlineClientsScreen() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           className="h-9 w-full max-w-sm rounded-xl border border-border px-3 text-sm"
-          placeholder="Search client, coach, or goal…"
+          placeholder="Search client, coach, or goal..."
           value={query}
           onChange={event => setQuery(event.target.value)}
         />
         <p className="text-xs text-muted-foreground">
-          Read-only · {rows.length} plan{rows.length === 1 ? '' : 's'}
+          Read-only | {rows.length} plan{rows.length === 1 ? '' : 's'}
         </p>
       </div>
 
@@ -103,7 +103,7 @@ export function OnlineClientsScreen() {
               <td className="px-4 py-3">
                 <p className="font-medium text-foreground">{row.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {row.goal} · {row.frequency}
+                  {row.goal} | {row.frequency}
                 </p>
               </td>
               <td className="px-4 py-3 text-sm text-muted-foreground">

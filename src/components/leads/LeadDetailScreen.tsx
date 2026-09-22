@@ -71,7 +71,7 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
 
   const serviceName =
     services.find(item => item.id === lead?.serviceId)?.name ??
-    (lead?.serviceId != null ? `#${lead.serviceId}` : 'â€”');
+    (lead?.serviceId != null ? `#${lead.serviceId}` : '-');
 
   const setStatus = async (status: 'open' | 'closed') => {
     if (!lead) {
@@ -89,7 +89,7 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
   };
 
   if (loading) {
-    return <LoadingState label="Loading leadâ€¦" />;
+    return <LoadingState label="Loading lead..." />;
   }
 
   if (error || !lead) {
@@ -109,7 +109,7 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
 
       <PageHeader
         title={lead.goal}
-        description={`${lead.location} Â· ${formatPostedAt(lead.postedAt)}`}
+        description={`${lead.location} | ${formatPostedAt(lead.postedAt)}`}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => void load()}>
@@ -152,8 +152,8 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
         <Section title="Client">
           <dl className="grid gap-3">
             <Field label="Name" value={lead.clientName} />
-            <Field label="Email" value={lead.clientEmail || 'â€”'} />
-            <Field label="Phone" value={lead.clientPhone || 'â€”'} />
+            <Field label="Email" value={lead.clientEmail || '-'} />
+            <Field label="Phone" value={lead.clientPhone || '-'} />
             {lead.clientId ? (
               <div>
                 <Link
@@ -181,13 +181,13 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
                       {new Date(unlock.unlockedAt).toLocaleString()}
                     </p>
                   </div>
-                  <span className="font-medium text-foreground">âˆ’{unlock.credits} cr</span>
+                  <span className="font-medium text-foreground">-{unlock.credits} cr</span>
                 </li>
               ))}
             </ul>
           )}
           <p className="mt-3 text-xs text-muted-foreground">
-            Unlock cost is computed at unlock time from coachâ€“client match % (100% = 50 credits).
+            Unlock cost is computed at unlock time from coach-client match % (100% = 50 credits).
           </p>
         </Section>
       </div>

@@ -71,7 +71,7 @@ export function SupportScreen(_props: {actor: SessionUser}) {
   );
 
   if (loading) {
-    return <LoadingState label="Loading support inbox…" />;
+    return <LoadingState label="Loading support inbox..." />;
   }
 
   if (error) {
@@ -104,7 +104,7 @@ export function SupportScreen(_props: {actor: SessionUser}) {
         ))}
         <input
           className="ms-auto h-9 min-w-[220px] rounded-xl border border-border px-3 text-sm"
-          placeholder="Search subject, user, email…"
+          placeholder="Search subject, user, email..."
           value={query}
           onChange={event => setQuery(event.target.value)}
         />

@@ -48,7 +48,7 @@ function asProgress(value: unknown): Record<string, unknown> {
 
 function formatWhen(value: unknown): string {
   if (value == null || value === '') {
-    return '—';
+    return '-';
   }
   const date = new Date(String(value));
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
@@ -70,18 +70,18 @@ function TrainingDays({
           : [];
         return (
           <div key={String(day.id)} className="rounded-xl border border-border p-4">
-            <p className="font-display font-bold">{String(day.day ?? '—')}</p>
+            <p className="font-display font-bold">{String(day.day ?? '-')}</p>
             {day.focus ? (
               <p className="text-sm text-muted-foreground">{String(day.focus)}</p>
             ) : null}
             <ul className="mt-3 grid gap-2">
               {exercises.length === 0 ? (
-                <li className="text-sm text-muted-foreground">—</li>
+                <li className="text-sm text-muted-foreground">-</li>
               ) : (
                 exercises.map(ex => {
                   const meta = [
                     ex.sets || ex.reps
-                      ? `${String(ex.sets ?? '')} × ${String(ex.reps ?? '')}`
+                      ? `${String(ex.sets ?? '')} x ${String(ex.reps ?? '')}`
                       : null,
                     ex.rest ? `Rest ${String(ex.rest)}` : null,
                     ex.rpe ? `Intensity ${String(ex.rpe)}` : null,
@@ -90,10 +90,10 @@ function TrainingDays({
                     <li
                       key={String(ex.id)}
                       className="rounded-lg bg-secondary px-3 py-2 text-sm">
-                      <p className="font-medium">{String(ex.name ?? '—')}</p>
+                      <p className="font-medium">{String(ex.name ?? '-')}</p>
                       {meta.length > 0 ? (
                         <p className="text-xs text-muted-foreground">
-                          {meta.join(' · ')}
+                          {meta.join(' | ')}
                         </p>
                       ) : null}
                       {ex.notes != null && String(ex.notes).trim() ? (
@@ -126,25 +126,25 @@ function NutritionBlock({nutrition}: {nutrition: Record<string, unknown>}) {
         <Field
           label="Calories"
           value={
-            nutrition.calories != null ? `${String(nutrition.calories)} kcal` : '—'
+            nutrition.calories != null ? `${String(nutrition.calories)} kcal` : '-'
           }
         />
         <Field
           label="Protein"
           value={
-            nutrition.protein != null ? `${String(nutrition.protein)} g` : '—'
+            nutrition.protein != null ? `${String(nutrition.protein)} g` : '-'
           }
         />
         <Field
           label="Carbs"
-          value={nutrition.carbs != null ? `${String(nutrition.carbs)} g` : '—'}
+          value={nutrition.carbs != null ? `${String(nutrition.carbs)} g` : '-'}
         />
         <Field
           label="Fats"
-          value={nutrition.fats != null ? `${String(nutrition.fats)} g` : '—'}
+          value={nutrition.fats != null ? `${String(nutrition.fats)} g` : '-'}
         />
         <div className="sm:col-span-2">
-          <Field label="Notes" value={String(nutrition.notes ?? '—')} />
+          <Field label="Notes" value={String(nutrition.notes ?? '-')} />
         </div>
       </dl>
       {meals.length > 0 ? (
@@ -153,7 +153,7 @@ function NutritionBlock({nutrition}: {nutrition: Record<string, unknown>}) {
             <li
               key={String(meal.id)}
               className="rounded-lg bg-secondary px-3 py-2 text-sm">
-              <p className="font-medium">{String(meal.name ?? '—')}</p>
+              <p className="font-medium">{String(meal.name ?? '-')}</p>
               {meal.idea ? (
                 <p className="text-xs text-muted-foreground">
                   {String(meal.idea)}
@@ -195,7 +195,7 @@ function RevisionCard({revision}: {revision: OnlinePlanRevision}) {
                 : null,
             ]
               .filter(Boolean)
-              .join(' · ')}
+              .join(' | ')}
           </p>
         </div>
         {open ? (
@@ -246,7 +246,7 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
   }, [id]);
 
   if (loading) {
-    return <LoadingState label="Loading plan…" />;
+    return <LoadingState label="Loading plan..." />;
   }
 
   if (error || !plan) {
@@ -286,7 +286,7 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
     <>
       <PageHeader
         title={plan.name}
-        description={`${plan.goal} · ${plan.frequency} · Coach ${plan.coachName}`}
+        description={`${plan.goal} | ${plan.frequency} | Coach ${plan.coachName}`}
         actions={
           <Link
             href="/online-clients"
@@ -338,7 +338,7 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
                     #{plan.leadId}
                   </Link>
                 ) : (
-                  '—'
+                  '-'
                 )
               }
             />
@@ -354,15 +354,15 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
             Intake
           </h2>
           <dl className="grid gap-3 sm:grid-cols-2">
-            <Field label="Goals" value={String(intake.goals ?? '—')} />
+            <Field label="Goals" value={String(intake.goals ?? '-')} />
             <Field
               label="Experience"
-              value={String(intake.experience || '—')}
+              value={String(intake.experience || '-')}
             />
             <Field
               label="Days per week"
               value={
-                intake.daysPerWeek != null ? String(intake.daysPerWeek) : '—'
+                intake.daysPerWeek != null ? String(intake.daysPerWeek) : '-'
               }
             />
             <Field
@@ -370,23 +370,23 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
               value={
                 intake.sessionMinutes != null
                   ? String(intake.sessionMinutes)
-                  : '—'
+                  : '-'
               }
             />
             <div className="sm:col-span-2">
               <Field
                 label="Equipment"
-                value={equipment.length > 0 ? equipment.join(', ') : '—'}
+                value={equipment.length > 0 ? equipment.join(', ') : '-'}
               />
             </div>
             <div className="sm:col-span-2">
               <Field
                 label="Limitations"
-                value={String(intake.limitations || '—')}
+                value={String(intake.limitations || '-')}
               />
             </div>
             <div className="sm:col-span-2">
-              <Field label="Notes" value={String(intake.notes || '—')} />
+              <Field label="Notes" value={String(intake.notes || '-')} />
             </div>
             <Field
               label="Intake completed"
@@ -442,7 +442,7 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
           <dl className="mb-4 grid gap-3 sm:grid-cols-2">
             <Field
               label="Latest weight"
-              value={latestWeight != null ? `${latestWeight} kg` : '—'}
+              value={latestWeight != null ? `${latestWeight} kg` : '-'}
             />
             <Field label="Measurements" value={String(measurements.length)} />
             <Field label="Check-ins" value={String(checkins.length)} />
@@ -470,7 +470,7 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
                       m.hips != null ? `Hips ${String(m.hips)}` : null,
                     ]
                       .filter(Boolean)
-                      .join(' · ') || String(m.notes ?? '—')}
+                      .join(' | ') || String(m.notes ?? '-')}
                   </p>
                 </li>
               ))}

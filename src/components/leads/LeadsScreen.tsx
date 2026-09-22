@@ -82,7 +82,7 @@ export function LeadsScreen({actor}: {actor: SessionUser}) {
   );
 
   if (loading) {
-    return <LoadingState label="Loading leads…" />;
+    return <LoadingState label="Loading leads..." />;
   }
 
   if (error) {
@@ -120,7 +120,7 @@ export function LeadsScreen({actor}: {actor: SessionUser}) {
         ))}
         <input
           className="ms-auto h-9 min-w-[200px] rounded-xl border border-border px-3 text-sm"
-          placeholder="Search goal, client, location…"
+          placeholder="Search goal, client, location..."
           value={query}
           onChange={event => setQuery(event.target.value)}
         />
@@ -137,12 +137,12 @@ export function LeadsScreen({actor}: {actor: SessionUser}) {
                 <div className="font-medium text-foreground">{row.goal}</div>
                 <div className="text-xs text-muted-foreground">
                   {serviceNameById.get(row.serviceId) ?? row.service ?? `#${row.serviceId}`}
-                  {row.frequency ? ` · ${row.frequency}` : ''}
+                  {row.frequency ? ` | ${row.frequency}` : ''}
                 </div>
               </td>
               <td className="px-4 py-3 text-sm">{row.clientName}</td>
               <td className="px-4 py-3 text-muted-foreground">{row.location}</td>
-              <td className="px-4 py-3 text-sm text-muted-foreground">{row.format ?? '—'}</td>
+              <td className="px-4 py-3 text-sm text-muted-foreground">{row.format ?? '-'}</td>
               <td className="px-4 py-3">
                 {row.unlockCount > 0 ? (
                   <Badge tone="primary">{row.unlockCount}</Badge>

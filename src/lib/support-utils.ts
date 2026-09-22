@@ -69,7 +69,7 @@ export function toSupportSummary(
     userType: ticket.userType,
     userId: ticket.userId,
     userName: user?.name ?? 'Unknown user',
-    userEmail: user?.email ?? '—',
+    userEmail: user?.email ?? '-',
     subject: ticket.subject,
     status: ticket.status,
     createdAt: ticket.createdAt,
@@ -86,8 +86,8 @@ export function toSupportDetail(
   return {
     ...ticket,
     userName: user?.name ?? 'Unknown user',
-    userEmail: user?.email ?? '—',
-    userPhone: user?.phone ?? '—',
+    userEmail: user?.email ?? '-',
+    userPhone: user?.phone ?? '-',
     profileHref: user?.profileHref ?? null,
     notificationPrefs: user?.notificationPrefs ?? normalizeNotificationPrefs(),
   };
@@ -95,7 +95,7 @@ export function toSupportDetail(
 
 export function formatSupportTimestamp(value: string | null) {
   if (!value) {
-    return '—';
+    return '-';
   }
   return new Date(value).toLocaleString('en-GB', {
     day: 'numeric',
