@@ -12,5 +12,5 @@ export default async function LeadDetailPage({params}: Props) {
     redirect('/login');
   }
   const {id} = await params;
-  return <LeadDetailScreen actor={user} id={id} />;
+  return <LeadDetailScreen id={id} />;
 }

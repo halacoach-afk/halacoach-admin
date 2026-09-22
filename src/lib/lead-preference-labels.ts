@@ -1,4 +1,4 @@
-import type {LeadSummary} from '@/api/types';
+import type {LeadDetail, LeadSummary} from '@/api/types';
 
 const FORMAT_LABELS: Record<string, string> = {
   client: 'Client location',
@@ -78,6 +78,16 @@ const LANGUAGE_LABELS: Record<string, string> = {
   arabic: 'Arabic',
 };
 
+const AGE_LABELS: Record<string, string> = {
+  u18: 'Younger than 18',
+  '18-22': '18–22 years old',
+  '23-29': '23–29 years old',
+  '30-39': '30–39 years old',
+  '40-49': '40–49 years old',
+  '50-59': '50–59 years old',
+  '60+': '60 or older',
+};
+
 function mapId(id: string | null | undefined, labels: Record<string, string>) {
   const key = id?.trim();
   if (!key) {
@@ -94,6 +104,31 @@ function mapIds(ids: string[] | undefined, labels: Record<string, string>) {
   return mapped.length ? mapped.join(', ') : null;
 }
 
+export type LeadPreferenceSource = Pick<
+  LeadSummary,
+  | 'goal'
+  | 'service'
+  | 'location'
+  | 'frequency'
+  | 'format'
+  | 'days'
+  | 'time'
+  | 'formatId'
+  | 'frequencyId'
+  | 'dayIds'
+  | 'timeIds'
+  | 'timesOther'
+  | 'startTraining'
+  | 'routine'
+  | 'routineOther'
+  | 'gender'
+  | 'style'
+  | 'languages'
+  | 'ages'
+  | 'goalDetail'
+> &
+  Partial<Pick<LeadDetail, 'radiusKm'>>;
+
 export type LeadPreferenceDisplay = {
   goal: string;
   format: string;
@@ -105,12 +140,14 @@ export type LeadPreferenceDisplay = {
   coachGender: string;
   coachStyle: string;
   languages: string;
+  ages: string;
   location: string;
+  radius: string;
   goalDetails: string;
 };
 
 export function leadPreferenceDisplay(
-  row: LeadSummary,
+  row: LeadPreferenceSource,
   serviceName?: string,
 ): LeadPreferenceDisplay {
   const format =
@@ -125,7 +162,7 @@ export function leadPreferenceDisplay(
 
   const days =
     mapIds(row.dayIds, DAY_LABELS) ??
-    (row.days?.trim() || '-');
+    (typeof row.days === 'string' ? row.days.trim() || '-' : '-');
 
   let times = mapIds(row.timeIds, TIME_LABELS);
   if (row.timeIds?.includes('other') && row.timesOther?.trim()) {
@@ -139,14 +176,26 @@ export function leadPreferenceDisplay(
     times = row.time?.trim() || '-';
   }
 
+  const routineLabel = mapId(row.routine, ROUTINE_LABELS);
+  const routineOther = row.routineOther?.trim() || '';
   const experience =
-    row.routine === 'other' && row.routineOther?.trim()
-      ? row.routineOther.trim()
-      : mapId(row.routine, ROUTINE_LABELS) ?? '-';
+    row.routine === 'other' && routineOther
+      ? routineOther
+      : routineLabel && routineOther
+        ? `${routineLabel} (${routineOther})`
+        : routineLabel || routineOther || '-';
 
   const languages =
     mapIds(row.languages, LANGUAGE_LABELS) ??
     (row.languages?.length ? row.languages.join(', ') : '-');
+
+  const ages =
+    mapIds(row.ages, AGE_LABELS) ?? (row.ages?.length ? row.ages.join(', ') : '-');
+
+  const radiusKm =
+    row.radiusKm != null && Number.isFinite(row.radiusKm) && row.radiusKm > 0
+      ? Math.round(row.radiusKm)
+      : null;
 
   return {
     goal: serviceName?.trim() || row.service?.trim() || row.goal?.trim() || '-',
@@ -159,7 +208,28 @@ export function leadPreferenceDisplay(
     coachGender: mapId(row.gender, GENDER_LABELS) ?? '-',
     coachStyle: mapId(row.style, STYLE_LABELS) ?? '-',
     languages,
+    ages,
     location: row.location?.trim() || '-',
+    radius: radiusKm != null ? `${radiusKm} km` : '-',
     goalDetails: row.goalDetail?.trim() || '-',
   };
 }
+
+export const LEAD_PREFERENCE_FIELDS: Array<{
+  key: keyof LeadPreferenceDisplay;
+  label: string;
+}> = [
+  {key: 'goal', label: 'Goal'},
+  {key: 'goalDetails', label: 'Goal details'},
+  {key: 'format', label: 'Format'},
+  {key: 'frequency', label: 'Frequency'},
+  {key: 'days', label: 'Days'},
+  {key: 'times', label: 'Times'},
+  {key: 'start', label: 'Start'},
+  {key: 'experience', label: 'Experience & activity'},
+  {key: 'coachGender', label: 'Coach gender'},
+  {key: 'coachStyle', label: 'Coach style'},
+  {key: 'languages', label: 'Languages'},
+  {key: 'location', label: 'Location'},
+  {key: 'radius', label: 'Travel radius'},
+];

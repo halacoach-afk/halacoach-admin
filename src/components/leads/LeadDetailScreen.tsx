@@ -1,55 +1,201 @@
 'use client';
 
 import Link from 'next/link';
-import {useEffect, useState, type ReactNode} from 'react';
-import {ArrowLeft, ExternalLink} from 'lucide-react';
+import {useEffect, useMemo, useState, type ReactNode} from 'react';
+import {
+  ArrowLeft,
+  CalendarClock,
+  CalendarDays,
+  CheckCircle2,
+  Circle,
+  CircleX,
+  ClipboardList,
+  Clock3,
+  Dumbbell,
+  Languages,
+  Mail,
+  MapPin,
+  Phone,
+  Radius,
+  Repeat,
+  Sparkles,
+  Target,
+  Users,
+} from 'lucide-react';
 import {
   getLead,
   isApiError,
   listServices,
-  updateLead,
   type CatalogService,
   type LeadDetail,
-  type SessionUser,
+  type LeadLifecycleStatus,
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
-import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
+import {
+  type LeadPreferenceDisplay,
+  leadPreferenceDisplay,
+} from '@/lib/lead-preference-labels';
 import {formatPostedAt} from '@/lib/lead-utils';
-import {can} from '@/lib/permissions';
 
-function Section({title, children}: {title: string; children: ReactNode}) {
+function PrefField({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+}) {
   return (
-    <Card>
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </h2>
-      {children}
-    </Card>
-  );
-}
-
-function Field({label, value}: {label: string; value: ReactNode}) {
-  return (
-    <div>
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm text-foreground">{value}</dd>
+    <div className="min-w-0">
+      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-primary">{icon}</span>
+        {label}
+      </p>
+      <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
     </div>
   );
 }
 
-export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) {
-  const canWrite = can(actor, 'leads:write');
+/** Two-column order matches product preference card (left/right pairs). */
+const PREFERENCE_ROWS: Array<{
+  key: keyof LeadPreferenceDisplay;
+  label: string;
+  icon: ReactNode;
+}> = [
+  {key: 'goal', label: 'Goal', icon: <Target className="size-3.5" strokeWidth={1.8} />},
+  {key: 'format', label: 'Format', icon: <Sparkles className="size-3.5" strokeWidth={1.8} />},
+  {key: 'frequency', label: 'Frequency', icon: <Repeat className="size-3.5" strokeWidth={1.8} />},
+  {key: 'days', label: 'Days', icon: <CalendarDays className="size-3.5" strokeWidth={1.8} />},
+  {key: 'times', label: 'Times', icon: <Clock3 className="size-3.5" strokeWidth={1.8} />},
+  {key: 'start', label: 'Start', icon: <CalendarClock className="size-3.5" strokeWidth={1.8} />},
+  {
+    key: 'experience',
+    label: 'Experience & activity',
+    icon: <Dumbbell className="size-3.5" strokeWidth={1.8} />,
+  },
+  {
+    key: 'coachGender',
+    label: 'Coach gender',
+    icon: <Users className="size-3.5" strokeWidth={1.8} />,
+  },
+  {
+    key: 'coachStyle',
+    label: 'Coach style',
+    icon: <Sparkles className="size-3.5" strokeWidth={1.8} />,
+  },
+  {
+    key: 'languages',
+    label: 'Languages',
+    icon: <Languages className="size-3.5" strokeWidth={1.8} />,
+  },
+  {key: 'location', label: 'Location', icon: <MapPin className="size-3.5" strokeWidth={1.8} />},
+  {key: 'radius', label: 'Travel radius', icon: <Radius className="size-3.5" strokeWidth={1.8} />},
+  {
+    key: 'goalDetails',
+    label: 'Goal details',
+    icon: <ClipboardList className="size-3.5" strokeWidth={1.8} />,
+  },
+];
+
+function lifecycleLabel(status: LeadLifecycleStatus | undefined, fallback: 'open' | 'closed') {
+  if (status === 'in_progress') return 'In progress';
+  if (status === 'completed') return 'Completed';
+  if (status === 'cancelled') return 'Cancelled';
+  if (status === 'open' || fallback === 'open') return 'Open';
+  return 'Closed';
+}
+
+function lifecycleTone(
+  status: LeadLifecycleStatus | undefined,
+  fallback: 'open' | 'closed',
+): 'primary' | 'muted' | 'warning' | 'danger' {
+  if (status === 'in_progress') return 'warning';
+  if (status === 'completed') return 'primary';
+  if (status === 'cancelled' || fallback === 'closed') return 'danger';
+  return 'primary';
+}
+
+function StatusIcon({
+  status,
+  fallback,
+}: {
+  status: LeadLifecycleStatus | undefined;
+  fallback: 'open' | 'closed';
+}) {
+  const className = 'size-3.5';
+  if (status === 'completed') {
+    return <CheckCircle2 className={className} strokeWidth={2} />;
+  }
+  if (status === 'cancelled' || fallback === 'closed') {
+    return <CircleX className={className} strokeWidth={2} />;
+  }
+  if (status === 'in_progress') {
+    return <Circle className={className} strokeWidth={2} />;
+  }
+  return <CheckCircle2 className={className} strokeWidth={2} />;
+}
+
+function PersonCard({
+  title,
+  name,
+  nameHref,
+  email,
+  phone,
+}: {
+  title: string;
+  name: string;
+  nameHref?: string | null;
+  email: string;
+  phone: string;
+}) {
+  const initial = name !== '-' ? name.trim().charAt(0).toUpperCase() : '?';
+  const nameValue = nameHref ? (
+    <Link href={nameHref} className="text-primary hover:underline">
+      {name}
+    </Link>
+  ) : (
+    name
+  );
+  return (
+    <Card className="overflow-hidden p-0">
+      <div className="flex items-start gap-3 p-5 pb-4">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-lg font-bold text-primary">
+          {initial}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="mt-1 text-base font-semibold text-foreground">{nameValue}</p>
+        </div>
+      </div>
+      <div className="border-t border-border px-5 py-4">
+        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+          <PrefField
+            icon={<Mail className="size-3.5" strokeWidth={1.8} />}
+            label="Email"
+            value={email || '-'}
+          />
+          <PrefField
+            icon={<Phone className="size-3.5" strokeWidth={1.8} />}
+            label="Phone"
+            value={phone || '-'}
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+export function LeadDetailScreen({id}: {id: string}) {
   const [lead, setLead] = useState<LeadDetail | null>(null);
   const [services, setServices] = useState<CatalogService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pendingClose, setPendingClose] = useState(false);
-  const [pendingReopen, setPendingReopen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -69,32 +215,33 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
     void load();
   }, [id]);
 
-  const serviceName =
-    services.find(item => item.id === lead?.serviceId)?.name ??
-    (lead?.serviceId != null ? `#${lead.serviceId}` : '-');
+  const serviceName = useMemo(() => {
+    if (!lead) return undefined;
+    return (
+      services.find(item => item.id === lead.serviceId)?.name ??
+      lead.service ??
+      (lead.serviceId != null ? `Service ${lead.serviceId}` : undefined)
+    );
+  }, [lead, services]);
 
-  const setStatus = async (status: 'open' | 'closed') => {
-    if (!lead) {
-      return;
-    }
-    try {
-      const updated = await updateLead(lead.id, {status});
-      setLead(updated);
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not update lead status.');
-    } finally {
-      setPendingClose(false);
-      setPendingReopen(false);
-    }
-  };
+  const prefs = useMemo(
+    () => (lead ? leadPreferenceDisplay(lead, serviceName) : null),
+    [lead, serviceName],
+  );
 
   if (loading) {
     return <LoadingState label="Loading lead..." />;
   }
 
-  if (error || !lead) {
+  if (error || !lead || !prefs) {
     return <ErrorState body={error ?? 'Lead not found.'} onRetry={() => void load()} />;
   }
+
+  const statusLabel = lifecycleLabel(lead.leadStatus, lead.status);
+  const statusTone = lifecycleTone(lead.leadStatus, lead.status);
+  const initial = prefs.goal.trim().charAt(0).toUpperCase() || 'L';
+  const clientName = lead.clientName?.trim() || '-';
+  const coachName = lead.assignedCoachName?.trim() || '-';
 
   return (
     <>
@@ -108,108 +255,71 @@ export function LeadDetailScreen({actor, id}: {actor: SessionUser; id: string}) 
       </div>
 
       <PageHeader
-        title={lead.goal}
-        description={`${lead.location} | ${formatPostedAt(lead.postedAt)}`}
+        title={`Lead ${lead.id}`}
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => void load()}>
-              Refresh
-            </Button>
-            {canWrite && lead.status === 'open' ? (
-              <Button variant="outline" size="sm" onClick={() => setPendingClose(true)}>
-                Close
-              </Button>
-            ) : null}
-            {canWrite && lead.status === 'closed' ? (
-              <Button size="sm" onClick={() => setPendingReopen(true)}>
-                Reopen
-              </Button>
-            ) : null}
-          </div>
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            Refresh
+          </Button>
         }
       />
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        <Badge tone={lead.status === 'open' ? 'primary' : 'muted'}>{lead.status}</Badge>
-        <Badge tone="muted">{lead.unlocks?.length ?? 0} unlocks</Badge>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Section title="Request">
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <Field label="Goal / service" value={serviceName} />
-            <Field label="Location" value={lead.location} />
-            <Field label="Frequency" value={lead.frequency} />
-            <Field label="Format" value={lead.format} />
-            <Field label="Days" value={lead.days} />
-            <Field label="Time" value={lead.time} />
-          </dl>
-          {lead.clientNote ? (
-            <p className="mt-4 rounded-lg bg-muted/50 p-3 text-sm text-foreground">{lead.clientNote}</p>
-          ) : null}
-        </Section>
-
-        <Section title="Client">
-          <dl className="grid gap-3">
-            <Field label="Name" value={lead.clientName} />
-            <Field label="Email" value={lead.clientEmail || '-'} />
-            <Field label="Phone" value={lead.clientPhone || '-'} />
-            {lead.clientId ? (
-              <div>
-                <Link
-                  href={`/clients/${lead.clientId}`}
-                  className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-                  Open client record <ExternalLink size={14} />
-                </Link>
+      <div className="grid gap-4">
+        <Card className="overflow-hidden p-0">
+          <div className="flex items-start gap-3 p-5 pb-4">
+            <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-xl font-bold text-primary">
+              {initial}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold text-foreground">{prefs.goal}</h2>
+              <div className="mt-2">
+                <Badge tone={statusTone} className="gap-1">
+                  <StatusIcon status={lead.leadStatus} fallback={lead.status} />
+                  {statusLabel}
+                </Badge>
               </div>
-            ) : null}
-          </dl>
-        </Section>
+            </div>
+          </div>
 
-        <Section title="Unlocks">
-          {!lead.unlocks?.length ? (
-            <p className="text-sm text-muted-foreground">No coaches have unlocked this client yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {lead.unlocks.map(unlock => (
-                <li
-                  key={unlock.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{unlock.professionalName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(unlock.unlockedAt).toLocaleString()}
-                    </p>
-                  </div>
-                  <span className="font-medium text-foreground">-{unlock.credits} cr</span>
-                </li>
+          <div className="border-t border-border px-5 py-4">
+            <h3 className="mb-4 text-sm font-semibold text-foreground">Preferences</h3>
+            <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              {PREFERENCE_ROWS.map(field => (
+                <PrefField
+                  key={field.key}
+                  icon={field.icon}
+                  label={field.label}
+                  value={prefs[field.key]}
+                />
               ))}
-            </ul>
-          )}
-          <p className="mt-3 text-xs text-muted-foreground">
-            Unlock cost is computed at unlock time from coach-client match % (100% = 50 credits).
-          </p>
-        </Section>
+            </div>
+          </div>
+
+          <div className="border-t border-border px-5 py-3">
+            <p className="text-sm text-muted-foreground">{formatPostedAt(lead.postedAt)}</p>
+          </div>
+        </Card>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <PersonCard
+            title="Client"
+            name={clientName}
+            nameHref={lead.clientId ? `/clients/${lead.clientId}` : null}
+            email={lead.clientEmail || '-'}
+            phone={lead.clientPhone || '-'}
+          />
+          <PersonCard
+            title="Coach"
+            name={coachName}
+            nameHref={
+              lead.assignedCoachName && lead.assignedCoachId
+                ? `/professionals/${lead.assignedCoachId}`
+                : null
+            }
+            email={lead.assignedCoachEmail || '-'}
+            phone={lead.assignedCoachPhone || '-'}
+          />
+        </div>
       </div>
-
-      <ConfirmDialog
-        open={pendingClose}
-        title="Close this lead?"
-        body="It will be removed from the marketplace. Coaches cannot unlock it until reopened."
-        confirmLabel="Close lead"
-        destructive
-        onClose={() => setPendingClose(false)}
-        onConfirm={() => void setStatus('closed')}
-      />
-
-      <ConfirmDialog
-        open={pendingReopen}
-        title="Reopen this lead?"
-        body="The request will appear in the marketplace again for coaches to unlock."
-        confirmLabel="Reopen"
-        onClose={() => setPendingReopen(false)}
-        onConfirm={() => void setStatus('open')}
-      />
     </>
   );
 }
