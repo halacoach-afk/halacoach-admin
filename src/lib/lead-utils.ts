@@ -23,8 +23,8 @@ export function toLeadDetail(
   return {
     ...lead,
     clientName: client?.name ?? 'Unknown client',
-    clientEmail: client?.email ?? '—',
-    clientPhone: client?.phone ?? '—',
+    clientEmail: client?.email ?? '-',
+    clientPhone: client?.phone ?? '-',
     unlocks: lead.unlocks.map(unlock => ({
       ...unlock,
       professionalName: proById.get(unlock.professionalId)?.name ?? unlock.professionalId,

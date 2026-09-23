@@ -67,6 +67,7 @@ export type {
   HealthResponse,
   InviteAdminInput,
   LeadDetail,
+  LeadLifecycleStatus,
   LeadStatus,
   LeadSummary,
   LeadUnlock,

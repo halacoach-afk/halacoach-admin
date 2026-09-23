@@ -39,7 +39,7 @@ export function ConversationScreen({id}: {id: string}) {
   }, [id]);
 
   if (loading) {
-    return <LoadingState label="Loading thread…" />;
+    return <LoadingState label="Loading thread..." />;
   }
 
   if (error || !conversation) {
@@ -54,8 +54,8 @@ export function ConversationScreen({id}: {id: string}) {
         title={`Conversation ${conversation.id}`}
         description={
           goal
-            ? `${conversation.clientName} ↔ ${conversation.professionalName} · ${goal}`
-            : `${conversation.clientName} ↔ ${conversation.professionalName}`
+            ? `${conversation.clientName} <-> ${conversation.professionalName} | ${goal}`
+            : `${conversation.clientName} <-> ${conversation.professionalName}`
         }
         actions={
           <div className="flex flex-wrap gap-2">
@@ -108,7 +108,7 @@ export function ConversationScreen({id}: {id: string}) {
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Goal
             </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">{goal || '—'}</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{goal || '-'}</p>
           </div>
         </div>
 
@@ -116,7 +116,7 @@ export function ConversationScreen({id}: {id: string}) {
           <Badge tone="sky">Live thread</Badge>
           {conversation.leadId ? <Badge tone="primary">From lead unlock</Badge> : null}
           <span className="text-muted-foreground">
-            {conversation.messages.length} messages · started{' '}
+            {conversation.messages.length} messages | started{' '}
             {formatMessageTime(conversation.createdAt)}
           </span>
           {conversation.leadId ? (

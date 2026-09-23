@@ -58,7 +58,7 @@ export function MessagesScreen() {
   }, [rows, query]);
 
   if (loading) {
-    return <LoadingState label="Loading conversations…" />;
+    return <LoadingState label="Loading conversations..." />;
   }
 
   if (error) {
@@ -80,7 +80,7 @@ export function MessagesScreen() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           className="h-9 w-full max-w-sm rounded-xl border border-border px-3 text-sm"
-          placeholder="Search ID, client, coach, goal, or message…"
+          placeholder="Search ID, client, coach, goal, or message..."
           value={query}
           onChange={event => setQuery(event.target.value)}
         />
@@ -116,11 +116,11 @@ export function MessagesScreen() {
                   </Link>
                 </td>
                 <td className="px-4 py-3">
-                  <p className="text-sm font-medium text-foreground">{goal || '—'}</p>
+                  <p className="text-sm font-medium text-foreground">{goal || '-'}</p>
                 </td>
                 <td className="max-w-md px-4 py-3">
                   <p className="line-clamp-2 text-sm text-muted-foreground">
-                    {row.lastMessage || '—'}
+                    {row.lastMessage || '-'}
                   </p>
                 </td>
                 <td className="px-4 py-3">

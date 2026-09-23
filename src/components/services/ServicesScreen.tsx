@@ -65,7 +65,7 @@ function CatalogActions({
       )}
       {isEditing ? (
         <Button size="sm" className={actionButtonClass} disabled={saving} onClick={onSave}>
-          {saving ? 'Savingâ€¦' : 'Save'}
+          {saving ? 'Saving...' : 'Save'}
         </Button>
       ) : (
         <Button size="sm" variant="outline" className={actionButtonClass} onClick={onEdit}>
@@ -181,7 +181,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
 
       {!canWrite ? (
         <p className="mb-4 rounded-xl bg-primary-soft px-4 py-3 text-sm text-primary-deep">
-          View only â€” adding or editing services requires super admin.
+          View only - adding or editing services requires super admin.
         </p>
       ) : null}
 

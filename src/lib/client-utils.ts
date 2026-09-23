@@ -7,11 +7,15 @@ export function toClientSummary(client: Client): ClientSummary {
     name: client.name,
     email: client.email,
     phone: client.phone,
-    location: client.profile?.location ?? '—',
+    emailVerified: Boolean(client.emailVerified),
+    phoneVerified: Boolean(client.phoneVerified),
+    birthDate: client.birthDate ?? client.profile?.birth_date ?? null,
+    location: client.profile?.location ?? '-',
     services: client.matchPrefs?.services ?? [],
     onboarded: client.onboarded,
     otpVerified: client.otpVerified,
     suspended: client.suspended,
+    profileCompletion: client.profileCompletion ?? 0,
     createdAt: client.createdAt,
     lastActiveAt: client.lastActiveAt,
   };
@@ -49,41 +53,41 @@ export function clientMatchPrefRows(client: Client): MatchPrefRow[] {
   };
   const profile = client.profile ?? {};
   return [
-    {step: 1, label: 'Services', value: displayList(prefs.services) || '—'},
+    {step: 1, label: 'Services', value: displayList(prefs.services) || '-'},
     {
       step: 2,
       label: 'Training formats',
-      value: displayList(prefs.formats) || '—',
+      value: displayList(prefs.formats) || '-',
     },
     {
       step: 3,
       label: 'Frequency',
-      value: displayValue(prefs.frequency) || '—',
+      value: displayValue(prefs.frequency) || '-',
     },
-    {step: 4, label: 'Preferred days', value: displayList(prefs.days) || '—'},
+    {step: 4, label: 'Preferred days', value: displayList(prefs.days) || '-'},
     {
       step: 5,
       label: 'Preferred times',
       value:
-        (displayList(prefs.times) || '—') +
+        (displayList(prefs.times) || '-') +
         (prefs.timesOther ? ` (${prefs.timesOther})` : ''),
     },
     {
       step: 6,
       label: 'Current routine',
       value:
-        (displayValue(prefs.routine) || '—') +
+        (displayValue(prefs.routine) || '-') +
         (prefs.routineOther ? ` (${prefs.routineOther})` : ''),
     },
     {
       step: 7,
       label: 'Gender preference',
-      value: displayValue(prefs.gender) || '—',
+      value: displayValue(prefs.gender) || '-',
     },
     {
       step: 8,
       label: 'Coaching style',
-      value: displayValue(prefs.style) || '—',
+      value: displayValue(prefs.style) || '-',
     },
     {
       step: 9,
@@ -97,22 +101,22 @@ export function clientMatchPrefRows(client: Client): MatchPrefRow[] {
         profile.location || null,
       ]
         .filter(Boolean)
-        .join(' · ') || '—',
+        .join(' | ') || '-',
     },
     {
       step: 10,
       label: 'Languages',
-      value: displayList(prefs.languages) || '—',
+      value: displayList(prefs.languages) || '-',
     },
     {
       step: 11,
       label: 'When to start',
-      value: displayValue(prefs.startTraining) || '—',
+      value: displayValue(prefs.startTraining) || '-',
     },
     {
       step: 12,
       label: 'Account',
-      value: [client.email, client.phone].filter(Boolean).join(' · ') || '—',
+      value: [client.email, client.phone].filter(Boolean).join(' | ') || '-',
     },
   ];
 }

@@ -53,7 +53,7 @@ export type AdminRoleRecord = {
   name: string;
   permissions: AdminPermission[];
   isSystem: boolean;
-  /** Super admin — cannot be edited or deleted. */
+  /** Super admin - cannot be edited or deleted. */
   isLocked?: boolean;
   createdAt: string | null;
   updatedAt: string | null;
@@ -333,7 +333,7 @@ export type ProPricing = {
 export type MatchPrefs = {
   /**
    * Shared catalog service ids.
-   * Client: services they want · Coach: services they provide.
+   * Client: services they want | Coach: services they provide.
    */
   services: string[];
   formats: string[];
@@ -366,9 +366,12 @@ export type Professional = {
   name: string;
   email: string;
   phone: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
   suspended: boolean;
   onboarded: boolean;
   createdAt: string;
+  lastActiveAt?: string;
   serviceIds: number[];
   locations: ('coach' | 'client' | 'online' | 'online_live')[];
   radiusKm: number;
@@ -389,6 +392,8 @@ export type Professional = {
   about: string;
   profileCertifications: string[];
   years: number;
+  /** Raw experience band from profile, e.g. `8-10`. */
+  yearsExperience?: string;
   style: string;
   availability: string;
   priceFrom: string;
@@ -416,7 +421,11 @@ export type Professional = {
 
 export type ProfileCompletionPayload = {
   percent: number;
-  items: Array<{ id: string; done: boolean }>;
+  items: Array<{
+    id: string;
+    done: boolean;
+    fields?: Array<{id: string; done: boolean; optional?: boolean}>;
+  }>;
 };
 
 export type ProfessionalSummary = {
@@ -424,8 +433,13 @@ export type ProfessionalSummary = {
   name: string;
   email: string;
   phone: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
   specialty: string;
   location: string;
+  /** Experience band id from coach profile, e.g. `8-10`. */
+  years: string;
+  about: string;
   serviceCount: number;
   verificationStatus: VerificationStatus;
   credits: number;
@@ -433,6 +447,8 @@ export type ProfessionalSummary = {
   onboarded: boolean;
   suspended: boolean;
   profileCompletion: number | ProfileCompletionPayload;
+  createdAt: string;
+  lastActiveAt: string;
 };
 
 export type UpdateProfessionalInput = {
@@ -514,6 +530,9 @@ export type Client = {
   name: string;
   email: string;
   phone: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  birthDate?: string | null;
   onboarded: boolean;
   otpVerified: boolean;
   otpVerifiedAt: string | null;
@@ -526,6 +545,7 @@ export type Client = {
   onlinePlans?: OnlinePlanSummary[];
   note?: string;
   notificationPrefs: NotificationPrefs;
+  profileCompletion?: number | ProfileCompletionPayload;
 };
 
 export type ClientSummary = {
@@ -533,11 +553,15 @@ export type ClientSummary = {
   name: string;
   email: string;
   phone: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  birthDate: string | null;
   location: string;
   services: string[];
   onboarded: boolean;
   otpVerified: boolean;
   suspended: boolean;
+  profileCompletion: number | ProfileCompletionPayload;
   createdAt: string;
   lastActiveAt: string;
 };
@@ -578,6 +602,8 @@ export type RejectVerificationInput = {
   }>;
 };
 
+export type LeadLifecycleStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
+
 export type LeadStatus = 'open' | 'closed';
 
 export type LeadUnlock = {
@@ -591,13 +617,33 @@ export type MarketplaceLead = {
   id: number;
   clientId: string;
   goal: string;
+  goalDetail?: string | null;
   serviceId: number;
+  service?: string;
   location: string;
   frequency: string;
   format: string;
   days: string;
   time: string;
+  formatId?: string | null;
+  frequencyId?: string | null;
+  dayIds?: string[];
+  timeIds?: string[];
+  timesOther?: string | null;
+  startTraining?: string | null;
+  routine?: string | null;
+  routineOther?: string | null;
+  gender?: string | null;
+  style?: string | null;
+  languages?: string[];
+  ages?: string[];
+  radiusKm?: number | null;
   status: LeadStatus;
+  leadStatus?: LeadLifecycleStatus;
+  assignedCoachId?: string | null;
+  assignedCoachName?: string | null;
+  assignedCoachEmail?: string | null;
+  assignedCoachPhone?: string | null;
   postedAt: string;
   closedAt: string | null;
   clientNote: string;
@@ -609,13 +655,32 @@ export type LeadSummary = {
   clientId: string;
   clientName: string;
   goal: string;
+  goalDetail?: string | null;
   serviceId: number;
   service?: string;
   location: string;
   frequency?: string;
   format?: string;
+  days?: string;
+  time?: string;
+  formatId?: string | null;
+  frequencyId?: string | null;
+  dayIds?: string[];
+  timeIds?: string[];
+  timesOther?: string | null;
+  startTraining?: string | null;
+  routine?: string | null;
+  routineOther?: string | null;
+  gender?: string | null;
+  style?: string | null;
+  languages?: string[];
+  ages?: string[];
   status: LeadStatus;
+  leadStatus?: LeadLifecycleStatus;
   unlockCount: number;
+  unlockCreditsTotal?: number;
+  assignedCoachId?: string | null;
+  assignedCoachName?: string | null;
   postedAt: string;
 };
 

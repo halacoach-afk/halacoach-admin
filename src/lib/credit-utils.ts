@@ -75,6 +75,16 @@ export function formatPromoBenefit(promo: Pick<PromoCode, 'benefitType' | 'benef
     case 'bonus_credits':
       return `+${promo.benefitValue} credits`;
     default:
-      return '—';
+      return '-';
   }
+}
+
+/** Human-readable credit ledger labels (API stores i18n keys). */
+export function creditTxnLabel(label: string) {
+  const map: Record<string, string> = {
+    'credits.purchased': 'Credits added',
+    'credits.spent': 'Lead unlocked',
+    'credits.membership': 'Membership credits',
+  };
+  return map[label] ?? label;
 }

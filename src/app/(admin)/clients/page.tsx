@@ -7,5 +7,5 @@ export default async function ClientsPage() {
   if (!user) {
     redirect('/login');
   }
-  return <ClientsScreen actor={user} />;
+  return <ClientsScreen />;
 }

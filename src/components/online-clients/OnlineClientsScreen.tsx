@@ -59,7 +59,7 @@ export function OnlineClientsScreen() {
   }, [rows, query]);
 
   if (loading) {
-    return <LoadingState label="Loading online plans…" />;
+    return <LoadingState label="Loading online plans..." />;
   }
 
   if (error) {
@@ -70,7 +70,7 @@ export function OnlineClientsScreen() {
     <>
       <PageHeader
         title="Online plans"
-        description="Live coaching plans from the coach Clients tab — intake, drafts, and published programs."
+        description="Live coaching plans from the coach Clients tab - intake, drafts, and published programs."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
@@ -81,13 +81,10 @@ export function OnlineClientsScreen() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           className="h-9 w-full max-w-sm rounded-xl border border-border px-3 text-sm"
-          placeholder="Search client, coach, or goal…"
+          placeholder="Search client, coach, or goal..."
           value={query}
           onChange={event => setQuery(event.target.value)}
         />
-        <p className="text-xs text-muted-foreground">
-          Read-only · {rows.length} plan{rows.length === 1 ? '' : 's'}
-        </p>
       </div>
 
       {visible.length === 0 ? (
@@ -97,17 +94,31 @@ export function OnlineClientsScreen() {
         />
       ) : (
         <DataTable
-          columns={['Client', 'Coach', 'Status', 'PAR-Q', 'Days', 'Updated', '']}>
+          columns={['Goal', 'Client', 'Coach', 'Status', 'PAR-Q', 'Updated', '']}>
           {visible.map(row => (
             <tr key={row.id} className="border-t border-border">
-              <td className="px-4 py-3">
-                <p className="font-medium text-foreground">{row.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {row.goal} · {row.frequency}
-                </p>
+              <td className="px-4 py-3 text-sm text-muted-foreground">{row.goal}</td>
+              <td className="px-4 py-3 text-sm">
+                {row.clientUserId ? (
+                  <Link
+                    href={`/clients/${row.clientUserId}`}
+                    className="font-medium text-primary hover:underline">
+                    {row.name}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-foreground">{row.name}</span>
+                )}
               </td>
-              <td className="px-4 py-3 text-sm text-muted-foreground">
-                {row.coachName}
+              <td className="px-4 py-3 text-sm">
+                {row.coachId > 0 && row.coachName?.trim() ? (
+                  <Link
+                    href={`/professionals/${row.coachId}`}
+                    className="font-medium text-primary hover:underline">
+                    {row.coachName}
+                  </Link>
+                ) : (
+                  <span className="text-muted-foreground">{row.coachName || '-'}</span>
+                )}
               </td>
               <td className="px-4 py-3">
                 <Badge tone={statusTone(row.status)}>{row.status}</Badge>
@@ -117,7 +128,6 @@ export function OnlineClientsScreen() {
                   {row.parq}
                 </Badge>
               </td>
-              <td className="px-4 py-3 text-sm">{row.dayCount}</td>
               <td className="px-4 py-3 text-xs text-muted-foreground">
                 {new Date(row.updatedAt).toLocaleString()}
               </td>

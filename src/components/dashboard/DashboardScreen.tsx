@@ -136,7 +136,7 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
   }, [overview, actor.role]);
 
   if (loading && !overview) {
-    return <LoadingState label="Loading dashboardâ€¦" />;
+    return <LoadingState label="Loading dashboard..." />;
   }
 
   if (error && !overview) {
@@ -151,7 +151,7 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
     <>
       <PageHeader
         title="Dashboard"
-        description={`Signed in as ${actor.name}. Counts refresh when you return here â€” approve Leila on Verification and the pending count drops automatically.`}
+        description={`Signed in as ${actor.name}. Counts refresh when you return here - approve Leila on Verification and the pending count drops automatically.`}
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
@@ -166,7 +166,7 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
       ) : null}
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <Badge tone="primary">API {apiSource ?? 'â€¦'}</Badge>
+        <Badge tone="primary">API {apiSource ?? '...'}</Badge>
         <span className="text-sm text-muted-foreground">
           Live counts from the API across verification, leads, credits, and support.
         </span>

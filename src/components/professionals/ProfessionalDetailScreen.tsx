@@ -1,90 +1,61 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
-import {FormEvent, useCallback, useEffect, useMemo, useState, type ReactNode} from 'react';
-import {ArrowLeft} from 'lucide-react';
+import {useCallback, useEffect, useMemo, useState, type ReactNode} from 'react';
+import {
+  ArrowLeft,
+  Briefcase,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  Circle,
+  ClipboardCheck,
+  Hash,
+  Mail,
+  MapPin,
+  Phone,
+  Shield,
+  UserRound,
+  Wallet,
+} from 'lucide-react';
 import {
   fetchVerificationFileBlob,
   getProfessional,
   isApiError,
+  listLeads,
   listServices,
   updateProfessional,
   type CatalogService,
+  type LeadLifecycleStatus,
+  type LeadSummary,
   type Professional,
+  type ProfileCompletionPayload,
   type SessionUser,
+  type VerificationFile,
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
 import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
+import {DataTable} from '@/components/ui/DataTable';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {FileViewerModal} from '@/components/ui/FileViewerModal';
-import {Input} from '@/components/ui/Input';
 import {LoadingState} from '@/components/ui/LoadingState';
-import {PageHeader} from '@/components/ui/PageHeader';
+import {NotificationPrefsPanel} from '@/components/support/NotificationPrefsPanel';
+import {creditTxnLabel} from '@/lib/credit-utils';
+import {leadPreferenceDisplay} from '@/lib/lead-preference-labels';
+import {formatPostedAt} from '@/lib/lead-utils';
+import {can} from '@/lib/permissions';
 import {
-  locationLabels,
-  profileCompletion,
+  coachLeadPrefRows,
+  coachLeadPrefsEmpty,
+  formatCoachYearsExperience,
   verificationLabels,
 } from '@/lib/professional-utils';
-import {can} from '@/lib/permissions';
-import {NotificationPrefsPanel} from '@/components/support/NotificationPrefsPanel';
-
-type EditForm = {
-  name: string;
-  email: string;
-  phone: string;
-  specialty: string;
-  location: string;
-  about: string;
-  years: string;
-  style: string;
-  availability: string;
-  priceFrom: string;
-  radiusKm: string;
-  serviceIds: number[];
-  locations: Professional['locations'];
-};
-
-function completionChecks(pro: Professional) {
-  const pricing = pro.pricing;
-  const hasPricing =
-    Object.keys(pricing?.rates ?? {}).length > 0 ||
-    Boolean(pricing?.onlineMonthly) ||
-    Boolean(pricing?.notes);
-  return [
-    {label: 'Account onboarded', done: pro.onboarded},
-    {label: 'Name and email', done: Boolean(pro.name && pro.email)},
-    {label: 'Services selected', done: pro.serviceIds.length > 0},
-    {label: 'Locations set', done: pro.locations.length > 0},
-    {label: 'Pricing set', done: hasPricing},
-    {label: 'Documents submitted', done: (pro.verificationFiles?.length ?? 0) > 0},
-    {label: 'Verification submitted', done: pro.verificationStatus === 'pending' || pro.verificationStatus === 'verified'},
-    {label: 'Profile activated', done: pro.activated},
-  ];
-}
-
-function toEditForm(pro: Professional): EditForm {
-  return {
-    name: pro.name,
-    email: pro.email,
-    phone: pro.phone,
-    specialty: pro.specialty,
-    location: pro.location,
-    about: pro.about,
-    years: String(pro.years),
-    style: pro.style,
-    availability: pro.availability,
-    priceFrom: pro.priceFrom,
-    radiusKm: String(pro.radiusKm),
-    serviceIds: [...pro.serviceIds],
-    locations: [...pro.locations],
-  };
-}
 
 function Section({title, children}: {title: string; children: ReactNode}) {
   return (
-    <Card>
+    <Card className="min-w-0 p-4 sm:p-5">
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         {title}
       </h2>
@@ -93,13 +64,175 @@ function Section({title, children}: {title: string; children: ReactNode}) {
   );
 }
 
-function Field({label, value}: {label: string; value: ReactNode}) {
+function PrefField({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+}) {
   return (
-    <div>
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm text-foreground">{value}</dd>
+    <div className="min-w-0">
+      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="text-primary">{icon}</span>
+        {label}
+      </p>
+      <div className="mt-1 text-sm font-medium text-foreground">{value ?? '—'}</div>
     </div>
   );
+}
+
+function ContactValue({value, verified}: {value: string; verified?: boolean}) {
+  const display = value.trim();
+  if (!display) {
+    return <span className="font-normal text-muted-foreground">â€”</span>;
+  }
+  return (
+    <span className="break-all">
+      {display}
+      {verified === false ? (
+        <span className="ms-1.5 text-xs font-normal text-muted-foreground">
+          (unverified)
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function formatDateTime(iso: string | null | undefined) {
+  if (!iso) return 'â€”';
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return 'â€”';
+  return date.toLocaleString();
+}
+
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return 'â€”';
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return 'â€”';
+  return date.toLocaleDateString();
+}
+
+function resolvedLeadStatus(row: LeadSummary): LeadLifecycleStatus {
+  if (row.leadStatus) {
+    return row.leadStatus;
+  }
+  return row.status === 'closed' ? 'cancelled' : 'open';
+}
+
+function leadStatusTone(status: LeadLifecycleStatus) {
+  if (status === 'in_progress') return 'primary' as const;
+  if (status === 'completed') return 'muted' as const;
+  if (status === 'cancelled') return 'danger' as const;
+  return 'sky' as const;
+}
+
+function leadStatusLabel(status: LeadLifecycleStatus) {
+  if (status === 'in_progress') return 'In progress';
+  if (status === 'completed') return 'Completed';
+  if (status === 'cancelled') return 'Cancelled';
+  return 'Open';
+}
+
+function LeadCell({value, className}: {value: string; className?: string}) {
+  return (
+    <td className={`px-4 py-3 align-top text-sm text-foreground ${className ?? ''}`}>
+      <div className="max-w-[180px] whitespace-normal break-words">{value}</div>
+    </td>
+  );
+}
+
+function verificationTone(status: Professional['verificationStatus']) {
+  if (status === 'verified') return 'primary' as const;
+  if (status === 'pending') return 'warning' as const;
+  if (status === 'rejected') return 'danger' as const;
+  return 'muted' as const;
+}
+
+const DOC_TYPE_LABELS: Record<string, string> = {
+  reps_uae: 'REPs UAE',
+  muahal: "Mu'Ahal",
+  ministry_or_federation: 'Ministry / federation',
+  cpr_aed: 'CPR / AED',
+  insurance: 'Insurance',
+  additional_certs: 'Additional certifications',
+  trade_licence: 'Trade licence',
+};
+
+const DOC_TYPE_TAGLINES: Record<string, string> = {
+  reps_uae: 'Valid REPs UAE registration certificate.',
+  muahal: "Mu'Ahal professional qualification approval.",
+  ministry_or_federation:
+    'Ministry of Sports licence or federation approval.',
+  cpr_aed: 'Current CPR/AED certification.',
+  insurance: 'Professional liability or related insurance.',
+  additional_certs: 'Specialty or other supporting certifications.',
+  trade_licence: 'Commercial or trade licence, if applicable.',
+};
+
+function docTypeLabel(file: VerificationFile) {
+  if (!file.docType) return 'Untyped';
+  return DOC_TYPE_LABELS[file.docType] ?? file.docType;
+}
+
+function docTypeTagline(file: VerificationFile) {
+  if (!file.docType) return null;
+  return DOC_TYPE_TAGLINES[file.docType] ?? null;
+}
+
+function docStatusTone(status?: string) {
+  if (status === 'approved' || status === 'expiring_soon') return 'primary' as const;
+  if (status === 'rejected') return 'danger' as const;
+  if (status === 'under_review') return 'sky' as const;
+  return 'muted' as const;
+}
+
+function docStatusLabel(status?: string) {
+  return String(status ?? 'submitted').replace(/_/g, ' ');
+}
+
+const COMPLETION_SECTION_LABELS: Record<string, string> = {
+  about: 'About',
+  verification: 'Verification',
+  activated: 'Activated',
+};
+
+const COMPLETION_FIELD_LABELS: Record<string, string> = {
+  name: 'Name',
+  email: 'Email',
+  phone: 'Phone',
+  bio: 'Bio',
+  years: 'Years experience',
+  emailVerified: 'Email verified',
+  phoneVerified: 'Phone verified',
+  reps_uae: 'REPs UAE',
+  muahal: 'Muahal',
+  ministry_or_federation: 'Ministry / federation',
+  live: 'Live profile',
+};
+
+/** Checklist without prefs/pricing/credits - shown elsewhere or not needed here. */
+function completionItems(
+  value: Professional['profileCompletion'],
+): ProfileCompletionPayload['items'] {
+  if (!value || typeof value === 'number') {
+    return [];
+  }
+  const items = Array.isArray(value.items) ? value.items : [];
+  return items.filter(
+    section =>
+      section.id !== 'prefs' &&
+      section.id !== 'pricing' &&
+      section.id !== 'credits',
+  );
+}
+
+function checklistPercent(items: ProfileCompletionPayload['items']): number {
+  const fields = items.flatMap(section => section.fields ?? []);
+  if (fields.length === 0) return 0;
+  return Math.round((fields.filter(field => field.done).length / fields.length) * 100);
 }
 
 export function ProfessionalDetailScreen({
@@ -112,13 +245,9 @@ export function ProfessionalDetailScreen({
   const canWrite = can(actor, 'professionals:write');
   const [pro, setPro] = useState<Professional | null>(null);
   const [services, setServices] = useState<CatalogService[]>([]);
+  const [leads, setLeads] = useState<LeadSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<EditForm | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [pendingSuspend, setPendingSuspend] = useState(false);
   const [pendingActivate, setPendingActivate] = useState<boolean | null>(null);
   const [viewer, setViewer] = useState<{fileId: string; name: string} | null>(null);
 
@@ -133,10 +262,17 @@ export function ProfessionalDetailScreen({
     setLoading(true);
     setError(null);
     try {
-      const [detail, catalog] = await Promise.all([getProfessional(id), listServices()]);
+      const [detail, catalog, allLeads] = await Promise.all([
+        getProfessional(id),
+        listServices(),
+        listLeads(),
+      ]);
       setPro(detail);
-      setServices(catalog.filter(item => item.active));
-      setForm(toEditForm(detail));
+      setServices(catalog);
+      const coachKey = String(detail.id);
+      setLeads(
+        allLeads.filter(lead => String(lead.assignedCoachId) === coachKey),
+      );
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load professional.');
     } finally {
@@ -148,66 +284,16 @@ export function ProfessionalDetailScreen({
     void load();
   }, [id]);
 
-  const serviceNames = useMemo(() => {
-    const byId = new Map(services.map(item => [item.id, item.name]));
-    return (pro?.serviceIds ?? []).map(id => byId.get(id) ?? `#${id}`);
-  }, [pro, services]);
+  const serviceNameById = useMemo(
+    () => new Map(services.map(item => [item.id, item.name])),
+    [services],
+  );
 
-  const pct = pro ? profileCompletion(pro) : 0;
-  const checks = pro ? completionChecks(pro) : [];
-
-  const saveEdit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!form || !pro) {
-      return;
-    }
-    const about = form.about.trim();
-    if (about.length < 50 || about.length > 500) {
-      setFormError('About must be between 50 and 500 characters.');
-      return;
-    }
-    setSaving(true);
-    setFormError(null);
-    try {
-      const updated = await updateProfessional(pro.id, {
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        specialty: form.specialty,
-        location: form.location,
-        about,
-        years: Number(form.years) || 0,
-        style: form.style,
-        availability: form.availability,
-        priceFrom: form.priceFrom,
-        radiusKm: Number(form.radiusKm) || 0,
-        serviceIds: form.serviceIds,
-        locations: form.locations,
-      });
-      setPro(updated);
-      setForm(toEditForm(updated));
-      setEditing(false);
-    } catch (err) {
-      setFormError(isApiError(err) ? err.message : 'Could not save changes.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleSuspended = async () => {
-    if (!pro) {
-      return;
-    }
-    try {
-      const updated = await updateProfessional(pro.id, {suspended: !pro.suspended});
-      setPro(updated);
-      setForm(toEditForm(updated));
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not update account status.');
-    } finally {
-      setPendingSuspend(false);
-    }
-  };
+  const coachLeads = useMemo(() => {
+    if (!pro) return [];
+    const coachKey = String(pro.id);
+    return leads.filter(lead => String(lead.assignedCoachId) === coachKey);
+  }, [pro, leads]);
 
   const toggleActivated = async () => {
     if (!pro || pendingActivate === null) {
@@ -216,7 +302,6 @@ export function ProfessionalDetailScreen({
     try {
       const updated = await updateProfessional(pro.id, {activated: pendingActivate});
       setPro(updated);
-      setForm(toEditForm(updated));
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not update activation.');
     } finally {
@@ -224,31 +309,11 @@ export function ProfessionalDetailScreen({
     }
   };
 
-  const toggleService = (id: number) => {
-    if (!form) {
-      return;
-    }
-    const next = form.serviceIds.includes(id)
-      ? form.serviceIds.filter(item => item !== id)
-      : [...form.serviceIds, id];
-    setForm({...form, serviceIds: next});
-  };
-
-  const toggleLocation = (key: Professional['locations'][number]) => {
-    if (!form) {
-      return;
-    }
-    const next = form.locations.includes(key)
-      ? form.locations.filter(item => item !== key)
-      : [...form.locations, key];
-    setForm({...form, locations: next});
-  };
-
   if (loading) {
-    return <LoadingState label="Loading professionalâ€¦" />;
+    return <LoadingState label="Loading professional..." />;
   }
 
-  if (error || !pro || !form) {
+  if (error || !pro) {
     return (
       <ErrorState
         body={error ?? 'Professional not found.'}
@@ -257,422 +322,421 @@ export function ProfessionalDetailScreen({
     );
   }
 
+  const checklist = completionItems(pro.profileCompletion);
+  const pct = checklistPercent(checklist);
+  const leadPrefRows = coachLeadPrefRows(pro, serviceNameById);
+  const leadPrefsEmpty = coachLeadPrefsEmpty(pro, serviceNameById);
+
   return (
     <>
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/professionals"
           className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">
           <ArrowLeft size={16} />
           Back to professionals
         </Link>
-      </div>
-
-      <PageHeader
-        title={pro.name}
-        description={`${pro.specialty} Â· ${pro.location}`}
-        actions={
-          canWrite ? (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setEditing(value => !value)}>
-                {editing ? 'Cancel edit' : 'Edit profile'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setPendingActivate(!pro.activated)}>
-                {pro.activated ? 'Deactivate' : 'Activate'}
-              </Button>
-              <Button
-                variant={pro.suspended ? 'primary' : 'destructive'}
-                onClick={() => setPendingSuspend(true)}>
-                {pro.suspended ? 'Unsuspend' : 'Suspend'}
-              </Button>
-            </div>
-          ) : null
-        }
-      />
-
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        {pro.onboarded ? (
-          <Badge tone="primary">Onboarded</Badge>
-        ) : (
-          <Badge tone="warning">Signup incomplete</Badge>
-        )}
-        <Badge tone={pro.verificationStatus === 'verified' ? 'primary' : pro.verificationStatus === 'pending' ? 'warning' : 'muted'}>
-          {verificationLabels[pro.verificationStatus]}
-        </Badge>
-        {pro.suspended ? <Badge tone="danger">Suspended</Badge> : null}
-        {pro.activated ? <Badge tone="primary">Live profile</Badge> : <Badge tone="muted">Not activated</Badge>}
-        {pro.verificationStatus === 'rejected' && pro.verificationRejectedReason ? (
-          <Badge tone="danger">Rejected: {pro.verificationRejectedReason}</Badge>
-        ) : null}
-        <Badge tone="sky">{pct}% complete</Badge>
-      </div>
-
-      {editing && canWrite ? (
-        <Card className="mb-6">
-          <h2 className="mb-4 text-lg font-semibold">Edit profile</h2>
-          <form onSubmit={saveEdit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} required />
-              <Input label="Email" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required />
-              <Input label="Phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} required />
-              <Input label="Public location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} />
-              <Input label="Specialty" value={form.specialty} onChange={e => setForm({...form, specialty: e.target.value})} />
-              <Input
-                label="Years experience"
-                type="number"
-                min={0}
-                inputMode="numeric"
-                value={form.years}
-                onChange={e =>
-                  setForm({...form, years: e.target.value.replace(/[^\d]/g, '')})
-                }
-              />
-              <Input label="Coaching style" value={form.style} onChange={e => setForm({...form, style: e.target.value})} />
-              <Input label="Availability" value={form.availability} onChange={e => setForm({...form, availability: e.target.value})} />
-              <Input label="Price from" value={form.priceFrom} onChange={e => setForm({...form, priceFrom: e.target.value})} />
-              <Input label="Radius (km)" value={form.radiusKm} onChange={e => setForm({...form, radiusKm: e.target.value})} />
-            </div>
-            <div>
-              <p className="mb-2 text-sm font-medium">Services</p>
-              <div className="flex flex-wrap gap-2">
-                {services.map(item => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => toggleService(item.id)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                      form.serviceIds.includes(item.id)
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}>
-                    {item.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="mb-2 text-sm font-medium">Session locations</p>
-              <div className="flex flex-wrap gap-2">
-                {(['coach', 'client', 'online_live', 'online'] as const).map(key => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => toggleLocation(key)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                      form.locations.includes(key)
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}>
-                    {locationLabels[key]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <label className="block text-sm">
-              <span className="font-medium">About</span>
-              <span className="relative mt-1 block">
-                <textarea
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 pb-8 text-sm"
-                  rows={4}
-                  maxLength={500}
-                  value={form.about}
-                  onChange={e => setForm({...form, about: e.target.value})}
-                />
-                <span className="pointer-events-none absolute bottom-2.5 end-3 text-xs tabular-nums text-muted-foreground">
-                  {form.about.length}/500
-                </span>
-              </span>
-            </label>
-            {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Savingâ€¦' : 'Save changes'}
+        <div className="flex flex-wrap gap-2">
+          {canWrite ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPendingActivate(!pro.activated)}>
+              {pro.activated ? 'Deactivate' : 'Activate'}
             </Button>
-          </form>
-        </Card>
-      ) : null}
+          ) : null}
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            Refresh
+          </Button>
+        </div>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Section title="Account">
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <Field label="Name" value={pro.name} />
-            <Field label="Email" value={pro.email} />
-            <Field label="Phone" value={pro.phone} />
-            <Field label="Member since" value={new Date(pro.createdAt).toLocaleDateString()} />
-          </dl>
+        <Section title="Profile">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <PrefField
+              icon={<Hash className="size-3.5" strokeWidth={1.8} />}
+              label="ID"
+              value={pro.id}
+            />
+            <PrefField
+              icon={<UserRound className="size-3.5" strokeWidth={1.8} />}
+              label="Name"
+              value={pro.name}
+            />
+            <PrefField
+              icon={<Mail className="size-3.5" strokeWidth={1.8} />}
+              label="Email"
+              value={
+                <ContactValue
+                  value={pro.email}
+                  verified={pro.emailVerified}
+                />
+              }
+            />
+            <PrefField
+              icon={<Phone className="size-3.5" strokeWidth={1.8} />}
+              label="Phone"
+              value={
+                <ContactValue
+                  value={pro.phone}
+                  verified={pro.phoneVerified}
+                />
+              }
+            />
+            <PrefField
+              icon={<UserRound className="size-3.5" strokeWidth={1.8} />}
+              label="Gender"
+              value={pro.gender === 'female' ? 'Female' : 'Male'}
+            />
+            <PrefField
+              icon={<Briefcase className="size-3.5" strokeWidth={1.8} />}
+              label="Experience"
+              value={formatCoachYearsExperience(
+                pro.yearsExperience ?? pro.years,
+              )}
+            />
+            <PrefField
+              icon={<MapPin className="size-3.5" strokeWidth={1.8} />}
+              label="Location"
+              value={pro.location?.trim() || 'â€”'}
+            />
+          </div>
+          {pro.about?.trim() || pro.bio?.trim() ? (
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+              {pro.about?.trim() || pro.bio?.trim()}
+            </p>
+          ) : null}
         </Section>
 
-        <Section title="Notification preferences">
-          <NotificationPrefsPanel prefs={pro.notificationPrefs} />
+        <Section title="Account">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <PrefField
+              icon={<Shield className="size-3.5" strokeWidth={1.8} />}
+              label="Status"
+              value={
+                pro.suspended ? (
+                  <Badge tone="danger">Suspended</Badge>
+                ) : (
+                  <Badge tone="primary">Active</Badge>
+                )
+              }
+            />
+            <PrefField
+              icon={<ClipboardCheck className="size-3.5" strokeWidth={1.8} />}
+              label="Onboarding"
+              value={
+                pro.onboarded ? (
+                  <Badge tone="primary">Complete</Badge>
+                ) : (
+                  <Badge tone="warning">Incomplete</Badge>
+                )
+              }
+            />
+            <PrefField
+              icon={<ClipboardCheck className="size-3.5" strokeWidth={1.8} />}
+              label="Verification"
+              value={
+                <Badge tone={verificationTone(pro.verificationStatus)}>
+                  {verificationLabels[pro.verificationStatus]}
+                </Badge>
+              }
+            />
+            <PrefField
+              icon={<Shield className="size-3.5" strokeWidth={1.8} />}
+              label="Marketplace"
+              value={
+                pro.activated ? (
+                  <Badge tone="primary">Live</Badge>
+                ) : (
+                  <Badge tone="muted">Off</Badge>
+                )
+              }
+            />
+            <PrefField
+              icon={<CalendarDays className="size-3.5" strokeWidth={1.8} />}
+              label="Joined"
+              value={
+                <span className="break-words">{formatDateTime(pro.createdAt)}</span>
+              }
+            />
+            <PrefField
+              icon={<CalendarDays className="size-3.5" strokeWidth={1.8} />}
+              label="Last active"
+              value={
+                <span className="break-words">
+                  {formatDateTime(pro.lastActiveAt)}
+                </span>
+              }
+            />
+            <PrefField
+              icon={<Wallet className="size-3.5" strokeWidth={1.8} />}
+              label="Credits"
+              value={pro.credits}
+            />
+          </div>
+          {pro.verificationStatus === 'rejected' &&
+          pro.verificationRejectedReason ? (
+            <p className="mt-4 rounded-xl bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+              Rejected: {pro.verificationRejectedReason}
+            </p>
+          ) : null}
         </Section>
 
         <Section title="Profile completion">
-          <div className="mb-3 flex items-center gap-3">
+          <div className="mb-4 flex items-center gap-3">
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-primary" style={{width: `${pct}%`}} />
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{width: `${pct}%`}}
+              />
             </div>
-            <span className="text-sm font-semibold">{pct}%</span>
+            <span className="text-sm font-semibold tabular-nums text-foreground">
+              {pct}%
+            </span>
           </div>
-          <ul className="space-y-1.5 text-sm">
-            {checks.map(item => (
-              <li key={item.label} className={item.done ? 'text-foreground' : 'text-muted-foreground'}>
-                {item.done ? 'âœ“' : 'â—‹'} {item.label}
-              </li>
-            ))}
-          </ul>
-        </Section>
-
-        <Section title="Services">
-          <div className="flex flex-wrap gap-2">
-            {serviceNames.map(name => (
-              <Badge key={name} tone="sky">
-                {name}
-              </Badge>
-            ))}
-          </div>
-        </Section>
-
-        <Section title="Location">
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <Field label="Public location" value={pro.location} />
-            <Field label="Radius" value={`${pro.radiusKm} km`} />
-            <Field
-              label="Session types"
-              value={pro.locations.map(key => locationLabels[key]).join(', ') || 'â€”'}
-            />
-          </dl>
-        </Section>
-
-        <Section title="Onboarding pricing">
-          {Object.keys(pro.pricing?.rates ?? {}).length === 0 &&
-          !pro.pricing?.onlineMonthly &&
-          !pro.pricing?.notes ? (
-            <p className="text-sm text-muted-foreground">No rates set during coach onboarding.</p>
+          {checklist.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No checklist data.</p>
           ) : (
             <div className="space-y-4">
-              {Object.entries(pro.pricing?.rates ?? {}).map(([serviceId, rate]) => {
-                const serviceName =
-                  services.find(item => String(item.id) === serviceId)?.name ?? `Service #${serviceId}`;
+              {checklist.map(section => {
+                const fields = section.fields ?? [];
                 return (
-                  <div key={serviceId} className="rounded-xl border border-border p-3">
-                    <p className="text-sm font-semibold text-foreground">{serviceName}</p>
-                    <dl className="mt-2 grid gap-2 sm:grid-cols-2">
-                      <Field label="Per session (AED)" value={rate.session || 'â€”'} />
-                      <Field label="10-session pack (AED)" value={rate.pack || 'â€”'} />
-                    </dl>
+                  <div key={section.id}>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {COMPLETION_SECTION_LABELS[section.id] ?? section.id}
+                      </p>
+                      <Badge tone={section.done ? 'primary' : 'muted'}>
+                        {section.done ? 'Done' : 'Incomplete'}
+                      </Badge>
+                    </div>
+                    <ul className="space-y-2">
+                      {fields.map(field => (
+                        <li
+                          key={field.id}
+                          className="flex items-center gap-2.5 text-sm">
+                          {field.done ? (
+                            <CheckCircle2
+                              className="size-4 shrink-0 text-primary"
+                              strokeWidth={2}
+                            />
+                          ) : (
+                            <Circle
+                              className="size-4 shrink-0 text-muted-foreground"
+                              strokeWidth={1.8}
+                            />
+                          )}
+                          <span
+                            className={
+                              field.done
+                                ? 'text-foreground'
+                                : 'text-muted-foreground'
+                            }>
+                            {COMPLETION_FIELD_LABELS[field.id] ?? field.id}
+                            {field.optional ? (
+                              <span className="ms-1 text-xs text-muted-foreground">
+                                (optional)
+                              </span>
+                            ) : null}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 );
               })}
-              <dl className="grid gap-3 sm:grid-cols-2">
-                <Field label="Online monthly (AED)" value={pro.pricing?.onlineMonthly || 'â€”'} />
-                <Field
-                  label="Free intro consult"
-                  value={pro.pricing?.freeConsult ? 'Yes' : 'No'}
-                />
-              </dl>
-              {pro.pricing?.notes ? (
-                <p className="text-sm text-muted-foreground">{pro.pricing.notes}</p>
-              ) : null}
             </div>
           )}
         </Section>
 
-        <Section title="Match preferences">
-          {(() => {
-            const prefs = pro.matchPrefs;
-            const listFields = [
-              prefs?.services,
-              prefs?.formats,
-              prefs?.days,
-              prefs?.times,
-              prefs?.ages,
-              prefs?.languages,
-            ];
-            const scalarEmpty = ![
-              prefs?.frequency,
-              prefs?.timesOther,
-              prefs?.gender,
-              prefs?.style,
-              prefs?.startTraining,
-              prefs?.routine,
-              prefs?.routineOther,
-            ].some(Boolean);
-            const empty =
-              !prefs || (listFields.every(list => !list?.length) && scalarEmpty);
-            if (empty) {
-              return (
-                <p className="text-sm text-muted-foreground">
-                  Coach has not set match preferences yet (shown as incomplete on their
-                  dashboard).
-                </p>
-              );
-            }
-            return (
-              <dl className="grid gap-3">
-                {(
-                  [
-                    ['Services', prefs.services],
-                    ['Formats', prefs.formats],
-                    [
-                      'Gender preference',
-                      prefs.gender ? [prefs.gender] : [],
-                    ],
-                    ['Ages', prefs.ages],
-                    ['Days', prefs.days],
-                    ['Times', prefs.times],
-                    ['Languages', prefs.languages],
-                  ] as const
-                ).map(([label, values]) => (
-                  <div key={label}>
-                    <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-                    <dd className="mt-1 flex flex-wrap gap-1.5">
-                      {values?.length ? (
-                        values.map(value => (
-                          <Badge key={value} tone="sky">
-                            {label === 'Formats'
-                              ? (locationLabels[value] ?? value)
-                              : value}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">â€”</span>
-                      )}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            );
-          })()}
+        <Section title="Notifications">
+          <NotificationPrefsPanel prefs={pro.notificationPrefs} />
         </Section>
+      </div>
 
-        <Section title="Public profile">
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <Field label="Gender" value={pro.gender === 'female' ? 'Female' : 'Male'} />
-            <Field label="Years" value={pro.years} />
-            <Field label="Style" value={pro.style} />
-            <Field label="Availability" value={pro.availability} />
-            <Field label="Price from" value={pro.priceFrom} />
-            <Field label="Rating" value={`${pro.rating} (${pro.reviews} reviews)`} />
-            <Field
-              label="Formats"
-              value={
-                pro.formats.map(id => locationLabels[id] ?? id).join(', ') || 'â€”'
-              }
-            />
-            <Field label="Languages" value={pro.languages.join(', ')} />
-          </dl>
-          <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{pro.about || pro.bio}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {pro.profileCertifications.map(item => (
-              <Badge key={item} tone="muted">
-                {item}
-              </Badge>
-            ))}
-          </div>
-        </Section>
-
-        <Section title="Client reviews">
-          {(pro.reviewList ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No reviews on file yet.</p>
+      <div className="mt-6">
+        <Section title="Lead preferences">
+          {leadPrefsEmpty ? (
+            <p className="text-sm text-muted-foreground">
+              Coach has not set lead preferences yet.
+            </p>
           ) : (
-            <ul className="space-y-3">
-              {(pro.reviewList ?? []).map(review => (
-                <li key={review.id} className="rounded-xl border border-border p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium">{review.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {review.date} Â· {review.source}
-                      </p>
-                    </div>
-                    <Badge tone="primary">{review.rating}â˜…</Badge>
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{review.text}</p>
-                </li>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {leadPrefRows.map(row => (
+                <PrefField
+                  key={row.label}
+                  icon={<ClipboardCheck className="size-3.5" strokeWidth={1.8} />}
+                  label={row.label}
+                  value={<span className="break-words">{row.value}</span>}
+                />
               ))}
-            </ul>
-          )}
-        </Section>
-
-        <Section title="ROI (from app activity)">
-          {pro.roi ? (
-            <dl className="grid gap-3 sm:grid-cols-2">
-              <Field label="Credits spent" value={pro.roi.creditsSpent} />
-              <Field label="Leads unlocked" value={pro.roi.leadsUnlocked} />
-              <Field
-                label="Leads won"
-                value={`${pro.roi.leadsWon} (unlocked: ${pro.roi.leadsWonUnlocked ?? 0})`}
-              />
-              <Field
-                label="Conversion trend"
-                value={pro.roi.conversionWeeks.join(' â†’ ') + '%'}
-              />
-            </dl>
-          ) : (
-            <p className="text-sm text-muted-foreground">No ROI data yet.</p>
-          )}
-        </Section>
-
-        <Section title="Documents">
-          <ul className="space-y-2 text-sm">
-            {(pro.verificationFiles ?? []).length ? (
-              (pro.verificationFiles ?? []).map(file => (
-                <li key={file.id}>
-                  <button
-                    type="button"
-                    className="text-primary hover:underline"
-                    onClick={() =>
-                      setViewer({fileId: file.id, name: file.originalName})
-                    }>
-                    {file.originalName}
-                  </button>
-                </li>
-              ))
-            ) : (
-              <li className="text-muted-foreground">None submitted</li>
-            )}
-          </ul>
-        </Section>
-
-        <Section title="Wallet">
-          <p className="mb-4 text-2xl font-bold text-foreground">{pro.credits} credits</p>
-          {pro.txns.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No transactions yet.</p>
-          ) : (
-            <ul className="divide-y divide-border text-sm">
-              {pro.txns.map(txn => (
-                <li key={txn.id} className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium">{txn.label}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(txn.at).toLocaleString()}
-                    </p>
-                  </div>
-                  <span className={txn.type === 'spend' ? 'text-destructive' : 'text-primary'}>
-                    {txn.type === 'spend' ? 'âˆ’' : '+'}
-                    {txn.credits}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            </div>
           )}
         </Section>
       </div>
 
-      <ConfirmDialog
-        open={pendingSuspend}
-        title={pro.suspended ? 'Unsuspend account?' : 'Suspend account?'}
-        body={
-          pro.suspended
-            ? `${pro.name} will be able to sign in and use the pro app again.`
-            : `${pro.name} will be blocked from signing in until unsuspended.`
-        }
-        confirmLabel={pro.suspended ? 'Unsuspend' : 'Suspend'}
-        destructive={!pro.suspended}
-        onClose={() => setPendingSuspend(false)}
-        onConfirm={() => void toggleSuspended()}
-      />
+      <div className="mt-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Documents
+        </h2>
+        {(pro.verificationFiles ?? []).length === 0 ? (
+          <p className="text-sm text-muted-foreground">None submitted</p>
+        ) : (
+          <DataTable
+            tableClassName="min-w-[720px]"
+            columns={['Name', 'Submitted', 'Verification', 'Expiry', 'Status', '']}>
+            {(pro.verificationFiles ?? []).map(file => {
+              const status = file.displayStatus ?? file.status;
+              return (
+                <tr key={file.id} className="border-b border-border last:border-0">
+                  <td className="px-4 py-3 align-top text-sm text-foreground">
+                    <p className="font-medium">{docTypeLabel(file)}</p>
+                    {docTypeTagline(file) ? (
+                      <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                        {docTypeTagline(file)}
+                      </p>
+                    ) : null}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                    {formatDate(pro.verificationSubmittedAt)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                    {formatDate(file.reviewedAt)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                    {formatDate(file.expiresAt)}
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <Badge tone={docStatusTone(status)}>
+                      {docStatusLabel(status)}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 align-top text-end">
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                      onClick={() =>
+                        setViewer({fileId: file.id, name: file.originalName})
+                      }>
+                      View
+                      <ChevronRight size={16} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </DataTable>
+        )}
+      </div>
+
+      <div className="mt-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Wallet, credits and subscription history
+        </h2>
+        {(() => {
+          const purchaseTxns = pro.txns.filter(
+            txn =>
+              txn.type === 'purchase' ||
+              txn.label === 'credits.purchased' ||
+              txn.label === 'credits.membership',
+          );
+          return (
+            <DataTable
+              tableClassName="min-w-[560px]"
+              columns={['Description', 'Date', 'Amount']}
+              footer={
+                <tr className="border-t border-border bg-muted/40">
+                  <td
+                    colSpan={2}
+                    className="px-4 py-3 text-sm font-semibold text-foreground">
+                    Current balance
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 text-end text-sm font-bold tabular-nums text-foreground">
+                    {pro.credits} credits
+                  </td>
+                </tr>
+              }>
+              {purchaseTxns.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={3}
+                    className="px-4 py-6 text-sm text-muted-foreground">
+                    No credit or subscription purchases yet.
+                  </td>
+                </tr>
+              ) : (
+                purchaseTxns.map(txn => (
+                  <tr key={txn.id} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3 align-top text-sm font-medium text-foreground">
+                      {creditTxnLabel(txn.label)}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                      {formatDateTime(txn.at)}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm font-semibold tabular-nums text-primary">
+                      +{txn.credits}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </DataTable>
+          );
+        })()}
+      </div>
+
+      <div className="mt-6">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Leads
+        </h2>
+        {coachLeads.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No assigned leads for this coach.
+          </p>
+        ) : (
+          <DataTable
+            tableClassName="min-w-[1000px]"
+            columns={['ID', 'Goal', 'Format', 'Frequency', 'Status', 'Posted', '']}>
+            {coachLeads.map(row => {
+              const status = resolvedLeadStatus(row);
+              const serviceName =
+                serviceNameById.get(row.serviceId) ??
+                row.service ??
+                row.goal ??
+                `Service #${row.serviceId}`;
+              const prefs = leadPreferenceDisplay(row, serviceName);
+              return (
+                <tr key={row.id} className="border-b border-border last:border-0">
+                  <td className="px-4 py-3 align-top text-sm text-muted-foreground">
+                    {row.id}
+                  </td>
+                  <td className="px-4 py-3 align-top text-sm font-medium text-foreground">
+                    {prefs.goal}
+                  </td>
+                  <LeadCell value={prefs.format} />
+                  <LeadCell value={prefs.frequency} />
+                  <td className="px-4 py-3 align-top">
+                    <Badge tone={leadStatusTone(status)}>
+                      {leadStatusLabel(status)}
+                    </Badge>
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                    {formatPostedAt(row.postedAt)}
+                  </td>
+                  <td className="px-4 py-3 align-top text-end">
+                    <Link
+                      href={`/leads/${row.id}`}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                      View
+                      <ChevronRight size={16} />
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </DataTable>
+        )}
+      </div>
 
       <FileViewerModal
         open={viewer !== null}

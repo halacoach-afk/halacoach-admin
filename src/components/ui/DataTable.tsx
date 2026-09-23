@@ -4,6 +4,7 @@ import {cn} from '@/lib/cn';
 export function DataTable({
   columns,
   children,
+  footer,
   className,
   tableClassName,
   columnWidths,
@@ -11,6 +12,7 @@ export function DataTable({
 }: {
   columns: string[];
   children: ReactNode;
+  footer?: ReactNode;
   className?: string;
   tableClassName?: string;
   columnWidths?: string[];
@@ -38,6 +40,7 @@ export function DataTable({
           </tr>
         </thead>
         <tbody>{children}</tbody>
+        {footer ? <tfoot>{footer}</tfoot> : null}
       </table>
     </div>
   );

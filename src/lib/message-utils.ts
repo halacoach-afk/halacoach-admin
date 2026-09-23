@@ -20,8 +20,8 @@ export function toConversationSummary(
     clientName: client?.name ?? 'Unknown client',
     professionalId: conversation.professionalId,
     professionalName: professional?.name ?? 'Unknown coach',
-    professionalSpecialty: professional?.specialty ?? '—',
-    lastMessage: last?.body ?? '—',
+    professionalSpecialty: professional?.specialty ?? '-',
+    lastMessage: last?.body ?? '-',
     lastMessageAt: last?.sentAt ?? conversation.updatedAt,
     messageCount: conversation.messages.length,
   };
@@ -37,10 +37,10 @@ export function toConversationDetail(
   return {
     ...conversation,
     clientName: client?.name ?? 'Unknown client',
-    clientEmail: client?.email ?? '—',
+    clientEmail: client?.email ?? '-',
     professionalName: professional?.name ?? 'Unknown coach',
-    professionalEmail: professional?.email ?? '—',
-    professionalSpecialty: professional?.specialty ?? '—',
+    professionalEmail: professional?.email ?? '-',
+    professionalSpecialty: professional?.specialty ?? '-',
   };
 }
 

@@ -97,7 +97,7 @@ export const navItems: NavItem[] = [
   {
     href: '/messages',
     label: 'Messages',
-    description: 'Read-only view of client ↔ coach chat threads (demo data).',
+    description: 'Read-only view of client <-> coach chat threads (demo data).',
     icon: MessageCircle,
     permission: 'messages:read',
   },
