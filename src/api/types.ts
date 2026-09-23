@@ -366,9 +366,12 @@ export type Professional = {
   name: string;
   email: string;
   phone: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
   suspended: boolean;
   onboarded: boolean;
   createdAt: string;
+  lastActiveAt?: string;
   serviceIds: number[];
   locations: ('coach' | 'client' | 'online' | 'online_live')[];
   radiusKm: number;
@@ -389,6 +392,8 @@ export type Professional = {
   about: string;
   profileCertifications: string[];
   years: number;
+  /** Raw experience band from profile, e.g. `8-10`. */
+  yearsExperience?: string;
   style: string;
   availability: string;
   priceFrom: string;
@@ -428,8 +433,13 @@ export type ProfessionalSummary = {
   name: string;
   email: string;
   phone: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
   specialty: string;
   location: string;
+  /** Experience band id from coach profile, e.g. `8-10`. */
+  years: string;
+  about: string;
   serviceCount: number;
   verificationStatus: VerificationStatus;
   credits: number;
@@ -437,6 +447,8 @@ export type ProfessionalSummary = {
   onboarded: boolean;
   suspended: boolean;
   profileCompletion: number | ProfileCompletionPayload;
+  createdAt: string;
+  lastActiveAt: string;
 };
 
 export type UpdateProfessionalInput = {

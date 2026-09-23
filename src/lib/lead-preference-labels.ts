@@ -233,3 +233,88 @@ export const LEAD_PREFERENCE_FIELDS: Array<{
   {key: 'location', label: 'Location'},
   {key: 'radius', label: 'Travel radius'},
 ];
+
+function resolveServiceLabel(
+  raw: string,
+  serviceNameById?: Map<number, string>,
+): string {
+  const key = raw.trim();
+  if (!key) return '';
+  const asNum = Number(key);
+  if (Number.isFinite(asNum) && serviceNameById?.has(asNum)) {
+    return serviceNameById.get(asNum) ?? key;
+  }
+  return key;
+}
+
+/** Human-readable coach match / lead preference rows for admin. */
+export function matchPrefsDisplayRows(
+  prefs: {
+    services?: string[];
+    formats?: string[];
+    frequency?: string;
+    days?: string[];
+    times?: string[];
+    timesOther?: string;
+    gender?: string;
+    style?: string;
+    ages?: string[];
+    languages?: string[];
+  } | null | undefined,
+  serviceNameById?: Map<number, string>,
+): Array<{label: string; value: string}> {
+  const p = prefs ?? {};
+  const services =
+    (p.services ?? [])
+      .map(id => resolveServiceLabel(id, serviceNameById))
+      .filter(Boolean)
+      .join(', ') || '—';
+
+  const formats =
+    mapIds(p.formats, FORMAT_LABELS) ??
+    (p.formats?.length ? p.formats.join(', ') : '—');
+
+  const frequency =
+    mapId(p.frequency, FREQUENCY_LABELS) ?? (p.frequency?.trim() || '—');
+  const days = mapIds(p.days, DAY_LABELS) ?? (p.days?.length ? p.days.join(', ') : '—');
+
+  let times = mapIds(p.times, TIME_LABELS);
+  if (p.times?.includes('other') && p.timesOther?.trim()) {
+    times = p.times
+      .map(id =>
+        id === 'other' ? p.timesOther!.trim() : mapId(id, TIME_LABELS) ?? id,
+      )
+      .join(', ');
+  }
+  if (!times) {
+    times = '—';
+  } else if (p.timesOther?.trim() && !p.times?.includes('other')) {
+    times = `${times} (${p.timesOther.trim()})`;
+  }
+
+  return [
+    {label: 'Services', value: services},
+    {label: 'Formats', value: formats},
+    {label: 'Frequency', value: frequency},
+    {label: 'Days', value: days},
+    {label: 'Times', value: times},
+    {
+      label: 'Gender preference',
+      value: mapId(p.gender, GENDER_LABELS) ?? (p.gender?.trim() || '—'),
+    },
+    {
+      label: 'Style',
+      value: mapId(p.style, STYLE_LABELS) ?? (p.style?.trim() || '—'),
+    },
+    {
+      label: 'Ages',
+      value: mapIds(p.ages, AGE_LABELS) ?? (p.ages?.length ? p.ages.join(', ') : '—'),
+    },
+    {
+      label: 'Languages',
+      value:
+        mapIds(p.languages, LANGUAGE_LABELS) ??
+        (p.languages?.length ? p.languages.join(', ') : '—'),
+    },
+  ];
+}
