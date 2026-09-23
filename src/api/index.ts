@@ -83,6 +83,7 @@ export type {
   ProServiceRate,
   MatchPrefs,
   PersonalProfile,
+  ProfileCompletionPayload,
   PromoCode,
   RejectVerificationInput,
   SessionResponse,

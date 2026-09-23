@@ -16,7 +16,6 @@ import {Card} from '@/components/ui/Card';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
-import {NotificationPrefsPanel} from '@/components/support/NotificationPrefsPanel';
 import {
   formatSupportTimestamp,
   supportStatusLabels,
@@ -244,10 +243,6 @@ export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string
                 />
               ) : null}
             </dl>
-          </Section>
-
-          <Section title="Notification preferences">
-            <NotificationPrefsPanel prefs={ticket.notificationPrefs} />
           </Section>
         </div>
       </div>
