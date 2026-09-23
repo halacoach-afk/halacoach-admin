@@ -38,7 +38,6 @@ export function Sidebar({actor}: {actor: SessionUser}) {
           );
         })}
       </nav>
-      <p className="px-5 py-4 text-xs text-muted-foreground">Connected to live API</p>
     </aside>
   );
 }

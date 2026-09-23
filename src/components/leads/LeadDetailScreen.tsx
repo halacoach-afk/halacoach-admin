@@ -241,7 +241,9 @@ export function LeadDetailScreen({id}: {id: string}) {
   const statusTone = lifecycleTone(lead.leadStatus, lead.status);
   const initial = prefs.goal.trim().charAt(0).toUpperCase() || 'L';
   const clientName = lead.clientName?.trim() || '-';
-  const coachName = lead.assignedCoachName?.trim() || '-';
+  const hasAssignedCoach = Boolean(
+    lead.assignedCoachId != null || lead.assignedCoachName?.trim(),
+  );
 
   return (
     <>
@@ -307,17 +309,19 @@ export function LeadDetailScreen({id}: {id: string}) {
             email={lead.clientEmail || '-'}
             phone={lead.clientPhone || '-'}
           />
-          <PersonCard
-            title="Coach"
-            name={coachName}
-            nameHref={
-              lead.assignedCoachName && lead.assignedCoachId
-                ? `/professionals/${lead.assignedCoachId}`
-                : null
-            }
-            email={lead.assignedCoachEmail || '-'}
-            phone={lead.assignedCoachPhone || '-'}
-          />
+          {hasAssignedCoach ? (
+            <PersonCard
+              title="Coach"
+              name={lead.assignedCoachName?.trim() || '-'}
+              nameHref={
+                lead.assignedCoachId != null
+                  ? `/professionals/${lead.assignedCoachId}`
+                  : null
+              }
+              email={lead.assignedCoachEmail || '-'}
+              phone={lead.assignedCoachPhone || '-'}
+            />
+          ) : null}
         </div>
       </div>
     </>
