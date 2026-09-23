@@ -489,16 +489,6 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
                   key={String(item.at ?? i)}
                   className="rounded-lg bg-secondary px-3 py-2 text-sm">
                   <p className="font-medium">{formatWhen(item.at)}</p>
-                  {item.weight != null ? (
-                    <p className="text-xs text-muted-foreground">
-                      Weight: {String(item.weight)}
-                    </p>
-                  ) : null}
-                  {item.adherence != null ? (
-                    <p className="text-xs text-muted-foreground">
-                      Adherence: {String(item.adherence)}%
-                    </p>
-                  ) : null}
                   {item.note != null && String(item.note).trim() ? (
                     <p className="mt-1 text-xs text-muted-foreground">
                       {String(item.note)}
