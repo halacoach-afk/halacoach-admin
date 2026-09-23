@@ -1,19 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import {useCallback, useEffect, useMemo, useState, type ReactNode} from 'react';
-import {ExternalLink, Eye, FileText} from 'lucide-react';
+import {Fragment, useCallback, useEffect, useMemo, useState} from 'react';
+import {ChevronDown, ChevronRight} from 'lucide-react';
 import {
-  approveVerification,
   approveVerificationFile,
   fetchVerificationFileBlob,
   isApiError,
-  listServices,
   listVerificationQueue,
-  markVerificationFileUnderReview,
-  rejectVerification,
   rejectVerificationFile,
-  type CatalogService,
   type SessionUser,
   type VerificationDocTypeMeta,
   type VerificationFile,
@@ -21,17 +16,14 @@ import {
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
-import {Card} from '@/components/ui/Card';
-import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
-import {FilterBar} from '@/components/ui/DataTable';
+import {DataTable, FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {FileViewerModal} from '@/components/ui/FileViewerModal';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {can} from '@/lib/permissions';
-import {cn} from '@/lib/cn';
-import {completionPercent, verificationLabels} from '@/lib/professional-utils';
+import {verificationLabels} from '@/lib/professional-utils';
 
 const REJECT_REASON_OPTIONS = [
   'Document is blurry or unreadable',
@@ -49,21 +41,6 @@ function formatSubmitted(at: string) {
   return new Date(at).toLocaleString();
 }
 
-function formatRelative(at: string) {
-  const ms = Date.now() - new Date(at).getTime();
-  const mins = Math.max(0, Math.floor(ms / 60_000));
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 48) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-function docLabel(file: VerificationFile, catalog: VerificationDocTypeMeta[]) {
-  if (!file.docType) return 'Untyped document';
-  return catalog.find(item => item.id === file.docType)?.label ?? file.docType;
-}
-
 function statusTone(status?: string) {
   if (status === 'approved') return 'primary' as const;
   if (status === 'rejected') return 'danger' as const;
@@ -76,46 +53,35 @@ function statusLabel(status?: string) {
   return String(status ?? 'submitted').replace(/_/g, ' ');
 }
 
+function needsDocumentAction(file?: VerificationFile) {
+  if (!file) return false;
+  const status = file.displayStatus ?? file.status;
+  return status !== 'approved' && status !== 'expiring_soon';
+}
+
 function queueStatusTone(status?: string) {
   if (status === 'rejected') return 'danger' as const;
   if (status === 'pending') return 'warning' as const;
   return 'muted' as const;
 }
 
-function fileCounts(files: VerificationFile[]) {
-  let approved = 0;
-  let rejected = 0;
-  let pending = 0;
-  for (const file of files) {
-    const status = file.displayStatus ?? file.status;
-    if (status === 'approved' || status === 'expiring_soon') approved += 1;
-    else if (status === 'rejected') rejected += 1;
-    else pending += 1;
+function requiredProgressForItem(
+  item: VerificationQueueItem,
+  documentTypes: VerificationDocTypeMeta[],
+) {
+  const requiredTypes = documentTypes.filter(meta => meta.required);
+  const byType = new Map<string, VerificationFile>();
+  for (const file of item.verificationFiles ?? []) {
+    if (file.docType) byType.set(file.docType, file);
   }
-  return {approved, rejected, pending, total: files.length};
-}
-
-function Section({title, children, action}: {title: string; children: ReactNode; action?: ReactNode}) {
-  return (
-    <Card>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          {title}
-        </h2>
-        {action}
-      </div>
-      {children}
-    </Card>
-  );
-}
-
-function Field({label, value}: {label: string; value: ReactNode}) {
-  return (
-    <div>
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm text-foreground">{value}</dd>
-    </div>
-  );
+  const total = requiredTypes.length;
+  const approved = requiredTypes.filter(meta => {
+    const file = byType.get(meta.id);
+    const status = file?.displayStatus ?? file?.status;
+    return status === 'approved' || status === 'expiring_soon';
+  }).length;
+  const submitted = requiredTypes.filter(meta => byType.has(meta.id)).length;
+  return {total, approved, submitted};
 }
 
 function ReasonSelect({
@@ -141,104 +107,16 @@ function ReasonSelect({
   );
 }
 
-function DocumentRow({
-  title,
-  description,
-  file,
-  canWrite,
-  acting,
-  onView,
-  onUnderReview,
-  onApprove,
-  onReject,
-}: {
-  title: string;
-  description?: string;
-  file?: VerificationFile;
-  canWrite: boolean;
-  acting: boolean;
-  onView?: () => void;
-  onUnderReview?: () => void;
-  onApprove?: () => void;
-  onReject?: () => void;
-}) {
-  const display = file?.displayStatus ?? file?.status;
-  return (
-    <li className="rounded-xl border border-border bg-background px-4 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-2">
-            <FileText size={16} className="mt-0.5 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">{title}</p>
-              {description ? (
-                <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-              ) : null}
-              {file ? (
-                <button
-                  type="button"
-                  className="mt-2 inline-flex max-w-full items-center gap-1 truncate text-sm font-medium text-primary hover:underline"
-                  onClick={onView}>
-                  <Eye size={14} />
-                  <span className="truncate">{file.originalName}</span>
-                </button>
-              ) : (
-                <p className="mt-2 text-sm text-muted-foreground">Not submitted</p>
-              )}
-              {file?.expiresAt ? (
-                <p className="mt-1 text-xs text-muted-foreground">Expires {file.expiresAt}</p>
-              ) : null}
-              {file?.rejectedReason ? (
-                <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs text-destructive">
-                  {file.rejectedReason}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        </div>
-        <Badge tone={file ? statusTone(display) : 'muted'}>
-          {file ? statusLabel(display) : 'Not submitted'}
-        </Badge>
-      </div>
-
-      {canWrite && file ? (
-        <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={acting || file.status === 'under_review'}
-            onClick={onUnderReview}>
-            Under review
-          </Button>
-          <Button
-            size="sm"
-            disabled={acting || file.status === 'approved'}
-            onClick={onApprove}>
-            Approve
-          </Button>
-          <Button size="sm" variant="destructive" disabled={acting} onClick={onReject}>
-            Reject
-          </Button>
-        </div>
-      ) : null}
-    </li>
-  );
-}
-
 export function VerificationScreen({actor}: {actor: SessionUser}) {
   const canWrite = can(actor, 'verification:write');
   const [queue, setQueue] = useState<VerificationQueueItem[]>([]);
   const [documentTypes, setDocumentTypes] = useState<VerificationDocTypeMeta[]>([]);
-  const [services, setServices] = useState<CatalogService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [rejectReasonsByFile, setRejectReasonsByFile] = useState<Record<string, string>>({});
-  const [pendingApprove, setPendingApprove] = useState<VerificationQueueItem | null>(null);
-  const [pendingReject, setPendingReject] = useState<VerificationQueueItem | null>(null);
   const [pendingFileReject, setPendingFileReject] = useState<{
     item: VerificationQueueItem;
     file: VerificationFile;
@@ -261,16 +139,12 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     setLoading(true);
     setError(null);
     try {
-      const [queueRes, catalog] = await Promise.all([listVerificationQueue(), listServices()]);
+      const queueRes = await listVerificationQueue();
       setQueue(queueRes.items);
       setDocumentTypes(queueRes.documentTypes);
-      setServices(catalog);
-      setSelectedId(current => {
-        if (current && queueRes.items.some(item => item.id === current)) {
-          return current;
-        }
-        return queueRes.items[0]?.id ?? null;
-      });
+      setSelectedId(current =>
+        current && queueRes.items.some(item => item.id === current) ? current : null,
+      );
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load verification queue.');
     } finally {
@@ -323,90 +197,13 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     return map;
   }, [selected]);
 
-  const requiredTypes = useMemo(
-    () => documentTypes.filter(item => item.required),
-    [documentTypes],
-  );
-  const optionalTypes = useMemo(
-    () => documentTypes.filter(item => !item.required),
-    [documentTypes],
-  );
   const untypedFiles = useMemo(
     () => (selected?.verificationFiles ?? []).filter(file => !file.docType),
     [selected],
   );
 
-  const requiredProgress = useMemo(() => {
-    const total = requiredTypes.length;
-    const approved = requiredTypes.filter(meta => {
-      const file = fileByType.get(meta.id);
-      const status = file?.displayStatus ?? file?.status;
-      return status === 'approved' || status === 'expiring_soon';
-    }).length;
-    const submitted = requiredTypes.filter(meta => fileByType.has(meta.id)).length;
-    return {total, approved, submitted};
-  }, [requiredTypes, fileByType]);
-
-  const serviceNames = selected
-    ? selected.serviceIds.map(id => services.find(item => item.id === id)?.name ?? `#${id}`)
-    : [];
-
-  const pendingRejectFiles = useMemo(() => {
-    if (!pendingReject) return [];
-    const order = new Map(documentTypes.map((item, index) => [item.id, index]));
-    return [...(pendingReject.verificationFiles ?? [])].sort((a, b) => {
-      const ai = a.docType != null ? (order.get(a.docType) ?? 999) : 998;
-      const bi = b.docType != null ? (order.get(b.docType) ?? 999) : 998;
-      return ai - bi;
-    });
-  }, [documentTypes, pendingReject]);
-
-  const rejectAllReady =
-    pendingRejectFiles.length > 0 &&
-    pendingRejectFiles.every(file => Boolean(rejectReasonsByFile[file.id]?.trim()));
-
-  const onApprove = async () => {
-    if (!pendingApprove) return;
-    setActing(true);
-    setError(null);
-    try {
-      await approveVerification(pendingApprove.id);
-      setPendingApprove(null);
-      await load();
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not approve verification.');
-    } finally {
-      setActing(false);
-    }
-  };
-
-  const onReject = async () => {
-    if (!pendingReject) return;
-    if (!rejectAllReady) {
-      setError('Please select a rejection reason for each document.');
-      return;
-    }
-    setActing(true);
-    setError(null);
-    try {
-      await rejectVerification(pendingReject.id, {
-        reasons: pendingRejectFiles.map(file => ({
-          fileId: file.id,
-          reason: rejectReasonsByFile[file.id],
-        })),
-      });
-      setPendingReject(null);
-      setRejectReasonsByFile({});
-      await load();
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not reject verification.');
-    } finally {
-      setActing(false);
-    }
-  };
-
   const onFileAction = async (
-    action: 'approve' | 'under_review' | 'reject',
+    action: 'approve' | 'reject',
     item: VerificationQueueItem,
     file: VerificationFile,
     reason?: string,
@@ -420,8 +217,6 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     try {
       if (action === 'approve') {
         await approveVerificationFile(item.id, file.id);
-      } else if (action === 'under_review') {
-        await markVerificationFileUnderReview(item.id, file.id);
       } else {
         await rejectVerificationFile(item.id, file.id, {reason});
       }
@@ -447,7 +242,6 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     <>
       <PageHeader
         title="Verification"
-        description="Review coach documents one case at a time. Profiles go live when all required documents are approved."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={acting}>
             Refresh
@@ -456,27 +250,6 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
       />
 
       {error ? <ErrorState body={error} onRetry={() => void load()} /> : null}
-
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <Card className="!p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            In queue
-          </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{counts.all}</p>
-        </Card>
-        <Card className="!p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Pending review
-          </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{counts.pending}</p>
-        </Card>
-        <Card className="!p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Rejected
-          </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-destructive">{counts.rejected}</p>
-        </Card>
-      </div>
 
       <FilterBar>
         {(
@@ -508,325 +281,246 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
           body="No coaches are waiting for document review right now."
         />
       ) : visible.length === 0 ? (
-        <EmptyState title="No coaches match" body="Try another filter or clear the search box." />
+        <EmptyState
+          title="No coaches match"
+          body="Try another filter or clear the search box."
+        />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)] xl:items-start">
-          <Card className="!p-0 overflow-hidden xl:sticky xl:top-4 xl:max-h-[calc(100vh-7rem)]">
-            <div className="border-b border-border px-4 py-3">
-              <p className="text-sm font-semibold text-foreground">Queue</p>
-              <p className="text-xs text-muted-foreground">
-                {visible.length} coach{visible.length === 1 ? '' : 'es'}
-              </p>
-            </div>
-            <ul className="max-h-[24rem] overflow-y-auto xl:max-h-[calc(100vh-11rem)]">
-              {visible.map(item => {
-                const docs = fileCounts(item.verificationFiles ?? []);
-                const status = item.verificationStatus ?? 'pending';
-                const active = item.id === selectedId;
-                return (
-                  <li key={item.id} className="border-b border-border last:border-0">
+        <DataTable
+          tableClassName="min-w-[900px]"
+          columns={[
+            'Coach',
+            'Email',
+            'Phone',
+            'Status',
+            'Required',
+            'Submitted',
+            '',
+          ]}>
+          {visible.map(item => {
+            const status = item.verificationStatus ?? 'pending';
+            const required = requiredProgressForItem(item, documentTypes);
+            const expanded = selectedId === item.id;
+            return (
+              <Fragment key={item.id}>
+                <tr className="border-b border-border last:border-0">
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/professionals/${item.id}`}
+                      className="font-medium text-primary hover:underline">
+                      {item.name}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-foreground">{item.email || '—'}</td>
+                  <td className="px-4 py-3 text-sm text-foreground">
+                    {item.phone || '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge tone={queueStatusTone(status)}>
+                      {verificationLabels[status as keyof typeof verificationLabels] ??
+                        statusLabel(status)}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-sm tabular-nums text-foreground">
+                    {required.approved}/{required.total} approved
+                    <div className="text-xs text-muted-foreground">
+                      {required.submitted}/{required.total} submitted
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-foreground">
+                    {formatSubmitted(item.submittedAt)}
+                  </td>
+                  <td className="px-4 py-3 text-end">
                     <button
                       type="button"
-                      onClick={() => setSelectedId(item.id)}
-                      className={cn(
-                        'w-full px-4 py-3 text-start transition-colors',
-                        active ? 'bg-primary-soft/60' : 'hover:bg-muted/50',
-                      )}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-foreground">
-                            {item.name}
-                          </p>
-                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                            {item.specialty || 'Coach'} | {formatRelative(item.submittedAt)}
-                          </p>
-                        </div>
-                        <Badge tone={queueStatusTone(status)}>
-                          {verificationLabels[status as keyof typeof verificationLabels] ??
-                            statusLabel(status)}
-                        </Badge>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <Badge tone="muted">{docs.total} docs</Badge>
-                        {docs.pending > 0 ? (
-                          <Badge tone="warning">{docs.pending} open</Badge>
-                        ) : null}
-                        {docs.rejected > 0 ? (
-                          <Badge tone="danger">{docs.rejected} rejected</Badge>
-                        ) : null}
-                        {docs.approved > 0 ? (
-                          <Badge tone="primary">{docs.approved} ok</Badge>
-                        ) : null}
-                      </div>
+                      className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                      aria-expanded={expanded}
+                      onClick={() =>
+                        setSelectedId(current => (current === item.id ? null : item.id))
+                      }>
+                      Review
+                      {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
-
-          {selected ? (
-            <div className="min-w-0 space-y-4">
-              <Card>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-xl font-bold text-foreground">{selected.name}</h2>
-                      <Badge tone={queueStatusTone(selected.verificationStatus)}>
-                        {verificationLabels[
-                          (selected.verificationStatus ??
-                            'pending') as keyof typeof verificationLabels
-                        ] ?? statusLabel(selected.verificationStatus)}
-                      </Badge>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {selected.specialty || 'Professional coach'}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/professionals/${selected.id}`}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-                    Full profile
-                    <ExternalLink size={14} />
-                  </Link>
-                </div>
-
-                <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <Field label="Email" value={selected.email} />
-                  <Field label="Phone" value={selected.phone || '-'} />
-                  <Field label="Location" value={selected.location || '-'} />
-                  <Field label="Submitted" value={formatSubmitted(selected.submittedAt)} />
-                </dl>
-
-                <div className="mt-4 rounded-xl bg-muted/50 px-4 py-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-foreground">
-                      Required docs | {requiredProgress.approved}/{requiredProgress.total}{' '}
-                      approved
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {requiredProgress.submitted}/{requiredProgress.total} submitted |{' '}
-                      {completionPercent(selected.profileCompletion)}% profile
-                    </p>
-                  </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary transition-[width]"
-                      style={{
-                        width: `${
-                          requiredProgress.total > 0
-                            ? Math.round(
-                                (requiredProgress.approved / requiredProgress.total) * 100,
-                              )
-                            : 0
-                        }%`,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {canWrite ? (
-                  <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-                    <Button
-                      onClick={() => setPendingApprove(selected)}
-                      disabled={acting}>
-                      Approve all
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => {
-                        setRejectReasonsByFile({});
-                        setPendingReject(selected);
-                      }}
-                      disabled={acting || (selected.verificationFiles?.length ?? 0) === 0}>
-                      Reject all
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
-                    Your role can review the queue but cannot approve or reject.
-                  </p>
-                )}
-              </Card>
-
-              <Section title="Profile context">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <p className="mb-2 text-xs font-medium text-muted-foreground">Services</p>
-                    <div className="flex flex-wrap gap-2">
-                      {serviceNames.length > 0 ? (
-                        serviceNames.map(name => (
-                          <Badge key={name} tone="muted">
-                            {name}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">None listed</span>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="mb-2 text-xs font-medium text-muted-foreground">
-                      Listed certifications
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {selected.profileCertifications.length > 0 ? (
-                        selected.profileCertifications.map(item => (
-                          <Badge key={item} tone="sky">
-                            {item}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">None listed</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Section>
-
-              <Section
-                title="Required documents"
-                action={
-                  <span className="text-xs text-muted-foreground">
-                    {requiredProgress.submitted}/{requiredProgress.total} submitted
-                  </span>
-                }>
-                <ul className="space-y-3">
-                  {requiredTypes.map(meta => {
-                    const file = fileByType.get(meta.id);
-                    return (
-                      <DocumentRow
-                        key={meta.id}
-                        title={meta.label}
-                        description={meta.description}
-                        file={file}
-                        canWrite={canWrite}
-                        acting={acting}
-                      onView={
-                        file
-                          ? () =>
-                              setViewer({
-                                professionalId: selected.id,
-                                fileId: file.id,
-                                name: file.originalName,
-                              })
-                          : undefined
-                      }
-                        onUnderReview={
-                          file
-                            ? () => void onFileAction('under_review', selected, file)
-                            : undefined
+                  </td>
+                </tr>
+                {expanded && selected ? (
+                  <tr className="border-b border-border bg-muted/30 last:border-0">
+                    <td colSpan={7} className="px-4 py-4">
+                      {(() => {
+                        const actionDocs = documentTypes.filter(meta =>
+                          needsDocumentAction(fileByType.get(meta.id)),
+                        );
+                        const actionUntyped = untypedFiles.filter(file =>
+                          needsDocumentAction(file),
+                        );
+                        if (actionDocs.length === 0 && actionUntyped.length === 0) {
+                          return (
+                            <p className="px-1 py-2 text-sm text-muted-foreground">
+                              No documents need action right now.
+                            </p>
+                          );
                         }
-                        onApprove={
-                          file ? () => void onFileAction('approve', selected, file) : undefined
-                        }
-                        onReject={
-                          file
-                            ? () => {
-                                setRejectReason('');
-                                setPendingFileReject({item: selected, file});
-                              }
-                            : undefined
-                        }
-                      />
-                    );
-                  })}
-                </ul>
-              </Section>
-
-              <Section
-                title="Optional documents"
-                action={
-                  <span className="text-xs text-muted-foreground">
-                    {optionalTypes.filter(meta => fileByType.has(meta.id)).length}/
-                    {optionalTypes.length} submitted
-                  </span>
-                }>
-                <ul className="space-y-3">
-                  {optionalTypes.map(meta => {
-                    const file = fileByType.get(meta.id);
-                    return (
-                      <DocumentRow
-                        key={meta.id}
-                        title={meta.label}
-                        description={meta.description}
-                        file={file}
-                        canWrite={canWrite}
-                        acting={acting}
-                      onView={
-                        file
-                          ? () =>
-                              setViewer({
-                                professionalId: selected.id,
-                                fileId: file.id,
-                                name: file.originalName,
-                              })
-                          : undefined
-                      }
-                        onUnderReview={
-                          file
-                            ? () => void onFileAction('under_review', selected, file)
-                            : undefined
-                        }
-                        onApprove={
-                          file ? () => void onFileAction('approve', selected, file) : undefined
-                        }
-                        onReject={
-                          file
-                            ? () => {
-                                setRejectReason('');
-                                setPendingFileReject({item: selected, file});
-                              }
-                            : undefined
-                        }
-                      />
-                    );
-                  })}
-                  {untypedFiles.map(file => (
-                    <DocumentRow
-                      key={file.id}
-                      title="Untyped document"
-                      file={file}
-                      canWrite={canWrite}
-                      acting={acting}
-                      onView={() =>
-                        setViewer({
-                          professionalId: selected.id,
-                          fileId: file.id,
-                          name: file.originalName,
-                        })
-                      }
-                      onUnderReview={() => void onFileAction('under_review', selected, file)}
-                      onApprove={() => void onFileAction('approve', selected, file)}
-                      onReject={() => {
-                        setRejectReason('');
-                        setPendingFileReject({item: selected, file});
-                      }}
-                    />
-                  ))}
-                </ul>
-              </Section>
-            </div>
-          ) : (
-            <Card className="flex min-h-[16rem] items-center justify-center">
-              <p className="text-sm text-muted-foreground">Select a coach from the queue.</p>
-            </Card>
-          )}
-        </div>
+                        return (
+                      <DataTable
+                        tableClassName="min-w-[700px]"
+                        columns={['Document', 'Expires', 'Type', 'Status', '']}>
+                        {actionDocs.map(meta => {
+                          const file = fileByType.get(meta.id);
+                          const display = file?.displayStatus ?? file?.status;
+                          return (
+                            <tr
+                              key={meta.id}
+                              className="border-b border-border last:border-0">
+                              <td className="px-4 py-3">
+                                <div className="font-medium text-foreground">{meta.label}</div>
+                                {meta.description ? (
+                                  <div className="text-xs text-muted-foreground">
+                                    {meta.description}
+                                  </div>
+                                ) : null}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-muted-foreground">
+                                {file?.expiresAt || '—'}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge tone={meta.required ? 'warning' : 'muted'}>
+                                  {meta.required ? 'Required' : 'Optional'}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge tone={file ? statusTone(display) : 'muted'}>
+                                  {file ? statusLabel(display) : 'Not submitted'}
+                                </Badge>
+                                {file?.rejectedReason ? (
+                                  <div className="mt-1 text-xs text-destructive">
+                                    {file.rejectedReason}
+                                  </div>
+                                ) : null}
+                              </td>
+                              <td className="px-4 py-3 text-end">
+                                {file ? (
+                                  <div className="inline-flex flex-wrap justify-end gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() =>
+                                        setViewer({
+                                          professionalId: selected.id,
+                                          fileId: file.id,
+                                          name: file.originalName,
+                                        })
+                                      }>
+                                      View
+                                    </Button>
+                                    {canWrite ? (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          disabled={acting || file.status === 'approved'}
+                                          onClick={() =>
+                                            void onFileAction('approve', selected, file)
+                                          }>
+                                          Approve
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="destructive"
+                                          disabled={acting}
+                                          onClick={() => {
+                                            setRejectReason('');
+                                            setPendingFileReject({item: selected, file});
+                                          }}>
+                                          Reject
+                                        </Button>
+                                      </>
+                                    ) : null}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {actionUntyped.map(file => {
+                          const display = file.displayStatus ?? file.status;
+                          return (
+                            <tr
+                              key={file.id}
+                              className="border-b border-border last:border-0">
+                              <td className="px-4 py-3">
+                                <div className="font-medium text-foreground">
+                                  Untyped document
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-muted-foreground">
+                                {file.expiresAt || '—'}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge tone="muted">Optional</Badge>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge tone={statusTone(display)}>
+                                  {statusLabel(display)}
+                                </Badge>
+                                {file.rejectedReason ? (
+                                  <div className="mt-1 text-xs text-destructive">
+                                    {file.rejectedReason}
+                                  </div>
+                                ) : null}
+                              </td>
+                              <td className="px-4 py-3 text-end">
+                                <div className="inline-flex flex-wrap justify-end gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      setViewer({
+                                        professionalId: selected.id,
+                                        fileId: file.id,
+                                        name: file.originalName,
+                                      })
+                                    }>
+                                    View
+                                  </Button>
+                                  {canWrite ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        disabled={acting || file.status === 'approved'}
+                                        onClick={() =>
+                                          void onFileAction('approve', selected, file)
+                                        }>
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        disabled={acting}
+                                        onClick={() => {
+                                          setRejectReason('');
+                                          setPendingFileReject({item: selected, file});
+                                        }}>
+                                        Reject
+                                      </Button>
+                                    </>
+                                  ) : null}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </DataTable>
+                        );
+                      })()}
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
+            );
+          })}
+        </DataTable>
       )}
-
-      <p className="mt-4 text-xs text-muted-foreground">
-        Signed in as {actor.name} ({actor.role}).
-      </p>
-
-      <ConfirmDialog
-        open={Boolean(pendingApprove)}
-        title="Approve all documents?"
-        body={`${pendingApprove?.name ?? 'This coach'} will be marked verified and their profile will be activated in the marketplace.`}
-        confirmLabel="Approve all"
-        onClose={() => setPendingApprove(null)}
-        onConfirm={() => void onApprove()}
-      />
 
       <FileViewerModal
         open={viewer !== null}
@@ -834,56 +528,6 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
         onClose={() => setViewer(null)}
         load={loadViewerFile}
       />
-
-      {pendingReject ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-card p-6 shadow-lg">
-            <h2 className="text-lg font-semibold text-foreground">Reject all documents?</h2>
-            <div className="mt-4 space-y-3">
-              {pendingRejectFiles.map(file => (
-                <label key={file.id} className="block rounded-xl border border-border p-3 text-sm">
-                  <span className="block font-medium text-foreground">{file.originalName}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {docLabel(file, documentTypes)}
-                  </span>
-                  <ReasonSelect
-                    value={rejectReasonsByFile[file.id] ?? ''}
-                    onChange={value =>
-                      setRejectReasonsByFile(prev => ({
-                        ...prev,
-                        [file.id]: value,
-                      }))
-                    }
-                  />
-                </label>
-              ))}
-              {pendingRejectFiles.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No documents submitted.</p>
-              ) : null}
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setPendingReject(null);
-                  setRejectReasonsByFile({});
-                }}
-                disabled={acting}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => void onReject()}
-                disabled={acting || !rejectAllReady}>
-                Reject all
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {pendingFileReject ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4">

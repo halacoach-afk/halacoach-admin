@@ -151,7 +151,7 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
     <>
       <PageHeader
         title="Dashboard"
-        description={`Signed in as ${actor.name}. Counts refresh when you return here - approve Leila on Verification and the pending count drops automatically.`}
+        description="Counts refresh when you return here — approve coaches on Verification and the pending count drops automatically."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
