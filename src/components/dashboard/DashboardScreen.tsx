@@ -6,7 +6,6 @@ import {useEffect, useMemo, useState} from 'react';
 import {ArrowUpRight} from 'lucide-react';
 import {
   getDashboardOverview,
-  getHealth,
   isApiError,
   type DashboardOverview,
   type SessionUser,
@@ -17,7 +16,6 @@ import {Card} from '@/components/ui/Card';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
-import {formatAed} from '@/lib/credit-utils';
 import {
   dashboardActivityLabels,
   formatDashboardTime,
@@ -71,13 +69,6 @@ function buildStatCards(overview: DashboardOverview): StatCard[] {
       permission: 'professionals:read',
     },
     {
-      label: 'Credits sold',
-      value: formatAed(counts.creditsSoldAed),
-      hint: 'Completed checkout total',
-      href: '/credits',
-      permission: 'credits:read',
-    },
-    {
       label: 'Open support',
       value: String(counts.openSupportTickets),
       hint: 'New or replied tickets',
@@ -99,7 +90,6 @@ const activityPermission: Record<DashboardOverview['recentActivity'][number]['ki
 export function DashboardScreen({actor}: {actor: SessionUser}) {
   const pathname = usePathname();
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
-  const [apiSource, setApiSource] = useState<'api' | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,9 +97,8 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
     setLoading(true);
     setError(null);
     try {
-      const [dashboard, health] = await Promise.all([getDashboardOverview(), getHealth()]);
+      const dashboard = await getDashboardOverview();
       setOverview(dashboard);
-      setApiSource(health.source);
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load dashboard.');
     } finally {
@@ -151,7 +140,6 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
     <>
       <PageHeader
         title="Dashboard"
-        description="Counts refresh when you return here — approve coaches on Verification and the pending count drops automatically."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
@@ -164,13 +152,6 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
           <ErrorState body={error} onRetry={() => void load()} />
         </div>
       ) : null}
-
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        <Badge tone="primary">API {apiSource ?? '...'}</Badge>
-        <span className="text-sm text-muted-foreground">
-          Live counts from the API across verification, leads, credits, and support.
-        </span>
-      </div>
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {statCards.map(card => (
