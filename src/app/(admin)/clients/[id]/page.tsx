@@ -12,5 +12,5 @@ export default async function ClientDetailPage({params}: Props) {
     redirect('/login');
   }
   const {id} = await params;
-  return <ClientDetailScreen actor={user} id={id} />;
+  return <ClientDetailScreen id={id} />;
 }

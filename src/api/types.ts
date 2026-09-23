@@ -416,7 +416,11 @@ export type Professional = {
 
 export type ProfileCompletionPayload = {
   percent: number;
-  items: Array<{ id: string; done: boolean }>;
+  items: Array<{
+    id: string;
+    done: boolean;
+    fields?: Array<{id: string; done: boolean; optional?: boolean}>;
+  }>;
 };
 
 export type ProfessionalSummary = {
@@ -514,6 +518,9 @@ export type Client = {
   name: string;
   email: string;
   phone: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  birthDate?: string | null;
   onboarded: boolean;
   otpVerified: boolean;
   otpVerifiedAt: string | null;
@@ -526,6 +533,7 @@ export type Client = {
   onlinePlans?: OnlinePlanSummary[];
   note?: string;
   notificationPrefs: NotificationPrefs;
+  profileCompletion?: number | ProfileCompletionPayload;
 };
 
 export type ClientSummary = {
@@ -533,11 +541,15 @@ export type ClientSummary = {
   name: string;
   email: string;
   phone: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  birthDate: string | null;
   location: string;
   services: string[];
   onboarded: boolean;
   otpVerified: boolean;
   suspended: boolean;
+  profileCompletion: number | ProfileCompletionPayload;
   createdAt: string;
   lastActiveAt: string;
 };
