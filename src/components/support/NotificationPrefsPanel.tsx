@@ -3,7 +3,6 @@ import {
   Mail,
   MessageCircle,
   MessageSquare,
-  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import type {NotificationPrefs} from '@/api/types';
@@ -15,7 +14,6 @@ const PREF_ICONS: Record<keyof NotificationPrefs, LucideIcon> = {
   email: Mail,
   sms: MessageSquare,
   whatsapp: MessageCircle,
-  marketing: Sparkles,
 };
 
 export function NotificationPrefsPanel({prefs}: {prefs: NotificationPrefs}) {

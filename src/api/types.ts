@@ -706,7 +706,6 @@ export type NotificationPrefs = {
   email: boolean;
   sms: boolean;
   whatsapp: boolean;
-  marketing: boolean;
 };
 
 export type SupportTicketStatus = 'new' | 'in_progress' | 'closed';
