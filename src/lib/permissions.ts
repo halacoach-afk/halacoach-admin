@@ -19,6 +19,8 @@ export const ALL_PERMISSIONS: Permission[] = [
   'services:write',
   'support:read',
   'support:write',
+  'settings:read',
+  'settings:write',
   'messages:read',
   'admins:read',
   'admins:write',
@@ -73,6 +75,7 @@ export function permissionForPath(pathname: string): Permission {
     subscriptions: 'credits:read',
     services: 'services:read',
     support: 'support:read',
+    settings: 'settings:read',
     messages: 'messages:read',
     admins: 'admins:read',
   };

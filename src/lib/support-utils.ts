@@ -10,8 +10,8 @@ import type {
 import {normalizeNotificationPrefs} from '@/lib/notification-utils';
 
 export const supportStatusLabels: Record<SupportTicketStatus, string> = {
-  new: 'New',
-  replied: 'Replied',
+  new: 'Open',
+  in_progress: 'In progress',
   closed: 'Closed',
 };
 
@@ -20,13 +20,14 @@ export const supportStatusTone: Record<
   'coral' | 'primary' | 'muted' | 'warning'
 > = {
   new: 'coral',
-  replied: 'primary',
+  in_progress: 'primary',
   closed: 'muted',
 };
 
 export const supportUserTypeLabels: Record<SupportUserType, string> = {
   client: 'Client',
   professional: 'Professional',
+  guest: 'Guest',
 };
 
 function findUser(
@@ -45,6 +46,9 @@ function findUser(
           profileHref: `/clients/${client.id}`,
         }
       : null;
+  }
+  if (ticket.userType === 'guest') {
+    return null;
   }
   const professional = professionals.find(item => item.id === ticket.userId);
   return professional
@@ -70,7 +74,9 @@ export function toSupportSummary(
     userId: ticket.userId,
     userName: user?.name ?? 'Unknown user',
     userEmail: user?.email ?? '-',
+    userPhone: user?.phone ?? '-',
     subject: ticket.subject,
+    body: ticket.body,
     status: ticket.status,
     createdAt: ticket.createdAt,
     repliedAt: ticket.repliedAt,

@@ -71,7 +71,7 @@ function buildStatCards(overview: DashboardOverview): StatCard[] {
     {
       label: 'Open support',
       value: String(counts.openSupportTickets),
-      hint: 'New or replied tickets',
+      hint: 'Open or in-progress tickets',
       href: '/support',
       permission: 'support:read',
     },

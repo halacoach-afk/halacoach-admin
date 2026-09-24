@@ -5,7 +5,6 @@ export const defaultNotificationPrefs: NotificationPrefs = {
   email: true,
   sms: true,
   whatsapp: true,
-  marketing: true,
 };
 
 export const notificationPrefLabels: {key: keyof NotificationPrefs; label: string; hint: string}[] = [
@@ -13,7 +12,6 @@ export const notificationPrefLabels: {key: keyof NotificationPrefs; label: strin
   {key: 'email', label: 'Email notifications', hint: 'New matches, replies and reminders'},
   {key: 'sms', label: 'SMS notifications', hint: 'New matches, replies and reminders'},
   {key: 'whatsapp', label: 'WhatsApp notifications', hint: 'New matches, replies and reminders'},
-  {key: 'marketing', label: 'Product updates', hint: 'Tips, offers, and new features'},
 ];
 
 export function normalizeNotificationPrefs(prefs?: Partial<NotificationPrefs>): NotificationPrefs {
@@ -22,6 +20,5 @@ export function normalizeNotificationPrefs(prefs?: Partial<NotificationPrefs>): 
     email: prefs?.email ?? defaultNotificationPrefs.email,
     sms: prefs?.sms ?? defaultNotificationPrefs.sms,
     whatsapp: prefs?.whatsapp ?? defaultNotificationPrefs.whatsapp,
-    marketing: prefs?.marketing ?? defaultNotificationPrefs.marketing,
   };
 }

@@ -241,6 +241,10 @@ Overview: packs, promos, VAT rate, ledger `transactions`, wallet stats.
 
 ## Support (M11)
 
+### `POST /api/v1/support` (public / optional auth)
+
+Creates a ticket. `userType` is derived from auth: logged-in `client` or `pro`, otherwise **`guest`**. Body `userType` is ignored.
+
 ### `GET /admin/support`
 
 Contact-us inbox summaries.
@@ -251,7 +255,21 @@ Ticket + user contact + `notificationPrefs`.
 
 ### `PATCH /admin/support/:id`
 
-**Body:** `{ status?, replyNote?, actorName? }` — `new` \| `replied` \| `closed`.
+**Body:** `{ status }` — `open` \| `in_progress` \| `closed`.
+
+---
+
+## Platform settings
+
+### `GET /admin/platform-settings/support-contact`
+
+Requires `settings:read`. Returns `{ supportEmail, supportPhone }`.
+
+### `PATCH /admin/platform-settings/support-contact`
+
+Requires `settings:write`. **Body:** `{ supportEmail, supportPhone }`.
+
+Public (app/web, no auth): `GET /api/v1/platform-settings/support-contact` — same payload.
 
 ---
 
@@ -279,7 +297,7 @@ Key enums used across modules:
 | Quote request | `pending`, `quoted`, `closed` |
 | Lead status | `open`, `closed` |
 | Credit txn | `purchase`, `spend`, `adjustment` |
-| Support ticket | `new`, `replied`, `closed` |
+| Support ticket | `open`, `in_progress`, `closed` |
 | Payment method | `card`, `applepay` |
 
 TypeScript source of truth: `src/api/types.ts`.
@@ -292,6 +310,7 @@ TypeScript source of truth: `src/api/types.ts`.
 |---|---|---|
 | M0 Foundation | — | shell, shared UI |
 | M1 Auth | `/v1/auth`, `/v1/admins` | `/login`, `/admins` |
+| M2 Settings | `/v1/platform-settings` | `/settings` |
 | M3 Services | `/admin/services` | `/services` |
 | M4 Professionals | `/admin/professionals` | `/professionals` |
 | M5 Verification | `/admin/verification` | `/verification` |

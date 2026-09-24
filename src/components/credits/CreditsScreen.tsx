@@ -29,11 +29,11 @@ import {DataTable, FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
-import {formatAed, formatPromoBenefit, VAT_RATE} from '@/lib/credit-utils';
+import {creditTxnLabel, formatAed, formatPromoBenefit, VAT_RATE} from '@/lib/credit-utils';
 import {cn} from '@/lib/cn';
 import {can} from '@/lib/permissions';
 
-type TxnFilter = 'all' | 'purchase' | 'spend' | 'adjustment';
+type TxnFilter = 'all' | 'credited' | 'spent';
 
 type CreditPackageDraft = {
   name: string;
@@ -45,7 +45,7 @@ type CreditPackageDraft = {
 
 type PromoDraft = {
   code: string;
-  benefitType: PromoBenefitType;
+  benefitType: PromoBenefitType | '';
   benefitValue: string;
 };
 
@@ -62,7 +62,7 @@ const emptyCreditPackageForm: CreditPackageDraft = {
   price: '',
   badge: '',
 };
-const emptyPromoForm: PromoDraft = {code: '', benefitType: 'percent_off', benefitValue: '10'};
+const emptyPromoForm: PromoDraft = {code: '', benefitType: '', benefitValue: ''};
 
 function promoDraftFromPromo(promo: PromoCode): PromoDraft {
   const benefitType = promo.benefitType ?? 'percent_off';
@@ -86,40 +86,46 @@ function parsePromoDraft(
   if (!code) {
     return {error: 'Promo code cannot be empty.'};
   }
+  if (!draft.benefitType) {
+    return {error: 'Select a benefit type.'};
+  }
+  const benefitType = draft.benefitType;
   const raw = Number(draft.benefitValue);
-  if (!Number.isFinite(raw)) {
+  if (!Number.isFinite(raw) || draft.benefitValue.trim() === '') {
     return {error: 'Enter a valid benefit value.'};
   }
-  if (draft.benefitType === 'percent_off') {
-    if (raw < 1 || raw > 50) {
-      return {error: 'Discount must be between 1% and 50%.'};
+  if (benefitType === 'percent_off') {
+    if (raw <= 0 || raw > 100) {
+      return {error: 'Discount must be greater than 0% and at most 100%.'};
     }
-    return {code, benefitType: draft.benefitType, benefitValue: raw / 100};
+    return {code, benefitType, benefitValue: raw / 100};
   }
-  if (draft.benefitType === 'fixed_off') {
+  if (benefitType === 'fixed_off') {
     if (raw <= 0) {
       return {error: 'Fixed discount must be greater than zero.'};
     }
-    return {code, benefitType: draft.benefitType, benefitValue: raw};
+    return {code, benefitType, benefitValue: raw};
   }
   if (!Number.isInteger(raw) || raw < 1) {
     return {error: 'Bonus credits must be at least 1.'};
   }
-  return {code, benefitType: draft.benefitType, benefitValue: raw};
+  return {code, benefitType, benefitValue: raw};
 }
 
 function isPromoDraftValid(draft: PromoDraft): boolean {
   return !('error' in parsePromoDraft(draft));
 }
 
-function promoBenefitInputProps(benefitType: PromoBenefitType) {
+function promoBenefitInputProps(benefitType: PromoBenefitType | '') {
   switch (benefitType) {
     case 'percent_off':
-      return {min: 1, max: 50, placeholder: '10'};
+      return {min: 0.01, max: 100, placeholder: '15'};
     case 'fixed_off':
-      return {min: 1, placeholder: '50'};
+      return {min: 1, placeholder: '15'};
     case 'bonus_credits':
-      return {min: 1, placeholder: '5'};
+      return {min: 1, placeholder: '15'};
+    default:
+      return {min: 1, placeholder: '15'};
   }
 }
 
@@ -286,7 +292,12 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     if (txnFilter === 'all') {
       return overview.transactions;
     }
-    return overview.transactions.filter(item => item.type === txnFilter);
+    if (txnFilter === 'credited') {
+      // Purchases, membership grants, and other credit-adding rows
+      return overview.transactions.filter(item => item.credits > 0);
+    }
+    // Spending / unlocks / other credit-removing rows
+    return overview.transactions.filter(item => item.credits < 0);
   }, [overview, txnFilter]);
 
   const oneTimePackages = useMemo(
@@ -895,12 +906,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                             [promo.id]: {
                               ...draft,
                               benefitType: e.target.value as PromoBenefitType,
-                              benefitValue:
-                                e.target.value === 'percent_off'
-                                  ? '10'
-                                  : e.target.value === 'fixed_off'
-                                    ? '50'
-                                    : '5',
+                              benefitValue: '',
                             },
                           }))
                         }>
@@ -987,15 +993,13 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                     onChange={e =>
                       setPromoForm(form => ({
                         ...form,
-                        benefitType: e.target.value as PromoBenefitType,
-                        benefitValue:
-                          e.target.value === 'percent_off'
-                            ? '10'
-                            : e.target.value === 'fixed_off'
-                              ? '50'
-                              : '5',
+                        benefitType: e.target.value as PromoBenefitType | '',
+                        benefitValue: '',
                       }))
                     }>
+                    <option value="" disabled>
+                      Please select
+                    </option>
                     {PROMO_BENEFIT_OPTIONS.map(option => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -1057,9 +1061,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         {(
           [
             ['all', 'All'],
-            ['purchase', 'Purchases'],
-            ['spend', 'Unlocks'],
-            ['adjustment', 'Adjustments'],
+            ['credited', 'Purchasings'],
+            ['spent', 'Spendings'],
           ] as const
         ).map(([key, label]) => (
           <Button
@@ -1087,11 +1090,10 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                 </Badge>
               </td>
               <td className="px-4 py-3 font-medium">
-                {txn.type === 'spend' ? '-' : '+'}
-                {txn.credits}
+                {txn.credits > 0 ? `+${txn.credits}` : String(txn.credits)}
               </td>
               <td className="px-4 py-3 text-sm text-muted-foreground">
-                {txn.label}
+                {creditTxnLabel(txn.label)}
                 {txn.orderId ? ` | ${txn.orderId}` : ''}
               </td>
               <td className="px-4 py-3 text-sm">
