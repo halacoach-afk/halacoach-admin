@@ -230,7 +230,7 @@ export type CreditLedgerEntry = {
   id: string;
   professionalId: string;
   professionalName: string;
-  type: 'purchase' | 'spend' | 'adjustment';
+  type: 'purchase' | 'spend' | 'adjustment' | 'membership_grant';
   credits: number;
   label: string;
   at: string;
@@ -314,7 +314,7 @@ export type VerificationFile = {
 
 export type ProfessionalTxn = {
   id: string;
-  type: 'purchase' | 'spend' | 'adjustment';
+  type: 'purchase' | 'spend' | 'adjustment' | 'membership_grant';
   credits: number;
   label: string;
   at: string;

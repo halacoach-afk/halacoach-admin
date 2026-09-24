@@ -29,11 +29,11 @@ import {DataTable, FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
-import {formatAed, formatPromoBenefit, VAT_RATE} from '@/lib/credit-utils';
+import {creditTxnLabel, formatAed, formatPromoBenefit, VAT_RATE} from '@/lib/credit-utils';
 import {cn} from '@/lib/cn';
 import {can} from '@/lib/permissions';
 
-type TxnFilter = 'all' | 'purchase' | 'spend' | 'adjustment';
+type TxnFilter = 'all' | 'credited' | 'spent';
 
 type CreditPackageDraft = {
   name: string;
@@ -286,7 +286,12 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     if (txnFilter === 'all') {
       return overview.transactions;
     }
-    return overview.transactions.filter(item => item.type === txnFilter);
+    if (txnFilter === 'credited') {
+      // Purchases, membership grants, and other credit-adding rows
+      return overview.transactions.filter(item => item.credits > 0);
+    }
+    // Spending / unlocks / other credit-removing rows
+    return overview.transactions.filter(item => item.credits < 0);
   }, [overview, txnFilter]);
 
   const oneTimePackages = useMemo(
@@ -1057,9 +1062,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         {(
           [
             ['all', 'All'],
-            ['purchase', 'Purchases'],
-            ['spend', 'Unlocks'],
-            ['adjustment', 'Adjustments'],
+            ['credited', 'Purchasings'],
+            ['spent', 'Spendings'],
           ] as const
         ).map(([key, label]) => (
           <Button
@@ -1087,11 +1091,10 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                 </Badge>
               </td>
               <td className="px-4 py-3 font-medium">
-                {txn.type === 'spend' ? '-' : '+'}
-                {txn.credits}
+                {txn.credits > 0 ? `+${txn.credits}` : String(txn.credits)}
               </td>
               <td className="px-4 py-3 text-sm text-muted-foreground">
-                {txn.label}
+                {creditTxnLabel(txn.label)}
                 {txn.orderId ? ` | ${txn.orderId}` : ''}
               </td>
               <td className="px-4 py-3 text-sm">
