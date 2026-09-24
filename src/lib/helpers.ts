@@ -21,6 +21,7 @@ const MODULE_LABELS: Record<string, string> = {
   credits: 'Credits',
   services: 'Services',
   support: 'Support',
+  settings: 'Settings',
   messages: 'Messages',
   admins: 'Access Management',
 };

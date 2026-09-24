@@ -290,6 +290,22 @@ export function updateSupportTicket(id: number, input: UpdateSupportTicketInput)
   });
 }
 
+export type SupportContactSettings = {
+  supportEmail: string;
+  supportPhone: string;
+};
+
+export function getSupportContactSettings() {
+  return request<SupportContactSettings>('/v1/platform-settings/support-contact');
+}
+
+export function updateSupportContactSettings(input: SupportContactSettings) {
+  return request<SupportContactSettings>('/v1/platform-settings/support-contact', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
 export function listConversations() {
   return request<ConversationSummary[]>('/v1/messages');
 }

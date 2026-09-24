@@ -1,251 +1,342 @@
 'use client';
 
 import Link from 'next/link';
-import {FormEvent, useEffect, useState, type ReactNode} from 'react';
-import {ArrowLeft, ExternalLink} from 'lucide-react';
+import {useEffect, useId, useState} from 'react';
+import {createPortal} from 'react-dom';
+import {
+  ExternalLink,
+  Mail,
+  Phone,
+  UserRound,
+  X,
+} from 'lucide-react';
 import {
   getSupportTicket,
   isApiError,
   updateSupportTicket,
   type SessionUser,
   type SupportTicketDetail,
+  type SupportTicketStatus,
 } from '@/api';
-import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
-import {Card} from '@/components/ui/Card';
 import {ErrorState} from '@/components/ui/ErrorState';
-import {LoadingState} from '@/components/ui/LoadingState';
-import {PageHeader} from '@/components/ui/PageHeader';
-import {
-  formatSupportTimestamp,
-  supportStatusLabels,
-  supportStatusTone,
-  supportUserTypeLabels,
-} from '@/lib/support-utils';
+import {supportStatusLabels} from '@/lib/support-utils';
 import {can} from '@/lib/permissions';
+import {cn} from '@/lib/cn';
 
-function Section({title, children}: {title: string; children: ReactNode}) {
-  return (
-    <Card>
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </h2>
-      {children}
-    </Card>
-  );
-}
+const STATUS_OPTIONS: SupportTicketStatus[] = ['new', 'in_progress', 'closed'];
 
-function Field({label, value}: {label: string; value: ReactNode}) {
-  return (
-    <div>
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm text-foreground">{value}</dd>
-    </div>
-  );
-}
-
-export function SupportDetailScreen({actor, id}: {actor: SessionUser; id: string}) {
+export function SupportDetailModal({
+  actor,
+  ticketId,
+  open,
+  onClose,
+  onUpdated,
+}: {
+  actor: SessionUser;
+  ticketId: number | null;
+  open: boolean;
+  onClose: () => void;
+  onUpdated?: (ticket: SupportTicketDetail) => void;
+}) {
+  const titleId = useId();
   const canWrite = can(actor, 'support:write');
+  const [mounted, setMounted] = useState(false);
   const [ticket, setTicket] = useState<SupportTicketDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [replyNote, setReplyNote] = useState('');
+  const [status, setStatus] = useState<SupportTicketStatus>('new');
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const detail = await getSupportTicket(Number(id));
-      setTicket(detail);
-      setReplyNote(detail.replyNote ?? '');
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not load support ticket.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    void load();
-  }, [id]);
+    setMounted(true);
+  }, []);
 
-  const saveReply = async (event: FormEvent, status?: 'replied' | 'closed') => {
-    event.preventDefault();
-    if (!ticket || !canWrite) {
+  useEffect(() => {
+    if (!open) {
       return;
     }
-    const note = replyNote.trim();
-    if (!note) {
-      setError('Reply note is required.');
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open || ticketId == null) {
+      setTicket(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    void (async () => {
+      try {
+        const detail = await getSupportTicket(ticketId);
+        if (cancelled) {
+          return;
+        }
+        setTicket(detail);
+        setStatus(detail.status);
+      } catch (err) {
+        if (!cancelled) {
+          setTicket(null);
+          setError(isApiError(err) ? err.message : 'Could not load support ticket.');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, ticketId]);
+
+  const reload = () => {
+    if (ticketId == null) {
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    void getSupportTicket(ticketId)
+      .then(detail => {
+        setTicket(detail);
+        setStatus(detail.status);
+      })
+      .catch(err => {
+        setError(isApiError(err) ? err.message : 'Could not load support ticket.');
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const saveStatus = async () => {
+    if (!ticket || !canWrite || ticketId == null) {
+      return;
+    }
+    if (status === ticket.status) {
+      onClose();
       return;
     }
     setSaving(true);
     setError(null);
-    setMessage(null);
     try {
-      const next = await updateSupportTicket(Number(id), {
-        replyNote: note,
-        status: status ?? (ticket.status === 'closed' ? 'closed' : 'replied'),
+      const next = await updateSupportTicket(ticketId, {
+        status,
         actorName: actor.name,
       });
       setTicket(next);
-      setReplyNote(next.replyNote ?? '');
-      setMessage(status === 'closed' ? 'Ticket closed.' : 'Reply saved.');
+      setStatus(next.status);
+      onUpdated?.(next);
+      onClose();
     } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not save reply.');
+      setError(isApiError(err) ? err.message : 'Could not update status.');
     } finally {
       setSaving(false);
     }
   };
 
-  const reopen = async () => {
-    if (!canWrite) {
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const next = await updateSupportTicket(Number(id), {
-        status: 'replied',
-        replyNote: replyNote.trim() || ticket?.replyNote || '',
-        actorName: actor.name,
-      });
-      setTicket(next);
-      setMessage('Ticket reopened as replied.');
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not reopen ticket.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return <LoadingState label="Loading ticket..." />;
-  }
-
-  if (error && !ticket) {
-    return <ErrorState body={error} onRetry={() => void load()} />;
-  }
-
-  if (!ticket) {
+  if (!mounted || !open) {
     return null;
   }
 
-  return (
-    <>
-      <PageHeader
-        title={ticket.subject}
-        description={`${supportUserTypeLabels[ticket.userType]} | ${ticket.userName}`}
-        actions={
-          <Link href="/support">
-            <Button variant="outline">
-              <ArrowLeft className="h-4 w-4" />
-              Back to inbox
-            </Button>
-          </Link>
-        }
+  const phoneHref = ticket?.userPhone?.trim()
+    ? `tel:${ticket.userPhone.replace(/\s/g, '')}`
+    : null;
+  const emailHref = ticket?.userEmail?.trim()
+    ? `mailto:${ticket.userEmail}`
+    : null;
+  const dirty = ticket != null && status !== ticket.status;
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
+      <button
+        type="button"
+        aria-label="Close dialog"
+        className="absolute inset-0 bg-foreground/40 backdrop-blur-[2px]"
+        onClick={onClose}
       />
 
-      {error ? (
-        <div className="mb-4">
-          <ErrorState body={error} onRetry={() => void load()} />
-        </div>
-      ) : null}
-      {message ? (
-        <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {message}
-        </p>
-      ) : null}
-
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Badge tone={supportStatusTone[ticket.status]}>{supportStatusLabels[ticket.status]}</Badge>
-        <Badge tone="sky">{supportUserTypeLabels[ticket.userType]}</Badge>
-        <span className="text-sm text-muted-foreground">
-          Received {formatSupportTimestamp(ticket.createdAt)}
-        </span>
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <div className="space-y-5">
-          <Section title="Message">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{ticket.body}</p>
-          </Section>
-
-          {ticket.replyNote ? (
-            <Section title="Support reply">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                {ticket.replyNote}
-              </p>
-              <p className="mt-3 text-xs text-muted-foreground">
-                {ticket.repliedBy ?? 'Support'} | {formatSupportTimestamp(ticket.repliedAt)}
-              </p>
-            </Section>
-          ) : null}
-
-          {canWrite && ticket.status !== 'closed' ? (
-            <Section title="Reply">
-              <form className="space-y-4" onSubmit={event => void saveReply(event)}>
-                <label className="block text-sm font-medium text-foreground">
-                  Internal reply note
-                  <textarea
-                    value={replyNote}
-                    onChange={event => setReplyNote(event.target.value)}
-                    rows={5}
-                    placeholder="What support told the user..."
-                    className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-                  />
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  <Button type="submit" disabled={saving}>
-                    {saving ? 'Saving...' : 'Save reply'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={saving}
-                    onClick={event => void saveReply(event, 'closed')}>
-                    Save & close
-                  </Button>
-                </div>
-              </form>
-            </Section>
-          ) : null}
-
-          {canWrite && ticket.status === 'closed' ? (
-            <Card>
-              <Button variant="outline" disabled={saving} onClick={() => void reopen()}>
-                Reopen ticket
-              </Button>
-            </Card>
-          ) : null}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative z-10 flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl border border-border bg-card shadow-2xl sm:rounded-3xl">
+        <div className="shrink-0 border-b border-border px-5 py-4 sm:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <p
+              id={titleId}
+              className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Ticket {ticketId ?? '—'}
+            </p>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              className="grid size-9 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-5">
-          <Section title="User">
-            <dl className="grid gap-4">
-              <Field label="Name" value={ticket.userName} />
-              <Field label="Email" value={ticket.userEmail} />
-              <Field label="Phone" value={ticket.userPhone} />
-              {ticket.profileHref ? (
-                <Field
-                  label="Profile"
-                  value={
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+          {loading ? (
+            <div className="space-y-3">
+              <div className="h-20 animate-pulse rounded-2xl bg-muted" />
+              <div className="h-24 animate-pulse rounded-2xl bg-muted" />
+              <div className="h-12 animate-pulse rounded-2xl bg-muted" />
+            </div>
+          ) : null}
+
+          {!loading && error && !ticket ? (
+            <ErrorState body={error} onRetry={reload} />
+          ) : null}
+
+          {ticket ? (
+            <>
+              {error ? (
+                <p className="rounded-2xl border border-destructive/20 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">
+                  {error}
+                </p>
+              ) : null}
+
+              <section>
+                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Contact
+                </h3>
+                <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
+                  {ticket.profileHref ? (
                     <Link
                       href={ticket.profileHref}
-                      className="inline-flex items-center gap-1 font-semibold text-primary">
-                      Open {supportUserTypeLabels[ticket.userType].toLowerCase()}
-                      <ExternalLink className="h-3.5 w-3.5" />
+                      className="flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-muted/60">
+                      <UserRound className="h-4 w-4 shrink-0 text-primary" />
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-primary">
+                        {ticket.userName}
+                      </span>
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-primary" />
                     </Link>
-                  }
-                />
+                  ) : (
+                    <div className="flex items-center gap-3 px-3.5 py-3">
+                      <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                        {ticket.userName || '—'}
+                      </span>
+                    </div>
+                  )}
+
+                  {emailHref ? (
+                    <a
+                      href={emailHref}
+                      className="flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-muted/60">
+                      <Mail className="h-4 w-4 shrink-0 text-primary" />
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-primary">
+                        {ticket.userEmail}
+                      </span>
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-3 px-3.5 py-3">
+                      <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">—</span>
+                    </div>
+                  )}
+
+                  {phoneHref ? (
+                    <a
+                      href={phoneHref}
+                      className="flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-muted/60">
+                      <Phone className="h-4 w-4 shrink-0 text-primary" />
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-primary">
+                        {ticket.userPhone}
+                      </span>
+                    </a>
+                  ) : (
+                    <div className="flex items-center gap-3 px-3.5 py-3">
+                      <Phone className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">—</span>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <section>
+                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Subject
+                </h3>
+                <p className="text-sm font-semibold text-foreground">
+                  {ticket.subject?.trim() || '—'}
+                </p>
+              </section>
+
+              <section className="min-h-0">
+                <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Message
+                </h3>
+                <div className="max-h-48 overflow-y-auto rounded-2xl border border-border bg-background px-4 py-3.5 sm:max-h-56">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                    {ticket.body?.trim() || '—'}
+                  </p>
+                </div>
+              </section>
+
+              {canWrite ? (
+                <section>
+                  <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Status
+                  </h3>
+                  <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-border p-1.5">
+                    {STATUS_OPTIONS.map(option => {
+                      const selected = status === option;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          disabled={saving}
+                          onClick={() => setStatus(option)}
+                          className={cn(
+                            'rounded-xl px-2 py-2.5 text-xs font-semibold transition-colors',
+                            selected
+                              ? 'bg-primary text-white'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                          )}>
+                          {supportStatusLabels[option]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
               ) : null}
-            </dl>
-          </Section>
+            </>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border px-5 py-3.5 sm:px-6">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Close
+          </Button>
+          {canWrite && ticket ? (
+            <Button
+              type="button"
+              disabled={saving || !dirty}
+              onClick={() => void saveStatus()}>
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+          ) : null}
         </div>
       </div>
-    </>
+    </div>,
+    document.body,
   );
 }

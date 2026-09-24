@@ -15,6 +15,8 @@ export type AdminPermission =
   | 'services:write'
   | 'support:read'
   | 'support:write'
+  | 'settings:read'
+  | 'settings:write'
   | 'messages:read'
   | 'admins:read'
   | 'admins:write';
@@ -707,9 +709,9 @@ export type NotificationPrefs = {
   marketing: boolean;
 };
 
-export type SupportTicketStatus = 'new' | 'replied' | 'closed';
+export type SupportTicketStatus = 'new' | 'in_progress' | 'closed';
 
-export type SupportUserType = 'client' | 'professional';
+export type SupportUserType = 'client' | 'professional' | 'guest';
 
 export type SupportTicket = {
   id: number;
@@ -731,7 +733,9 @@ export type SupportTicketSummary = {
   userId: string;
   userName: string;
   userEmail: string;
+  userPhone: string;
   subject: string;
+  body: string;
   status: SupportTicketStatus;
   createdAt: string;
   repliedAt: string | null;
