@@ -16,6 +16,7 @@ import {
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
+import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {DataTable, FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
@@ -121,6 +122,11 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     item: VerificationQueueItem;
     file: VerificationFile;
   } | null>(null);
+  const [pendingFileApprove, setPendingFileApprove] = useState<{
+    item: VerificationQueueItem;
+    file: VerificationFile;
+    label: string;
+  } | null>(null);
   const [acting, setActing] = useState(false);
   const [viewer, setViewer] = useState<{
     professionalId: string;
@@ -221,6 +227,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
         await rejectVerificationFile(item.id, file.id, {reason});
       }
       setPendingFileReject(null);
+      setPendingFileApprove(null);
       setRejectReason('');
       await load();
     } catch (err) {
@@ -418,7 +425,11 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                                           size="sm"
                                           disabled={acting || file.status === 'approved'}
                                           onClick={() =>
-                                            void onFileAction('approve', selected, file)
+                                            setPendingFileApprove({
+                                              item: selected,
+                                              file,
+                                              label: meta.label,
+                                            })
                                           }>
                                           Approve
                                         </Button>
@@ -489,7 +500,11 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                                         size="sm"
                                         disabled={acting || file.status === 'approved'}
                                         onClick={() =>
-                                          void onFileAction('approve', selected, file)
+                                          setPendingFileApprove({
+                                            item: selected,
+                                            file,
+                                            label: file.originalName || 'Untyped document',
+                                          })
                                         }>
                                         Approve
                                       </Button>
@@ -527,6 +542,28 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
         title={viewer?.name ?? ''}
         onClose={() => setViewer(null)}
         load={loadViewerFile}
+      />
+
+      <ConfirmDialog
+        open={pendingFileApprove !== null}
+        title="Approve this document?"
+        body={
+          pendingFileApprove
+            ? `Confirm approval of “${pendingFileApprove.label}” for ${pendingFileApprove.item.name}.`
+            : ''
+        }
+        confirmLabel="Approve"
+        onClose={() => {
+          if (!acting) setPendingFileApprove(null);
+        }}
+        onConfirm={() => {
+          if (!pendingFileApprove) return;
+          void onFileAction(
+            'approve',
+            pendingFileApprove.item,
+            pendingFileApprove.file,
+          );
+        }}
       />
 
       {pendingFileReject ? (

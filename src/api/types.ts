@@ -834,3 +834,9 @@ export type DashboardOverview = {
   counts: DashboardCounts;
   recentActivity: DashboardActivity[];
 };
+
+/** Action-required counts for admin sidebar badges. */
+export type NavBadges = {
+  pendingVerifications: number;
+  openSupportTickets: number;
+};

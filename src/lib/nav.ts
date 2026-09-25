@@ -22,6 +22,8 @@ export type NavItem = {
   description: string;
   icon: LucideIcon;
   permission: Permission;
+  /** Sidebar action badge key from GET /v1/nav-badges. */
+  badgeKey?: 'pendingVerifications' | 'openSupportTickets';
 };
 
 export const navItems: NavItem[] = [
@@ -38,6 +40,7 @@ export const navItems: NavItem[] = [
     description: 'Review coach documents. Profiles go live only after approval.',
     icon: BadgeCheck,
     permission: 'verification:read',
+    badgeKey: 'pendingVerifications',
   },
   {
     href: '/professionals',
@@ -101,6 +104,7 @@ export const navItems: NavItem[] = [
     description: 'Contact-us inbox from the mobile app.',
     icon: Headset,
     permission: 'support:read',
+    badgeKey: 'openSupportTickets',
   },
   {
     href: '/admins',

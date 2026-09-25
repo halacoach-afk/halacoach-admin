@@ -30,6 +30,7 @@ import type {
   ConversationDetail,
   ConversationSummary,
   DashboardOverview,
+  NavBadges,
   OnlinePlanDetail,
   OnlinePlanRevision,
   OnlinePlanSummary,
@@ -59,6 +60,7 @@ export type {
   DashboardActivityKind,
   DashboardCounts,
   DashboardOverview,
+  NavBadges,
   CreditLedgerEntry,
   CreditPackage,
   CreditPackageBadge,
@@ -114,6 +116,10 @@ export function getHealth() {
 
 export function getDashboardOverview() {
   return request<DashboardOverview>('/v1/dashboard');
+}
+
+export function getNavBadges() {
+  return request<NavBadges>('/v1/nav-badges');
 }
 
 export function login(email: string, password: string) {
