@@ -2,7 +2,7 @@
 
 import {FormEvent, useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {LockKeyhole, ShieldCheck} from 'lucide-react';
+import {ShieldCheck} from 'lucide-react';
 import {isApiError, login} from '@/api';
 import {Button} from '@/components/ui/Button';
 import {Input} from '@/components/ui/Input';
@@ -89,7 +89,7 @@ export default function LoginPage() {
           <div className="rounded-3xl border border-border/80 bg-card/95 p-8 shadow-[0_24px_60px_-28px_rgba(15,118,110,0.35)] backdrop-blur-sm sm:p-10">
             <div className="flex items-center gap-3">
               <span className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary">
-                <LockKeyhole className="size-5" strokeWidth={1.8} />
+                <ShieldCheck className="size-5" strokeWidth={1.8} />
               </span>
               <div>
                 <h2 className="text-xl font-bold tracking-tight text-foreground">Sign in</h2>
