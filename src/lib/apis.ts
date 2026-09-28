@@ -10,6 +10,7 @@ import type {
   CreatePromoInput,
   CreateServiceInput,
   PromoCode,
+  ReorderServicesInput,
   UpdateCreditPackageInput,
   UpdatePromoInput,
   UpdateServiceInput,
@@ -109,6 +110,13 @@ export function createService(input: CreateServiceInput) {
 
 export function updateService(id: number, input: UpdateServiceInput) {
   return request<CatalogService>(`/v1/services/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function reorderServices(input: ReorderServicesInput) {
+  return request<CatalogService[]>('/v1/services/reorder', {
     method: 'PATCH',
     body: JSON.stringify(input),
   });

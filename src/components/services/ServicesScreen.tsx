@@ -1,10 +1,12 @@
 'use client';
 
 import {useEffect, useState} from 'react';
+import {ChevronDown, ChevronUp} from 'lucide-react';
 import {
   createService,
   isApiError,
   listServices,
+  reorderServices,
   updateService,
   type CatalogService,
   type SessionUser,
@@ -21,6 +23,7 @@ const tableInputClass =
 const tableCellClass = 'flex h-9 items-center';
 const actionButtonClass = 'w-[4.75rem] shrink-0 justify-center';
 const archiveButtonClass = 'min-w-[5.5rem] shrink-0 justify-center';
+const sortButtonClass = 'size-8 shrink-0 justify-center px-0';
 const addButtonClass = cn(
   actionButtonClass,
   'transform-gpu disabled:opacity-100 disabled:bg-primary-soft disabled:text-primary',
@@ -92,6 +95,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
   const [savingId, setSavingId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [reordering, setReordering] = useState(false);
 
   const load = async () => {
     setServices(state => ({...state, isLoading: true, error: null}));
@@ -152,6 +156,32 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     }
   };
 
+  const moveService = async (id: number, direction: 'up' | 'down') => {
+    const items = services.items;
+    const index = items.findIndex(item => item.id === id);
+    if (index < 0) return;
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= items.length) return;
+
+    const next = [...items];
+    const [row] = next.splice(index, 1);
+    next.splice(target, 0, row);
+
+    setReordering(true);
+    setError(null);
+    setServices(state => ({...state, items: next}));
+    try {
+      const reordered = await reorderServices({orderedIds: next.map(item => item.id)});
+      setServices({items: reordered, isLoading: false, error: null});
+      setDrafts(Object.fromEntries(reordered.map(item => [item.id, item.name])));
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not reorder services.');
+      await load();
+    } finally {
+      setReordering(false);
+    }
+  };
+
   const submitCreate = async () => {
     const name = createName.trim();
     if (!name) {
@@ -171,6 +201,8 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     }
   };
 
+  const colCount = canWrite ? 4 : 3;
+
   return (
     <>
       <PageHeader title="Services" />
@@ -188,18 +220,18 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
       <div className="mb-8">
         <DataTable
           tableClassName="table-fixed"
-          columnWidths={canWrite ? ['58%', '18%', '24%'] : ['70%', '30%']}
-          columns={canWrite ? ['Name', 'Status', 'Actions'] : ['Name', 'Status']}>
+          columnWidths={canWrite ? ['48%', '16%', '14%', '22%'] : ['58%', '22%', '20%']}
+          columns={canWrite ? ['Name', 'Status', 'Order', 'Actions'] : ['Name', 'Status', 'Order']}>
           {services.isLoading && services.items.length === 0 ? (
             <tr>
-              <td colSpan={canWrite ? 3 : 2} className="px-4 py-8 text-center">
+              <td colSpan={colCount} className="px-4 py-8 text-center">
                 <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
               </td>
             </tr>
           ) : null}
           {services.error ? (
             <tr>
-              <td colSpan={canWrite ? 3 : 2} className="px-4 py-6 text-center">
+              <td colSpan={colCount} className="px-4 py-6 text-center">
                 <p className="mb-2 text-sm text-destructive">{services.error}</p>
                 <button className="text-xs text-primary underline" onClick={() => void load()}>
                   Retry
@@ -207,7 +239,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
               </td>
             </tr>
           ) : null}
-          {services.items.map(service => {
+          {services.items.map((service, index) => {
             const draft = drafts[service.id] ?? service.name;
             const isEditing = canWrite && editingId === service.id;
             return (
@@ -242,6 +274,35 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                     )}
                   </TableCell>
                 </td>
+                <td className="px-4 py-2">
+                  <TableCell className="gap-1.5">
+                    <span className="w-6 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
+                      {index + 1}
+                    </span>
+                    {canWrite ? (
+                      <span className="flex shrink-0 gap-0.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={sortButtonClass}
+                          disabled={reordering || index === 0}
+                          aria-label={`Move ${service.name} up`}
+                          onClick={() => void moveService(service.id, 'up')}>
+                          <ChevronUp className="size-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={sortButtonClass}
+                          disabled={reordering || index === services.items.length - 1}
+                          aria-label={`Move ${service.name} down`}
+                          onClick={() => void moveService(service.id, 'down')}>
+                          <ChevronDown className="size-4" />
+                        </Button>
+                      </span>
+                    ) : null}
+                  </TableCell>
+                </td>
                 {canWrite ? (
                   <td className="px-4 py-2">
                     <CatalogActions
@@ -273,6 +334,11 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
               <td className="px-4 py-2">
                 <TableCell>
                   <Badge tone="sky">New</Badge>
+                </TableCell>
+              </td>
+              <td className="px-4 py-2">
+                <TableCell>
+                  <span className="text-sm text-muted-foreground">—</span>
                 </TableCell>
               </td>
               <td className="px-4 py-2">
