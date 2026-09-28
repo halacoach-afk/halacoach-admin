@@ -27,7 +27,7 @@ export function TopBar({
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
-      <p className="text-sm text-muted-foreground">The Right Coach. For YOU</p>
+      <p className="text-sm text-muted-foreground">The Right Coach. For You.</p>
       <div className="flex items-center gap-3">
         <div className="text-end">
           <p className="text-sm font-semibold text-foreground">{name}</p>
