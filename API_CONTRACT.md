@@ -111,6 +111,22 @@ Sign-out is client-only (clears session cookie). No logout endpoint required for
 
 `recentActivity.kind`: `client_signup` \| `pro_signup` \| `verification_pending` \| `lead_unlock` \| `credit_purchase` \| `support_ticket`
 
+### `GET /admin/nav-badges`
+
+Lightweight action-required counts for the admin sidebar (no activity feed).
+
+**Response**
+
+```json
+{
+  "pendingVerifications": 1,
+  "openSupportTickets": 4
+}
+```
+
+- `pendingVerifications` — active coaches with `verification_status: pending` (Verification nav badge)
+- `openSupportTickets` — tickets in `new` or `in_progress` (Support nav badge)
+
 ---
 
 ## Admin users (M1)
