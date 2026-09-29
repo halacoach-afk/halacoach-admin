@@ -66,23 +66,25 @@ function queueStatusTone(status?: string) {
   return 'muted' as const;
 }
 
-function requiredProgressForItem(
+/** Count approved / submitted / catalog total for the queue column. */
+function documentsProgressForItem(
   item: VerificationQueueItem,
   documentTypes: VerificationDocTypeMeta[],
 ) {
-  const requiredTypes = documentTypes.filter(meta => meta.required);
   const byType = new Map<string, VerificationFile>();
   for (const file of item.verificationFiles ?? []) {
     if (file.docType) byType.set(file.docType, file);
   }
-  const total = requiredTypes.length;
-  const approved = requiredTypes.filter(meta => {
-    const file = byType.get(meta.id);
-    const status = file?.displayStatus ?? file?.status;
-    return status === 'approved' || status === 'expiring_soon';
-  }).length;
-  const submitted = requiredTypes.filter(meta => byType.has(meta.id)).length;
-  return {total, approved, submitted};
+  const submitted = byType.size;
+  const total = documentTypes.length;
+  let approved = 0;
+  for (const file of byType.values()) {
+    const status = file.displayStatus ?? file.status;
+    if (status === 'approved' || status === 'expiring_soon') {
+      approved += 1;
+    }
+  }
+  return {approved, submitted, total};
 }
 
 function ReasonSelect({
@@ -300,13 +302,13 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
             'Email',
             'Phone',
             'Status',
-            'Required',
+            'Documents',
             'Submitted',
             '',
           ]}>
           {visible.map(item => {
             const status = item.verificationStatus ?? 'pending';
-            const required = requiredProgressForItem(item, documentTypes);
+            const docs = documentsProgressForItem(item, documentTypes);
             const expanded = selectedId === item.id;
             return (
               <Fragment key={item.id}>
@@ -329,9 +331,9 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-sm tabular-nums text-foreground">
-                    {required.approved}/{required.total} approved
+                    {docs.approved}/{docs.submitted} approved
                     <div className="text-xs text-muted-foreground">
-                      {required.submitted}/{required.total} submitted
+                      {docs.submitted}/{docs.total} submitted
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-foreground">

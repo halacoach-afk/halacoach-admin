@@ -11,8 +11,8 @@ import {
   Repeat,
   Settings,
   Shield,
+  UserCog,
   Users,
-  LockKeyhole,
 } from 'lucide-react';
 import type {Permission} from '@/lib/permissions';
 
@@ -110,7 +110,7 @@ export const navItems: NavItem[] = [
     href: '/admins',
     label: 'Access Management',
     description: 'Invite operators and assign roles with permissions.',
-    icon: LockKeyhole,
+    icon: UserCog,
     permission: 'admins:read',
   },
   {

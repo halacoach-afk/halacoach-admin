@@ -15,6 +15,7 @@ import {
 import type {AdminPermissionCatalogItem, AdminRoleRecord} from '@/api/types';
 import {createAdminRole, listAdminRoles} from '@/lib/apis';
 import {roleLabel} from '@/lib/helpers';
+import {isPasswordPolicyValid} from '@/lib/password-policy';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {DataTable} from '@/components/ui/DataTable';
@@ -148,8 +149,8 @@ export function AdminsScreen({actor}: {actor: SessionUser}) {
   const canSubmitInvite =
     invite.name.trim().length > 0 &&
     invite.email.trim().length > 0 &&
-    invite.password.length >= 8 &&
-    invite.confirmPassword.length >= 8 &&
+    isPasswordPolicyValid(invite.password) &&
+    isPasswordPolicyValid(invite.confirmPassword) &&
     invite.password === invite.confirmPassword &&
     Boolean(invite.role);
 
@@ -267,7 +268,7 @@ export function AdminsScreen({actor}: {actor: SessionUser}) {
                       minLength={8}
                       value={invite.password}
                       onChange={e => setInvite(s => ({...s, password: e.target.value}))}
-                      placeholder="Password"
+                      placeholder="8+ chars, A–z, 0–9, symbol"
                     />
                     <button
                       type="button"

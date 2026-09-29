@@ -260,6 +260,7 @@ export type CatalogService = {
   id: number;
   name: string;
   active: boolean;
+  sortOrder?: number;
 };
 
 export type CreateServiceInput = {
@@ -269,6 +270,10 @@ export type CreateServiceInput = {
 export type UpdateServiceInput = {
   name?: string;
   active?: boolean;
+};
+
+export type ReorderServicesInput = {
+  orderedIds: number[];
 };
 
 export type VerificationStatus = 'none' | 'pending' | 'verified' | 'rejected';

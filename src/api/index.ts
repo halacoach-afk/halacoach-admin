@@ -162,7 +162,7 @@ export async function getCreditsOverview(): Promise<CreditsOverview> {
 }
 
 export {createPromoCode, listPromoCodes, updatePromoCode} from '@/lib/apis';
-export {createService, listServices, updateService} from '@/lib/apis';
+export {createService, listServices, reorderServices, updateService} from '@/lib/apis';
 
 export function adjustCredits(input: AdjustCreditsInput) {
   return request<Professional>(`/v1/credit-adjustments`, {
