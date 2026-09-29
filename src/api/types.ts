@@ -328,6 +328,7 @@ export type ProfessionalTxn = {
 export type ProServiceRate = {
   session: string;
   pack: string;
+  packSessions: string;
 };
 
 export type ProPricing = {
