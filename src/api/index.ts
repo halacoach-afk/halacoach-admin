@@ -301,12 +301,28 @@ export type SupportContactSettings = {
   supportPhone: string;
 };
 
+export type BillingSettings = {
+  vatRate: number;
+  vatPercent: number;
+};
+
 export function getSupportContactSettings() {
   return request<SupportContactSettings>('/v1/platform-settings/support-contact');
 }
 
 export function updateSupportContactSettings(input: SupportContactSettings) {
   return request<SupportContactSettings>('/v1/platform-settings/support-contact', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function getBillingSettings() {
+  return request<BillingSettings>('/v1/platform-settings/billing');
+}
+
+export function updateBillingSettings(input: {vatPercent: number}) {
+  return request<BillingSettings>('/v1/platform-settings/billing', {
     method: 'PATCH',
     body: JSON.stringify(input),
   });

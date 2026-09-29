@@ -309,6 +309,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     [packages.items],
   );
   const vatRate = overview?.vatRate ?? VAT_RATE;
+  const showVat = vatRate > 0;
 
   const renderPackageCatalog = (
     type: CreditPackageType,
@@ -318,25 +319,36 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     namePlaceholder: string,
     pricePlaceholder: string,
   ) => {
-    const colSpan = canWrite ? 6 : 5;
+    const colSpan = canWrite ? (showVat ? 6 : 5) : showVat ? 5 : 4;
+    const priceLabel = showVat ? 'Price (excl. VAT)' : 'Price';
     return (
       <div className="mb-8">
         <DataTable
           tableClassName="table-fixed"
           columnWidths={
             canWrite
-              ? ['22%', '12%', '16%', '14%', '12%', '24%']
-              : ['26%', '14%', '18%', '16%', '14%']
+              ? showVat
+                ? ['22%', '12%', '16%', '14%', '12%', '24%']
+                : ['24%', '14%', '18%', '16%', '28%']
+              : showVat
+                ? ['26%', '14%', '18%', '16%', '14%']
+                : ['30%', '16%', '24%', '30%']
           }
           columnHeaderClassNames={
             canWrite
-              ? [undefined, undefined, undefined, undefined, undefined, 'text-right']
+              ? showVat
+                ? [undefined, undefined, undefined, undefined, undefined, 'text-right']
+                : [undefined, undefined, undefined, undefined, 'text-right']
               : undefined
           }
           columns={
             canWrite
-              ? ['Name', 'Credits', 'Price (excl. VAT)', 'Badge', 'Incl. VAT', 'Actions']
-              : ['Name', 'Credits', 'Price (excl. VAT)', 'Badge', 'Incl. VAT']
+              ? showVat
+                ? ['Name', 'Credits', priceLabel, 'Badge', 'Incl. VAT', 'Actions']
+                : ['Name', 'Credits', priceLabel, 'Badge', 'Actions']
+              : showVat
+                ? ['Name', 'Credits', priceLabel, 'Badge', 'Incl. VAT']
+                : ['Name', 'Credits', priceLabel, 'Badge']
           }>
           {packages.isLoading && items.length === 0 ? (
             <tr>
@@ -470,11 +482,13 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                     )}
                   </CreditPackageTableCell>
                 </td>
-                <td className="px-4 py-2">
-                  <CreditPackageTableCell>
-                    <span className="text-muted-foreground">{inclVat}</span>
-                  </CreditPackageTableCell>
-                </td>
+                {showVat ? (
+                  <td className="px-4 py-2">
+                    <CreditPackageTableCell>
+                      <span className="text-muted-foreground">{inclVat}</span>
+                    </CreditPackageTableCell>
+                  </td>
+                ) : null}
                 {canWrite ? (
                   <td className="px-4 py-2">
                     <CatalogActions
@@ -544,15 +558,17 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                   </select>
                 </CreditPackageTableCell>
               </td>
+              {showVat ? (
                 <td className="px-4 py-2">
-                <CreditPackageTableCell>
-                  <span className="text-muted-foreground">
-                    {Number.isFinite(Number(form.price)) && form.price
-                      ? formatAed(Number(form.price) * (1 + vatRate))
-                      : '-'}
-                  </span>
-                </CreditPackageTableCell>
-              </td>
+                  <CreditPackageTableCell>
+                    <span className="text-muted-foreground">
+                      {Number.isFinite(Number(form.price)) && form.price
+                        ? formatAed(Number(form.price) * (1 + vatRate))
+                        : '-'}
+                    </span>
+                  </CreditPackageTableCell>
+                </td>
+              ) : null}
               <td className="px-4 py-2">
                 <CreditPackageTableCell className="flex-nowrap justify-end gap-1">
                   <span className={creditPackageActionButtonClass} aria-hidden />
