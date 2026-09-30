@@ -328,6 +328,21 @@ export function updateBillingSettings(input: {vatPercent: number}) {
   });
 }
 
+export type FeaturesSettings = {
+  onlinePlansEnabled: boolean;
+};
+
+export function getFeaturesSettings() {
+  return request<FeaturesSettings>('/v1/platform-settings/features');
+}
+
+export function updateFeaturesSettings(input: {onlinePlansEnabled: boolean}) {
+  return request<FeaturesSettings>('/v1/platform-settings/features', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
 export function listConversations() {
   return request<ConversationSummary[]>('/v1/messages');
 }

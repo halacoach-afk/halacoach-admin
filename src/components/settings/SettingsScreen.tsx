@@ -3,9 +3,11 @@
 import {useEffect, useState} from 'react';
 import {
   getBillingSettings,
+  getFeaturesSettings,
   getSupportContactSettings,
   isApiError,
   updateBillingSettings,
+  updateFeaturesSettings,
   updateSupportContactSettings,
   type SessionUser,
 } from '@/api';
@@ -32,6 +34,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingBilling, setSavingBilling] = useState(false);
+  const [savingFeatures, setSavingFeatures] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editingBilling, setEditingBilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,14 +44,16 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
   const [draftPhone, setDraftPhone] = useState('');
   const [vatPercent, setVatPercent] = useState(5);
   const [draftVatPercent, setDraftVatPercent] = useState('5');
+  const [onlinePlansEnabled, setOnlinePlansEnabled] = useState(true);
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [support, billing] = await Promise.all([
+      const [support, billing, features] = await Promise.all([
         getSupportContactSettings(),
         getBillingSettings(),
+        getFeaturesSettings(),
       ]);
       setSupportEmail(support.supportEmail);
       setSupportPhone(support.supportPhone);
@@ -56,6 +61,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       setDraftPhone(support.supportPhone);
       setVatPercent(billing.vatPercent);
       setDraftVatPercent(String(billing.vatPercent));
+      setOnlinePlansEnabled(features.onlinePlansEnabled);
       setEditing(false);
       setEditingBilling(false);
     } catch (err) {
@@ -148,6 +154,23 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       setError(isApiError(err) ? err.message : 'Could not save billing settings.');
     } finally {
       setSavingBilling(false);
+    }
+  };
+
+  const toggleOnlinePlans = async () => {
+    if (!canWrite || savingFeatures) {
+      return;
+    }
+    const nextEnabled = !onlinePlansEnabled;
+    setSavingFeatures(true);
+    setError(null);
+    try {
+      const next = await updateFeaturesSettings({onlinePlansEnabled: nextEnabled});
+      setOnlinePlansEnabled(next.onlinePlansEnabled);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not update online plans setting.');
+    } finally {
+      setSavingFeatures(false);
     }
   };
 
@@ -270,6 +293,48 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
                       Edit
                     </Button>
                   )}
+                </TableCell>
+              </td>
+            ) : null}
+          </tr>
+        </DataTable>
+      </div>
+
+      <h2 className="mb-3 text-lg font-semibold text-foreground">Features</h2>
+      <p className="mb-3 text-sm text-muted-foreground">
+        When disabled, new personalized online training plans cannot be started. Existing
+        personalized plans keep working.
+      </p>
+      <div className="mb-8">
+        <DataTable
+          tableClassName="table-fixed"
+          columnWidths={canWrite ? ['76%', '24%'] : ['100%']}
+          columnHeaderClassNames={canWrite ? [undefined, 'text-right'] : undefined}
+          columns={canWrite ? ['Personalized online plans', 'Actions'] : ['Personalized online plans']}>
+          <tr className="border-b border-border last:border-0">
+            <td className="px-4 py-2">
+              <TableCell>
+                <span className="font-medium text-foreground">
+                  {onlinePlansEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+                {!onlinePlansEnabled ? (
+                  <span className="ms-2 text-sm text-muted-foreground">
+                    (no new personalized plans)
+                  </span>
+                ) : null}
+              </TableCell>
+            </td>
+            {canWrite ? (
+              <td className="px-4 py-2">
+                <TableCell className="flex-nowrap justify-end gap-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="min-w-[5.5rem] shrink-0 justify-center"
+                    disabled={savingFeatures}
+                    onClick={() => void toggleOnlinePlans()}>
+                    {savingFeatures ? 'Saving...' : onlinePlansEnabled ? 'Disable' : 'Enable'}
+                  </Button>
                 </TableCell>
               </td>
             ) : null}
