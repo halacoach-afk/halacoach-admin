@@ -116,6 +116,8 @@ export type CreditPackage = {
   badge?: CreditPackageBadge;
   sortOrder: number;
   active: boolean;
+  purchaseLimit?: number | null;
+  maxPurchases?: number | null;
 };
 
 export type CreateCreditPackageInput = {
@@ -124,6 +126,8 @@ export type CreateCreditPackageInput = {
   credits: number;
   price: number;
   badge?: CreditPackageBadge | null;
+  purchaseLimit?: number | null;
+  maxPurchases?: number | null;
 };
 
 export type UpdateCreditPackageInput = {
@@ -133,6 +137,8 @@ export type UpdateCreditPackageInput = {
   price?: number;
   badge?: CreditPackageBadge | null;
   active?: boolean;
+  purchaseLimit?: number | null;
+  maxPurchases?: number | null;
 };
 
 export type CreditSubscriptionAdmin = {
@@ -328,6 +334,7 @@ export type ProfessionalTxn = {
 export type ProServiceRate = {
   session: string;
   pack: string;
+  packSessions: string;
 };
 
 export type ProPricing = {

@@ -7,7 +7,7 @@ import type {
 } from '@/api/types';
 import type {CreditPackage} from '@/api/types';
 
-/** Matches web/app hardcoded checkout VAT. */
+/** Fallback VAT rate when billing settings are unavailable. */
 export const VAT_RATE = 0.05;
 
 export function buildCreditLedger(
