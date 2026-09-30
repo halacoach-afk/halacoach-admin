@@ -41,6 +41,8 @@ type CreditPackageDraft = {
   credits: string;
   price: string;
   badge: CreditPackageBadge | '';
+  purchaseLimit: number | null;
+  maxPurchases: string;
 };
 
 type PromoDraft = {
@@ -61,6 +63,8 @@ const emptyCreditPackageForm: CreditPackageDraft = {
   credits: '',
   price: '',
   badge: '',
+  purchaseLimit: null,
+  maxPurchases: '',
 };
 const emptyPromoForm: PromoDraft = {code: '', benefitType: '', benefitValue: ''};
 
@@ -140,6 +144,115 @@ const creditPackageAddButtonClass = cn(
   creditPackageActionButtonClass,
   'transform-gpu disabled:opacity-100 disabled:bg-primary-soft disabled:text-primary',
 );
+
+const PURCHASE_LIMIT_OPTIONS: {value: string; label: string; limit: number | null}[] = [
+  {value: 'unlimited', label: 'Unlimited', limit: null},
+  {value: '1', label: '1', limit: 1},
+];
+
+function purchaseLimitLabel(limit: number | null): string {
+  if (limit == null || limit < 1) return 'Unlimited';
+  const known = PURCHASE_LIMIT_OPTIONS.find(option => option.limit === limit);
+  if (known) return known.label;
+  return String(limit);
+}
+
+function normalizeDraftPurchaseLimit(raw: unknown): number | null {
+  if (raw == null || raw === '' || raw === 'unlimited') return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1) return null;
+  return Math.round(n);
+}
+
+function PurchaseLimitCell({
+  purchaseLimit,
+  editing,
+  onChange,
+}: {
+  purchaseLimit: number | null;
+  editing: boolean;
+  onChange?: (next: number | null) => void;
+}) {
+  const limit = normalizeDraftPurchaseLimit(purchaseLimit);
+  if (editing && onChange) {
+    const selectValue =
+      PURCHASE_LIMIT_OPTIONS.find(option => option.limit === limit)?.value ??
+      (limit == null ? 'unlimited' : String(limit));
+    const options =
+      PURCHASE_LIMIT_OPTIONS.some(option => option.limit === limit) || limit == null
+        ? PURCHASE_LIMIT_OPTIONS
+        : [...PURCHASE_LIMIT_OPTIONS, {value: String(limit), label: String(limit), limit}];
+    return (
+      <select
+        className={tableSelectClass}
+        value={selectValue}
+        aria-label="Purchase limit"
+        onChange={e => {
+          const selected = options.find(option => option.value === e.target.value);
+          onChange(selected?.limit ?? null);
+        }}>
+        {options.map(option => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  if (limit != null && limit >= 1) {
+    return <span className="text-sm">{purchaseLimitLabel(limit)}</span>;
+  }
+
+  return <span className="text-sm text-muted-foreground">Unlimited</span>;
+}
+
+function normalizeDraftMaxPurchases(raw: unknown): string {
+  if (raw == null || raw === '') return '';
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1) return '';
+  return String(Math.round(n));
+}
+
+function parseMaxPurchasesInput(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n < 1) return null;
+  return Math.round(n);
+}
+
+function MaxPurchasesCell({
+  maxPurchases,
+  editing,
+  onChange,
+}: {
+  maxPurchases: string;
+  editing: boolean;
+  onChange?: (next: string) => void;
+}) {
+  const parsed = parseMaxPurchasesInput(maxPurchases);
+  if (editing && onChange) {
+    return (
+      <input
+        className={tableInputClass}
+        type="number"
+        min={1}
+        inputMode="numeric"
+        placeholder="Unlimited"
+        aria-label="Max purchases"
+        value={maxPurchases}
+        onChange={e => onChange(e.target.value)}
+      />
+    );
+  }
+
+  if (parsed != null) {
+    return <span className="text-sm">{parsed}</span>;
+  }
+
+  return <span className="text-sm text-muted-foreground">Unlimited</span>;
+}
 
 function CreditPackageTableCell({children, className}: {children: React.ReactNode; className?: string}) {
   return <div className={cn(creditPackageTableCellClass, className)}>{children}</div>;
@@ -246,6 +359,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
               credits: String(pkg.credits),
               price: String(pkg.price),
               badge: pkg.badge ?? '',
+              purchaseLimit: normalizeDraftPurchaseLimit(pkg.purchaseLimit),
+              maxPurchases: normalizeDraftMaxPurchases(pkg.maxPurchases),
             },
           ]),
         ),
@@ -319,47 +434,58 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     namePlaceholder: string,
     pricePlaceholder: string,
   ) => {
-    const colSpan = canWrite ? (showVat ? 6 : 5) : showVat ? 5 : 4;
+    const showPurchaseLimit = true;
+    const showMaxPurchases = true;
+    const baseWrite = canWrite ? (showVat ? 6 : 5) : showVat ? 5 : 4;
+    const effectiveColSpan =
+      baseWrite + (showPurchaseLimit ? 1 : 0) + (showMaxPurchases ? 1 : 0);
     const priceLabel = showVat ? 'Price (excl. VAT)' : 'Price';
+    const columns = [
+      'Name',
+      'Credits',
+      priceLabel,
+      'Badge',
+      ...(showPurchaseLimit ? ['Purchase limit'] : []),
+      ...(showMaxPurchases ? ['Max purchases'] : []),
+      ...(showVat ? ['Incl. VAT'] : []),
+      ...(canWrite ? ['Actions'] : []),
+    ];
+    const columnWidths = canWrite
+      ? showVat
+        ? showPurchaseLimit
+          ? ['14%', '8%', '11%', '10%', '12%', '12%', '10%', '23%']
+          : ['16%', '10%', '14%', '12%', '14%', '12%', '22%']
+        : showPurchaseLimit
+          ? ['16%', '9%', '12%', '11%', '14%', '14%', '24%']
+          : ['18%', '12%', '16%', '14%', '16%', '24%']
+      : showVat
+        ? showPurchaseLimit
+          ? ['18%', '10%', '12%', '10%', '14%', '14%', '12%']
+          : ['20%', '12%', '16%', '14%', '18%', '20%']
+        : showPurchaseLimit
+          ? ['20%', '10%', '14%', '14%', '20%', '22%']
+          : ['24%', '14%', '18%', '20%', '24%'];
     return (
       <div className="mb-8">
         <DataTable
           tableClassName="table-fixed"
-          columnWidths={
-            canWrite
-              ? showVat
-                ? ['22%', '12%', '16%', '14%', '12%', '24%']
-                : ['24%', '14%', '18%', '16%', '28%']
-              : showVat
-                ? ['26%', '14%', '18%', '16%', '14%']
-                : ['30%', '16%', '24%', '30%']
-          }
+          columnWidths={columnWidths}
           columnHeaderClassNames={
             canWrite
-              ? showVat
-                ? [undefined, undefined, undefined, undefined, undefined, 'text-right']
-                : [undefined, undefined, undefined, undefined, 'text-right']
+              ? [...Array(columns.length - 1).fill(undefined), 'text-right']
               : undefined
           }
-          columns={
-            canWrite
-              ? showVat
-                ? ['Name', 'Credits', priceLabel, 'Badge', 'Incl. VAT', 'Actions']
-                : ['Name', 'Credits', priceLabel, 'Badge', 'Actions']
-              : showVat
-                ? ['Name', 'Credits', priceLabel, 'Badge', 'Incl. VAT']
-                : ['Name', 'Credits', priceLabel, 'Badge']
-          }>
+          columns={columns}>
           {packages.isLoading && items.length === 0 ? (
             <tr>
-              <td colSpan={colSpan} className="px-4 py-8 text-center">
+              <td colSpan={effectiveColSpan} className="px-4 py-8 text-center">
                 <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
               </td>
             </tr>
           ) : null}
           {packages.error ? (
             <tr>
-              <td colSpan={colSpan} className="px-4 py-6 text-center">
+              <td colSpan={effectiveColSpan} className="px-4 py-6 text-center">
                 <p className="mb-2 text-sm text-destructive">{packages.error}</p>
                 <button
                   className="text-xs text-primary underline"
@@ -371,7 +497,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
           ) : null}
           {!packages.isLoading && !packages.error && items.length === 0 ? (
             <tr>
-              <td colSpan={colSpan} className="px-4 py-6 text-center text-sm text-muted-foreground">
+              <td colSpan={effectiveColSpan} className="px-4 py-6 text-center text-sm text-muted-foreground">
                 No {type === 'membership' ? 'membership plans' : 'credit packages'} yet.
               </td>
             </tr>
@@ -383,6 +509,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
               credits: String(pack.credits),
               price: String(pack.price),
               badge: pack.badge ?? '',
+              purchaseLimit: normalizeDraftPurchaseLimit(pack.purchaseLimit),
+              maxPurchases: normalizeDraftMaxPurchases(pack.maxPurchases),
             };
             const isEditing = canWrite && editingCreditPackageId === pack.id;
             const displayPrice = Number(isEditing ? draft.price : pack.price);
@@ -482,6 +610,50 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                     )}
                   </CreditPackageTableCell>
                 </td>
+                {showPurchaseLimit ? (
+                  <td className="px-4 py-2">
+                    <CreditPackageTableCell>
+                      <PurchaseLimitCell
+                        purchaseLimit={
+                          isEditing
+                            ? draft.purchaseLimit
+                            : normalizeDraftPurchaseLimit(pack.purchaseLimit)
+                        }
+                        editing={isEditing}
+                        onChange={
+                          isEditing
+                            ? next =>
+                                setCreditPackageDrafts(state => ({
+                                  ...state,
+                                  [pack.id]: {...draft, purchaseLimit: next},
+                                }))
+                            : undefined
+                        }
+                      />
+                    </CreditPackageTableCell>
+                  </td>
+                ) : null}
+                {showMaxPurchases ? (
+                  <td className="px-4 py-2">
+                    <CreditPackageTableCell>
+                      <MaxPurchasesCell
+                        maxPurchases={
+                          isEditing ? draft.maxPurchases : normalizeDraftMaxPurchases(pack.maxPurchases)
+                        }
+                        editing={isEditing}
+                        onChange={
+                          isEditing
+                            ? next =>
+                                setCreditPackageDrafts(state => ({
+                                  ...state,
+                                  [pack.id]: {...draft, maxPurchases: next},
+                                }))
+                            : undefined
+                        }
+                      />
+                    </CreditPackageTableCell>
+                  </td>
+                ) : null}
                 {showVat ? (
                   <td className="px-4 py-2">
                     <CreditPackageTableCell>
@@ -558,6 +730,28 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                   </select>
                 </CreditPackageTableCell>
               </td>
+              {showPurchaseLimit ? (
+                <td className="px-4 py-2">
+                  <CreditPackageTableCell>
+                    <PurchaseLimitCell
+                      purchaseLimit={form.purchaseLimit}
+                      editing
+                      onChange={next => setForm(current => ({...current, purchaseLimit: next}))}
+                    />
+                  </CreditPackageTableCell>
+                </td>
+              ) : null}
+              {showMaxPurchases ? (
+                <td className="px-4 py-2">
+                  <CreditPackageTableCell>
+                    <MaxPurchasesCell
+                      maxPurchases={form.maxPurchases}
+                      editing
+                      onChange={next => setForm(current => ({...current, maxPurchases: next}))}
+                    />
+                  </CreditPackageTableCell>
+                </td>
+              ) : null}
               {showVat ? (
                 <td className="px-4 py-2">
                   <CreditPackageTableCell>
@@ -623,6 +817,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         credits,
         price,
         badge: draft.badge || null,
+        purchaseLimit: normalizeDraftPurchaseLimit(draft.purchaseLimit),
+        maxPurchases: parseMaxPurchasesInput(draft.maxPurchases ?? ''),
       });
       setEditingCreditPackageId(current => (current === packId ? null : current));
       await loadPackages();
@@ -659,6 +855,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         credits,
         price,
         badge: form.badge || null,
+        purchaseLimit: normalizeDraftPurchaseLimit(form.purchaseLimit),
+        maxPurchases: parseMaxPurchasesInput(form.maxPurchases),
       });
       setForm({...emptyCreditPackageForm, type});
       await loadPackages();
@@ -681,6 +879,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
             credits: String(previous.credits),
             price: String(previous.price),
             badge: previous.badge ?? '',
+            purchaseLimit: normalizeDraftPurchaseLimit(previous.purchaseLimit),
+            maxPurchases: normalizeDraftMaxPurchases(previous.maxPurchases),
           },
         }));
       }
@@ -694,6 +894,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         credits: String(pack.credits),
         price: String(pack.price),
         badge: pack.badge ?? '',
+        purchaseLimit: normalizeDraftPurchaseLimit(pack.purchaseLimit),
+        maxPurchases: normalizeDraftMaxPurchases(pack.maxPurchases),
       },
     }));
     setError(null);
@@ -708,6 +910,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         credits: String(pack.credits),
         price: String(pack.price),
         badge: pack.badge ?? '',
+        purchaseLimit: normalizeDraftPurchaseLimit(pack.purchaseLimit),
+        maxPurchases: normalizeDraftMaxPurchases(pack.maxPurchases),
       },
     }));
     setEditingCreditPackageId(current => (current === pack.id ? null : current));
