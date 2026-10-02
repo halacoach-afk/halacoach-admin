@@ -336,7 +336,7 @@ export function getFeaturesSettings() {
   return request<FeaturesSettings>('/v1/platform-settings/features');
 }
 
-export function updateFeaturesSettings(input: {onlinePlansEnabled: boolean}) {
+export function updateFeaturesSettings(input: Partial<FeaturesSettings>) {
   return request<FeaturesSettings>('/v1/platform-settings/features', {
     method: 'PATCH',
     body: JSON.stringify(input),
