@@ -87,7 +87,7 @@ function PrefField({
 function ContactValue({value, verified}: {value: string; verified?: boolean}) {
   const display = value.trim();
   if (!display) {
-    return <span className="font-normal text-muted-foreground">â€”</span>;
+    return <span className="font-normal text-muted-foreground">{'\u2014'}</span>;
   }
   return (
     <span className="break-all">
@@ -102,16 +102,16 @@ function ContactValue({value, verified}: {value: string; verified?: boolean}) {
 }
 
 function formatDateTime(iso: string | null | undefined) {
-  if (!iso) return 'â€”';
+  if (!iso) return '\u2014';
   const date = new Date(iso);
-  if (!Number.isFinite(date.getTime())) return 'â€”';
+  if (!Number.isFinite(date.getTime())) return '\u2014';
   return date.toLocaleString();
 }
 
 function formatDate(iso: string | null | undefined) {
-  if (!iso) return 'â€”';
+  if (!iso) return '\u2014';
   const date = new Date(iso);
-  if (!Number.isFinite(date.getTime())) return 'â€”';
+  if (!Number.isFinite(date.getTime())) return '\u2014';
   return date.toLocaleDateString();
 }
 
@@ -399,7 +399,7 @@ export function ProfessionalDetailScreen({
             <PrefField
               icon={<MapPin className="size-3.5" strokeWidth={1.8} />}
               label="Location"
-              value={pro.location?.trim() || 'â€”'}
+              value={pro.location?.trim() || '\u2014'}
             />
           </div>
           {pro.about?.trim() || pro.bio?.trim() ? (
