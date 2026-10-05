@@ -114,34 +114,28 @@ export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
       />
 
       <FilterBar>
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              ['all', `All (${counts.all ?? 0})`],
-              ['active', `Active (${counts.active ?? 0})`],
-              ['past_due', `Past due (${counts.past_due ?? 0})`],
-              ['canceled', `Canceled (${counts.canceled ?? 0})`],
-              ['expired', `Expired (${counts.expired ?? 0})`],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setFilter(value)}
-              className={
-                filter === value
-                  ? 'rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground'
-                  : 'rounded-lg bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground'
-              }>
-              {label}
-            </button>
-          ))}
-        </div>
+        {(
+          [
+            ['all', 'All'],
+            ['active', 'Active'],
+            ['past_due', 'Past due'],
+            ['canceled', 'Canceled'],
+            ['expired', 'Expired'],
+          ] as const
+        ).map(([key, label]) => (
+          <Button
+            key={key}
+            variant={filter === key ? 'primary' : 'outline'}
+            size="sm"
+            onClick={() => setFilter(key)}>
+            {label} ({counts[key] ?? 0})
+          </Button>
+        ))}
         <input
-          value={query}
-          onChange={e => setQuery(e.target.value)}
+          className="ms-auto h-9 min-w-[220px] rounded-xl border border-border px-3 text-sm"
           placeholder="Search coach, email, plan..."
-          className="w-full max-w-xs rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          value={query}
+          onChange={event => setQuery(event.target.value)}
         />
       </FilterBar>
 
