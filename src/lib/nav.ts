@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   LifeBuoy,
   MapPin,
-  MessageCircle,
   Receipt,
   Settings,
   Shield,
@@ -69,13 +68,6 @@ export const navItems: NavItem[] = [
     description: 'Coach-built training plans from the mobile Clients tab.',
     icon: ClipboardList,
     permission: 'clients:read',
-  },
-  {
-    href: '/messages',
-    label: 'Messages',
-    description: 'Read-only view of client <-> coach chat threads (demo data).',
-    icon: MessageCircle,
-    permission: 'messages:read',
   },
   {
     href: '/billing',
