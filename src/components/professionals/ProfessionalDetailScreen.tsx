@@ -249,6 +249,8 @@ export function ProfessionalDetailScreen({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingActivate, setPendingActivate] = useState<boolean | null>(null);
+  const [pendingSuspend, setPendingSuspend] = useState<boolean | null>(null);
+  const [acting, setActing] = useState(false);
   const [viewer, setViewer] = useState<{fileId: string; name: string} | null>(null);
 
   const loadViewerFile = useCallback(async () => {
@@ -296,6 +298,8 @@ export function ProfessionalDetailScreen({
     if (!pro || pendingActivate === null) {
       return;
     }
+    setActing(true);
+    setError(null);
     try {
       const updated = await updateProfessional(pro.id, {activated: pendingActivate});
       setPro(updated);
@@ -303,6 +307,24 @@ export function ProfessionalDetailScreen({
       setError(isApiError(err) ? err.message : 'Could not update activation.');
     } finally {
       setPendingActivate(null);
+      setActing(false);
+    }
+  };
+
+  const toggleSuspended = async () => {
+    if (!pro || pendingSuspend === null) {
+      return;
+    }
+    setActing(true);
+    setError(null);
+    try {
+      const updated = await updateProfessional(pro.id, {suspended: pendingSuspend});
+      setPro(updated);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not update suspension.');
+    } finally {
+      setPendingSuspend(null);
+      setActing(false);
     }
   };
 
@@ -310,12 +332,18 @@ export function ProfessionalDetailScreen({
     return <LoadingState label="Loading professional..." />;
   }
 
-  if (error || !pro) {
+  if (error && !pro) {
     return (
       <ErrorState
         body={error ?? 'Professional not found.'}
         onRetry={() => void load()}
       />
+    );
+  }
+
+  if (!pro) {
+    return (
+      <ErrorState body="Professional not found." onRetry={() => void load()} />
     );
   }
 
@@ -335,18 +363,30 @@ export function ProfessionalDetailScreen({
         </Link>
         <div className="flex flex-wrap gap-2">
           {canWrite ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPendingActivate(!pro.activated)}>
-              {pro.activated ? 'Deactivate' : 'Activate'}
-            </Button>
+            <>
+              <Button
+                variant={pro.suspended ? 'primary' : 'destructive'}
+                size="sm"
+                disabled={acting}
+                onClick={() => setPendingSuspend(!pro.suspended)}>
+                {pro.suspended ? 'Unsuspend' : 'Suspend'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={acting}
+                onClick={() => setPendingActivate(!pro.activated)}>
+                {pro.activated ? 'Deactivate' : 'Activate'}
+              </Button>
+            </>
           ) : null}
-          <Button variant="outline" size="sm" onClick={() => void load()}>
+          <Button variant="outline" size="sm" onClick={() => void load()} disabled={acting}>
             Refresh
           </Button>
         </div>
       </div>
+
+      {error ? <ErrorState body={error} onRetry={() => void load()} /> : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Profile">
@@ -751,8 +791,26 @@ export function ProfessionalDetailScreen({
             : 'The profile will be hidden from clients until activated again.'
         }
         confirmLabel={pendingActivate ? 'Activate' : 'Deactivate'}
-        onClose={() => setPendingActivate(null)}
+        onClose={() => {
+          if (!acting) setPendingActivate(null);
+        }}
         onConfirm={() => void toggleActivated()}
+      />
+
+      <ConfirmDialog
+        open={pendingSuspend !== null}
+        title={pendingSuspend ? 'Suspend this coach?' : 'Unsuspend this coach?'}
+        body={
+          pendingSuspend
+            ? 'They will be signed out and cannot log in until unsuspended. Marketplace access is blocked while suspended.'
+            : 'They will be able to log in again. Marketplace visibility still depends on activation and verification.'
+        }
+        confirmLabel={pendingSuspend ? 'Suspend' : 'Unsuspend'}
+        destructive={pendingSuspend === true}
+        onClose={() => {
+          if (!acting) setPendingSuspend(null);
+        }}
+        onConfirm={() => void toggleSuspended()}
       />
     </>
   );
