@@ -148,12 +148,6 @@ export function AdminDetailScreen({actor, id}: {actor: SessionUser; id: string})
       <h2 className="mb-3 text-lg font-semibold text-foreground">Details</h2>
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={
-            canWrite
-              ? ['18%', '24%', '14%', '12%', '14%', '18%']
-              : ['20%', '28%', '16%', '14%', '22%']
-          }
           columnHeaderClassNames={
             canWrite
               ? [undefined, undefined, undefined, undefined, undefined, 'text-right']

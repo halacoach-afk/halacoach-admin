@@ -119,7 +119,7 @@ function leadStatusLabel(status: LeadLifecycleStatus) {
 function LeadCell({value, className}: {value: string; className?: string}) {
   return (
     <td className={`px-4 py-3 align-top text-sm text-foreground ${className ?? ''}`}>
-      <div className="max-w-[180px] whitespace-normal break-words">{value}</div>
+      {value}
     </td>
   );
 }
@@ -160,12 +160,11 @@ export function ClientDetailScreen({id}: {id: string}) {
     try {
       const [detail, allLeads, catalog] = await Promise.all([
         getClient(id),
-        listLeads(),
+        listLeads({clientId: id, perPage: 100}),
         listServices(),
       ]);
       setClient(detail);
-      const clientKey = String(detail.id);
-      setLeads(allLeads.filter(lead => String(lead.clientId) === clientKey));
+      setLeads(allLeads.data);
       setServices(catalog);
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load client.');

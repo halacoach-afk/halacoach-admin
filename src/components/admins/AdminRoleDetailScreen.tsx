@@ -242,8 +242,6 @@ export function AdminRoleDetailScreen({actor, id}: {actor: SessionUser; id: stri
       <h2 className="mb-3 text-lg font-semibold text-foreground">Details</h2>
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={canEdit ? ['34%', '46%', '20%'] : ['40%', '60%']}
           columnHeaderClassNames={
             canEdit ? [undefined, undefined, 'text-right'] : undefined
           }
@@ -313,10 +311,7 @@ export function AdminRoleDetailScreen({actor, id}: {actor: SessionUser; id: stri
 
       <h2 className="mb-3 text-lg font-semibold text-foreground">Permissions</h2>
       <div className="mb-8">
-        <DataTable
-          tableClassName="table-fixed"
-          columnWidths={['28%', '18%', '18%', '18%', '18%']}
-          columns={['Module', ...ACCESS_COLUMNS.map(column => column.label)]}>
+        <DataTable columns={['Module', ...ACCESS_COLUMNS.map(column => column.label)]}>
           {moduleRows.map(row => (
             <tr
               key={row.module}

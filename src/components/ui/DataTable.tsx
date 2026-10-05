@@ -15,12 +15,19 @@ export function DataTable({
   footer?: ReactNode;
   className?: string;
   tableClassName?: string;
+  /** Optional column widths; prefer content-sized columns when omitted. */
   columnWidths?: string[];
   columnHeaderClassNames?: (string | undefined)[];
 }) {
   return (
     <div className={cn('overflow-x-auto overflow-y-hidden rounded-2xl border border-border bg-card', className)}>
-      <table className={cn('w-full min-w-[640px] text-left text-sm', tableClassName)}>
+      <table
+        className={cn(
+          // Fill the card; grow past 100% when nowrap content needs horizontal scroll.
+          'w-full min-w-max table-auto text-left text-sm',
+          '[&_th]:whitespace-nowrap [&_td]:whitespace-nowrap',
+          tableClassName,
+        )}>
         {columnWidths?.length ? (
           <colgroup>
             {columnWidths.map((width, index) => (

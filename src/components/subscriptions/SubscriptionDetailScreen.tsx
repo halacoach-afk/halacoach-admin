@@ -94,10 +94,10 @@ export function SubscriptionDetailScreen({
     <>
       <div className="mb-4">
         <Link
-          href="/subscriptions"
+          href="/billing"
           className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">
           <ArrowLeft size={16} />
-          Back to subscriptions
+          Back to billing
         </Link>
       </div>
 
@@ -183,7 +183,7 @@ export function SubscriptionDetailScreen({
         {sub.grants.length === 0 ? (
           <p className="text-sm text-muted-foreground">No grant transactions for this subscription.</p>
         ) : (
-          <DataTable columns={['When', 'Credits', 'Label']} columnWidths={['30%', '20%', '50%']}>
+          <DataTable columns={['When', 'Credits', 'Label']}>
             {sub.grants.map(txn => (
               <tr key={txn.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 text-sm text-muted-foreground">
@@ -204,7 +204,7 @@ export function SubscriptionDetailScreen({
         {sub.periodSpends.length === 0 ? (
           <p className="text-sm text-muted-foreground">No spends in the current billing period.</p>
         ) : (
-          <DataTable columns={['When', 'Credits', 'Label']} columnWidths={['30%', '20%', '50%']}>
+          <DataTable columns={['When', 'Credits', 'Label']}>
             {sub.periodSpends.map(txn => (
               <tr key={txn.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 text-sm text-muted-foreground">

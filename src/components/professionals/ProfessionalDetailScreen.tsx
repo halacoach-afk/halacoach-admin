@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import {useCallback, useEffect, useMemo, useState, type ReactNode} from 'react';
@@ -87,7 +87,7 @@ function PrefField({
 function ContactValue({value, verified}: {value: string; verified?: boolean}) {
   const display = value.trim();
   if (!display) {
-    return <span className="font-normal text-muted-foreground">â€”</span>;
+    return <span className="font-normal text-muted-foreground">{'\u2014'}</span>;
   }
   return (
     <span className="break-all">
@@ -102,16 +102,16 @@ function ContactValue({value, verified}: {value: string; verified?: boolean}) {
 }
 
 function formatDateTime(iso: string | null | undefined) {
-  if (!iso) return 'â€”';
+  if (!iso) return '\u2014';
   const date = new Date(iso);
-  if (!Number.isFinite(date.getTime())) return 'â€”';
+  if (!Number.isFinite(date.getTime())) return '\u2014';
   return date.toLocaleString();
 }
 
 function formatDate(iso: string | null | undefined) {
-  if (!iso) return 'â€”';
+  if (!iso) return '\u2014';
   const date = new Date(iso);
-  if (!Number.isFinite(date.getTime())) return 'â€”';
+  if (!Number.isFinite(date.getTime())) return '\u2014';
   return date.toLocaleDateString();
 }
 
@@ -139,7 +139,7 @@ function leadStatusLabel(status: LeadLifecycleStatus) {
 function LeadCell({value, className}: {value: string; className?: string}) {
   return (
     <td className={`px-4 py-3 align-top text-sm text-foreground ${className ?? ''}`}>
-      <div className="max-w-[180px] whitespace-normal break-words">{value}</div>
+      {value}
     </td>
   );
 }
@@ -265,14 +265,11 @@ export function ProfessionalDetailScreen({
       const [detail, catalog, allLeads] = await Promise.all([
         getProfessional(id),
         listServices(),
-        listLeads(),
+        listLeads({assignedCoachId: id, perPage: 100}),
       ]);
       setPro(detail);
       setServices(catalog);
-      const coachKey = String(detail.id);
-      setLeads(
-        allLeads.filter(lead => String(lead.assignedCoachId) === coachKey),
-      );
+      setLeads(allLeads.data);
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load professional.');
     } finally {
@@ -399,7 +396,7 @@ export function ProfessionalDetailScreen({
             <PrefField
               icon={<MapPin className="size-3.5" strokeWidth={1.8} />}
               label="Location"
-              value={pro.location?.trim() || 'â€”'}
+              value={pro.location?.trim() || '\u2014'}
             />
           </div>
           {pro.about?.trim() || pro.bio?.trim() ? (

@@ -205,7 +205,14 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
 
   return (
     <>
-      <PageHeader title="Services" />
+      <PageHeader
+        title="Services"
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            Refresh
+          </Button>
+        }
+      />
 
       {error ? (
         <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-destructive">{error}</p>
@@ -219,8 +226,9 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
 
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={canWrite ? ['48%', '16%', '14%', '22%'] : ['58%', '22%', '20%']}
+          columnHeaderClassNames={
+            canWrite ? [undefined, undefined, undefined, 'text-right'] : undefined
+          }
           columns={canWrite ? ['Name', 'Status', 'Order', 'Actions'] : ['Name', 'Status', 'Order']}>
           {services.isLoading && services.items.length === 0 ? (
             <tr>
@@ -250,7 +258,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                   !service.active && 'bg-muted/30',
                   isEditing && 'bg-primary-soft/30',
                 )}>
-                <td className="px-4 py-2">
+                <td className="w-full px-4 py-2">
                   <TableCell>
                     {isEditing ? (
                       <input
@@ -261,12 +269,14 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                         }
                       />
                     ) : (
-                      <span className="truncate font-medium text-foreground">{service.name}</span>
+                      <span className="font-medium text-foreground whitespace-nowrap">
+                        {service.name}
+                      </span>
                     )}
                   </TableCell>
                 </td>
-                <td className="px-4 py-2">
-                  <TableCell>
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <TableCell className="flex-nowrap">
                     {service.active ? (
                       <Badge tone="primary">Active</Badge>
                     ) : (
@@ -274,13 +284,13 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                     )}
                   </TableCell>
                 </td>
-                <td className="px-4 py-2">
-                  <TableCell className="gap-1.5">
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <TableCell className="flex-nowrap gap-1.5">
                     <span className="w-6 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
                       {index + 1}
                     </span>
                     {canWrite ? (
-                      <span className="flex shrink-0 gap-0.5">
+                      <span className="flex shrink-0 flex-nowrap gap-0.5">
                         <Button
                           size="sm"
                           variant="outline"
@@ -304,7 +314,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                   </TableCell>
                 </td>
                 {canWrite ? (
-                  <td className="px-4 py-2">
+                  <td className="px-4 py-2 whitespace-nowrap">
                     <CatalogActions
                       isEditing={isEditing}
                       saving={savingId === service.id}
@@ -321,7 +331,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
           })}
           {canWrite ? (
             <tr className="border-t-2 border-border bg-primary-soft/40">
-              <td className="px-4 py-2">
+              <td className="w-full px-4 py-2">
                 <TableCell>
                   <input
                     className={tableInputClass}
@@ -331,17 +341,17 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                   />
                 </TableCell>
               </td>
-              <td className="px-4 py-2">
-                <TableCell>
+              <td className="px-4 py-2 whitespace-nowrap">
+                <TableCell className="flex-nowrap">
                   <Badge tone="sky">New</Badge>
                 </TableCell>
               </td>
-              <td className="px-4 py-2">
+              <td className="px-4 py-2 whitespace-nowrap">
                 <TableCell>
                   <span className="text-sm text-muted-foreground">—</span>
                 </TableCell>
               </td>
-              <td className="px-4 py-2">
+              <td className="px-4 py-2 whitespace-nowrap">
                 <TableCell className="flex-nowrap justify-end gap-1">
                   <span className={actionButtonClass} aria-hidden />
                   <Button

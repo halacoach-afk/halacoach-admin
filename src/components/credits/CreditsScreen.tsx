@@ -25,15 +25,12 @@ import type {
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
-import {DataTable, FilterBar} from '@/components/ui/DataTable';
-import {EmptyState} from '@/components/ui/EmptyState';
+import {DataTable} from '@/components/ui/DataTable';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
-import {creditTxnLabel, formatAed, formatPromoBenefit, VAT_RATE} from '@/lib/credit-utils';
+import {formatAed, formatPromoBenefit, VAT_RATE} from '@/lib/credit-utils';
 import {cn} from '@/lib/cn';
 import {can} from '@/lib/permissions';
-
-type TxnFilter = 'all' | 'credited' | 'spent';
 
 type CreditPackageDraft = {
   name: string;
@@ -336,7 +333,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   const [savingCreditPackage, setSavingCreditPackage] = useState<number | null>(null);
   const [creatingCreditPackage, setCreatingCreditPackage] = useState(false);
   const [editingCreditPackageId, setEditingCreditPackageId] = useState<number | null>(null);
-  const [txnFilter, setTxnFilter] = useState<TxnFilter>('all');
   const [promoDrafts, setPromoDrafts] = useState<Record<number, PromoDraft>>({});
   const [promoForm, setPromoForm] = useState<PromoDraft>(emptyPromoForm);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -381,11 +377,13 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  const load = async () => {
+  const loadMeta = async () => {
     setLoading(true);
     setError(null);
     try {
-      const meta = await request<Omit<CreditsOverview, 'packs' | 'promos'>>('/v1/credits-meta');
+      const meta = await request<Omit<CreditsOverview, 'packs' | 'promos'>>(
+        '/v1/credits-meta?page=1&perPage=1',
+      );
       setOverview({...meta, packs: [], promos: []});
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load credits module.');
@@ -397,23 +395,9 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   useEffect(() => {
     void loadPackages();
     void loadPromos();
-    void load();
+    void loadMeta();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial catalog + VAT load
   }, []);
-
-  const transactions = useMemo(() => {
-    if (!overview) {
-      return [];
-    }
-    if (txnFilter === 'all') {
-      return overview.transactions;
-    }
-    if (txnFilter === 'credited') {
-      // Purchases, membership grants, and other credit-adding rows
-      return overview.transactions.filter(item => item.credits > 0);
-    }
-    // Spending / unlocks / other credit-removing rows
-    return overview.transactions.filter(item => item.credits < 0);
-  }, [overview, txnFilter]);
 
   const oneTimePackages = useMemo(
     () => packages.items.filter(pack => (pack.type ?? 'one_time') === 'one_time'),
@@ -450,26 +434,9 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
       ...(showVat ? ['Incl. VAT'] : []),
       ...(canWrite ? ['Actions'] : []),
     ];
-    const columnWidths = canWrite
-      ? showVat
-        ? showPurchaseLimit
-          ? ['14%', '8%', '11%', '10%', '12%', '12%', '10%', '23%']
-          : ['16%', '10%', '14%', '12%', '14%', '12%', '22%']
-        : showPurchaseLimit
-          ? ['16%', '9%', '12%', '11%', '14%', '14%', '24%']
-          : ['18%', '12%', '16%', '14%', '16%', '24%']
-      : showVat
-        ? showPurchaseLimit
-          ? ['18%', '10%', '12%', '10%', '14%', '14%', '12%']
-          : ['20%', '12%', '16%', '14%', '18%', '20%']
-        : showPurchaseLimit
-          ? ['20%', '10%', '14%', '14%', '20%', '22%']
-          : ['24%', '14%', '18%', '20%', '24%'];
     return (
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={columnWidths}
           columnHeaderClassNames={
             canWrite
               ? [...Array(columns.length - 1).fill(undefined), 'text-right']
@@ -540,7 +507,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                         }
                       />
                     ) : (
-                      <span className="truncate font-medium text-foreground">{pack.name}</span>
+                      <span className="font-medium text-foreground">{pack.name}</span>
                     )}
                   </CreditPackageTableCell>
                 </td>
@@ -1013,7 +980,19 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     <>
       <PageHeader
         title="Credits"
-        description="Packs, memberships, promo codes, VAT, and transactions."
+        description="Packs, memberships, promo codes, and VAT configuration."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              void loadPackages();
+              void loadPromos();
+              void loadMeta();
+            }}>
+            Refresh
+          </Button>
+        }
       />
 
       {error ? (
@@ -1050,10 +1029,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
       <h2 className="mb-3 text-lg font-semibold text-foreground">Promo codes</h2>
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={
-            canWrite ? ['16%', '22%', '16%', '12%', '34%'] : ['30%', '35%', '35%']
-          }
           columnHeaderClassNames={
             canWrite
               ? [undefined, undefined, undefined, undefined, 'text-right']
@@ -1148,7 +1123,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                   <CreditPackageTableCell>
                     {isEditing ? (
                       <input
-                        className={cn(tableInputClass, 'max-w-[7rem]')}
+                        className={tableInputClass}
                         type="number"
                         min={benefitInput.min}
                         max={'max' in benefitInput ? benefitInput.max : undefined}
@@ -1231,7 +1206,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
               <td className="px-4 py-2">
                 <CreditPackageTableCell>
                   <input
-                    className={cn(tableInputClass, 'max-w-[7rem]')}
+                    className={tableInputClass}
                     type="number"
                     min={promoBenefitInputProps(promoForm.benefitType).min}
                     max={
@@ -1274,58 +1249,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         </DataTable>
         {promoError ? <p className="mt-2 text-sm text-destructive">{promoError}</p> : null}
       </div>
-
-      {overview ? (<>
-      <h2 className="mb-3 mt-8 text-lg font-semibold text-foreground">Transactions</h2>
-      <FilterBar>
-        {(
-          [
-            ['all', 'All'],
-            ['credited', 'Purchasings'],
-            ['spent', 'Spendings'],
-          ] as const
-        ).map(([key, label]) => (
-          <Button
-            key={key}
-            size="sm"
-            variant={txnFilter === key ? 'primary' : 'outline'}
-            onClick={() => setTxnFilter(key)}>
-            {label}
-          </Button>
-        ))}
-      </FilterBar>
-      {transactions.length === 0 ? (
-        <EmptyState title="No transactions" body="Try another filter." />
-      ) : (
-        <DataTable columns={['When', 'Coach', 'Type', 'Credits', 'Details', 'Paid']}>
-          {transactions.map(txn => (
-            <tr key={txn.id} className="border-b border-border last:border-0">
-              <td className="px-4 py-3 text-sm text-muted-foreground">
-                {new Date(txn.at).toLocaleString()}
-              </td>
-              <td className="px-4 py-3 text-sm">{txn.professionalName}</td>
-              <td className="px-4 py-3">
-                <Badge tone={txn.type === 'purchase' ? 'primary' : txn.type === 'spend' ? 'coral' : 'sky'}>
-                  {txn.type}
-                </Badge>
-              </td>
-              <td className="px-4 py-3 font-medium">
-                {txn.credits > 0 ? `+${txn.credits}` : String(txn.credits)}
-              </td>
-              <td className="px-4 py-3 text-sm text-muted-foreground">
-                {creditTxnLabel(txn.label)}
-                {txn.orderId ? ` | ${txn.orderId}` : ''}
-              </td>
-              <td className="px-4 py-3 text-sm">
-                {txn.totalAed ? formatAed(txn.totalAed) : '-'}
-              </td>
-            </tr>
-          ))}
-        </DataTable>
-      )}
-
-      </>
-      ) : null}
     </>
   );
 }

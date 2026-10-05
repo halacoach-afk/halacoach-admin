@@ -9,6 +9,7 @@ import {
   updateBillingSettings,
   updateFeaturesSettings,
   updateSupportContactSettings,
+  type FeaturesSettings,
   type SessionUser,
 } from '@/api';
 import {Button} from '@/components/ui/Button';
@@ -25,8 +26,60 @@ const tableInputClass =
 const tableCellClass = 'flex h-9 items-center';
 const actionButtonClass = 'w-[4.75rem] shrink-0 justify-center';
 
+type FeatureFlagId = keyof FeaturesSettings;
+
+type FeatureFlagDef = {
+  id: FeatureFlagId;
+  title: string;
+  description: string;
+};
+
+/** Add new platform feature toggles here; wire matching keys on the features API. */
+const FEATURE_FLAGS: FeatureFlagDef[] = [
+  {
+    id: 'onlinePlansEnabled',
+    title: 'Personalized online plans',
+    description:
+      'When disabled, new personalized online training plans cannot be started. Existing personalized plans keep working.',
+  },
+];
+
 function TableCell({children, className}: {children: React.ReactNode; className?: string}) {
   return <div className={cn(tableCellClass, className)}>{children}</div>;
+}
+
+function FeatureSwitch({
+  checked,
+  disabled,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  onChange?: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onChange}
+      className={cn(
+        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors',
+        checked ? 'bg-primary' : 'bg-muted',
+        disabled ? 'cursor-default opacity-70' : 'cursor-pointer',
+      )}>
+      <span
+        className={cn(
+          'inline-block h-4 w-4 rounded-full bg-white shadow transition-transform',
+          checked ? 'translate-x-6' : 'translate-x-1',
+        )}
+      />
+    </button>
+  );
 }
 
 export function SettingsScreen({actor}: {actor: SessionUser}) {
@@ -34,7 +87,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingBilling, setSavingBilling] = useState(false);
-  const [savingFeatures, setSavingFeatures] = useState(false);
+  const [savingFeatureId, setSavingFeatureId] = useState<FeatureFlagId | null>(null);
   const [editing, setEditing] = useState(false);
   const [editingBilling, setEditingBilling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,13 +97,15 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
   const [draftPhone, setDraftPhone] = useState('');
   const [vatPercent, setVatPercent] = useState(5);
   const [draftVatPercent, setDraftVatPercent] = useState('5');
-  const [onlinePlansEnabled, setOnlinePlansEnabled] = useState(true);
+  const [features, setFeatures] = useState<FeaturesSettings>({
+    onlinePlansEnabled: true,
+  });
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [support, billing, features] = await Promise.all([
+      const [support, billing, nextFeatures] = await Promise.all([
         getSupportContactSettings(),
         getBillingSettings(),
         getFeaturesSettings(),
@@ -61,7 +116,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       setDraftPhone(support.supportPhone);
       setVatPercent(billing.vatPercent);
       setDraftVatPercent(String(billing.vatPercent));
-      setOnlinePlansEnabled(features.onlinePlansEnabled);
+      setFeatures(nextFeatures);
       setEditing(false);
       setEditingBilling(false);
     } catch (err) {
@@ -157,20 +212,20 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  const toggleOnlinePlans = async () => {
-    if (!canWrite || savingFeatures) {
+  const toggleFeature = async (id: FeatureFlagId) => {
+    if (!canWrite || savingFeatureId) {
       return;
     }
-    const nextEnabled = !onlinePlansEnabled;
-    setSavingFeatures(true);
+    const nextValue = !features[id];
+    setSavingFeatureId(id);
     setError(null);
     try {
-      const next = await updateFeaturesSettings({onlinePlansEnabled: nextEnabled});
-      setOnlinePlansEnabled(next.onlinePlansEnabled);
+      const next = await updateFeaturesSettings({[id]: nextValue});
+      setFeatures(next);
     } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not update online plans setting.');
+      setError(isApiError(err) ? err.message : 'Could not update feature setting.');
     } finally {
-      setSavingFeatures(false);
+      setSavingFeatureId(null);
     }
   };
 
@@ -211,8 +266,6 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       <h2 className="mb-3 text-lg font-semibold text-foreground">Support contact</h2>
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={canWrite ? ['38%', '38%', '24%'] : ['50%', '50%']}
           columnHeaderClassNames={
             canWrite ? [undefined, undefined, 'text-right'] : undefined
           }
@@ -234,7 +287,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
                     disabled={saving}
                   />
                 ) : (
-                  <span className="truncate font-medium text-foreground">{displayEmail}</span>
+                  <span className="font-medium text-foreground">{displayEmail}</span>
                 )}
               </TableCell>
             </td>
@@ -250,7 +303,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
                     disabled={saving}
                   />
                 ) : (
-                  <span className="truncate text-foreground">{displayPhone}</span>
+                  <span className="text-foreground">{displayPhone}</span>
                 )}
               </TableCell>
             </td>
@@ -301,44 +354,37 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       </div>
 
       <h2 className="mb-3 text-lg font-semibold text-foreground">Features</h2>
-      <p className="mb-3 text-sm text-muted-foreground">
-        When disabled, new personalized online training plans cannot be started. Existing
-        personalized plans keep working.
-      </p>
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={canWrite ? ['76%', '24%'] : ['100%']}
-          columnHeaderClassNames={canWrite ? [undefined, 'text-right'] : undefined}
-          columns={canWrite ? ['Personalized online plans', 'Actions'] : ['Personalized online plans']}>
-          <tr className="border-b border-border last:border-0">
-            <td className="px-4 py-2">
-              <TableCell>
-                <span className="font-medium text-foreground">
-                  {onlinePlansEnabled ? 'Enabled' : 'Disabled'}
-                </span>
-                {!onlinePlansEnabled ? (
-                  <span className="ms-2 text-sm text-muted-foreground">
-                    (no new personalized plans)
+          columnHeaderClassNames={[undefined, undefined, 'text-right']}
+          columns={['Feature', 'Status', 'Actions']}>
+          {FEATURE_FLAGS.map(flag => {
+            const enabled = Boolean(features[flag.id]);
+            const savingThis = savingFeatureId === flag.id;
+            return (
+              <tr key={flag.id} className="border-b border-border last:border-0">
+                <td className="px-4 py-3 align-middle">
+                  <p className="font-medium text-foreground">{flag.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{flag.description}</p>
+                </td>
+                <td className="px-4 py-3 align-middle whitespace-nowrap">
+                  <span className="text-sm font-medium text-foreground">
+                    {savingThis ? 'Saving…' : enabled ? 'Enabled' : 'Disabled'}
                   </span>
-                ) : null}
-              </TableCell>
-            </td>
-            {canWrite ? (
-              <td className="px-4 py-2">
-                <TableCell className="flex-nowrap justify-end gap-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="min-w-[5.5rem] shrink-0 justify-center"
-                    disabled={savingFeatures}
-                    onClick={() => void toggleOnlinePlans()}>
-                    {savingFeatures ? 'Saving...' : onlinePlansEnabled ? 'Disable' : 'Enable'}
-                  </Button>
-                </TableCell>
-              </td>
-            ) : null}
-          </tr>
+                </td>
+                <td className="px-4 py-3 align-middle">
+                  <div className="flex items-center justify-end">
+                    <FeatureSwitch
+                      checked={enabled}
+                      disabled={!canWrite || savingFeatureId != null}
+                      label={`${enabled ? 'Disable' : 'Enable'} ${flag.title}`}
+                      onChange={() => void toggleFeature(flag.id)}
+                    />
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </DataTable>
       </div>
 
@@ -349,8 +395,6 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       </p>
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={canWrite ? ['76%', '24%'] : ['100%']}
           columnHeaderClassNames={canWrite ? [undefined, 'text-right'] : undefined}
           columns={canWrite ? ['VAT (%)', 'Actions'] : ['VAT (%)']}>
           <tr
@@ -366,7 +410,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
                     min={0}
                     max={100}
                     step={0.01}
-                    className={cn(tableInputClass, 'max-w-[8rem]')}
+                    className={tableInputClass}
                     value={draftVatPercent}
                     onChange={event => setDraftVatPercent(event.target.value)}
                     disabled={savingBilling}

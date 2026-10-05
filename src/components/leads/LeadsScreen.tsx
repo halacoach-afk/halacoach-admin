@@ -8,7 +8,6 @@ import {
   listLeads,
   listServices,
   type CatalogService,
-  type LeadLifecycleStatus,
   type LeadSummary,
 } from '@/api';
 import {Button} from '@/components/ui/Button';
@@ -17,28 +16,16 @@ import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
+import {PaginationBar} from '@/components/ui/PaginationBar';
 import {leadPreferenceDisplay} from '@/lib/lead-preference-labels';
 import {formatPostedAt} from '@/lib/lead-utils';
+import {
+  DEFAULT_PER_PAGE,
+  emptyPaginationMeta,
+  type PaginationMeta,
+} from '@/lib/pagination';
 
 type Filter = 'open' | 'in_progress' | 'closed';
-
-function resolvedLeadStatus(row: LeadSummary): LeadLifecycleStatus {
-  if (row.leadStatus) {
-    return row.leadStatus;
-  }
-  return row.status === 'closed' ? 'cancelled' : 'open';
-}
-
-function matchesTab(row: LeadSummary, filter: Filter) {
-  const status = resolvedLeadStatus(row);
-  if (filter === 'open') {
-    return status === 'open';
-  }
-  if (filter === 'in_progress') {
-    return status === 'in_progress';
-  }
-  return status === 'completed' || status === 'cancelled';
-}
 
 function Cell({
   value,
@@ -49,25 +36,39 @@ function Cell({
 }) {
   return (
     <td className={`px-4 py-3 align-top text-sm text-foreground ${className ?? ''}`}>
-      <div className="max-w-[180px] whitespace-normal break-words">{value}</div>
+      {value}
     </td>
   );
 }
 
 export function LeadsScreen() {
   const [rows, setRows] = useState<LeadSummary[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
+  const [counts, setCounts] = useState<Record<string, number>>({
+    open: 0,
+    in_progress: 0,
+    closed: 0,
+  });
+  const [page, setPage] = useState(1);
   const [services, setServices] = useState<CatalogService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('open');
-  const [query, setQuery] = useState('');
 
-  const load = async () => {
+  const load = async (nextPage = page, nextFilter = filter) => {
     setLoading(true);
     setError(null);
     try {
-      const [leads, catalog] = await Promise.all([listLeads(), listServices()]);
-      setRows(leads);
+      const [leads, catalog] = await Promise.all([
+        listLeads({page: nextPage, perPage: DEFAULT_PER_PAGE, status: nextFilter}),
+        listServices(),
+      ]);
+      setRows(leads.data);
+      setMeta(leads.meta);
+      setPage(leads.meta.page);
+      if (leads.counts) {
+        setCounts(leads.counts);
+      }
       setServices(catalog);
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load leads.');
@@ -77,58 +78,20 @@ export function LeadsScreen() {
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(1, filter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   const serviceNameById = useMemo(
     () => new Map(services.map(item => [item.id, item.name])),
     [services],
   );
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter(row => {
-      if (!matchesTab(row, filter)) {
-        return false;
-      }
-      if (!q) {
-        return true;
-      }
-      const serviceName = serviceNameById.get(row.serviceId) ?? row.service ?? '';
-      const prefs = leadPreferenceDisplay(row, serviceName);
-      const haystack = [
-        String(row.id),
-        row.clientName,
-        row.assignedCoachName,
-        prefs.goal,
-        prefs.format,
-        prefs.frequency,
-        prefs.days,
-        prefs.times,
-        prefs.location,
-        prefs.goalDetails,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [rows, filter, query, serviceNameById]);
-
-  const counts = useMemo(
-    () => ({
-      open: rows.filter(row => matchesTab(row, 'open')).length,
-      in_progress: rows.filter(row => matchesTab(row, 'in_progress')).length,
-      closed: rows.filter(row => matchesTab(row, 'closed')).length,
-    }),
-    [rows],
-  );
-
-  if (loading) {
+  if (loading && rows.length === 0) {
     return <LoadingState label="Loading leads..." />;
   }
 
-  if (error) {
+  if (error && rows.length === 0) {
     return <ErrorState body={error} onRetry={() => void load()} />;
   }
 
@@ -157,19 +120,13 @@ export function LeadsScreen() {
             variant={filter === key ? 'primary' : 'outline'}
             size="sm"
             onClick={() => setFilter(key)}>
-            {label} ({counts[key]})
+            {label} ({counts[key] ?? 0})
           </Button>
         ))}
-        <input
-          className="ms-auto h-9 min-w-[220px] rounded-xl border border-border px-3 text-sm"
-          placeholder="Search ID, client, goal, location..."
-          value={query}
-          onChange={event => setQuery(event.target.value)}
-        />
       </FilterBar>
 
-      {visible.length === 0 ? (
-        <EmptyState title="No leads match" body="Try another filter or clear the search box." />
+      {rows.length === 0 ? (
+        <EmptyState title="No leads match" body="Try another status tab." />
       ) : (
         <DataTable
           tableClassName="min-w-[1600px]"
@@ -187,7 +144,7 @@ export function LeadsScreen() {
             'Posted',
             '',
           ]}>
-          {visible.map(row => {
+          {rows.map(row => {
             const serviceName =
               serviceNameById.get(row.serviceId) ?? row.service ?? row.goal ?? `Service #${row.serviceId}`;
             const prefs = leadPreferenceDisplay(row, serviceName);
@@ -239,6 +196,12 @@ export function LeadsScreen() {
           })}
         </DataTable>
       )}
+
+      <PaginationBar
+        meta={meta}
+        disabled={loading}
+        onPageChange={next => void load(next)}
+      />
     </>
   );
 }

@@ -85,6 +85,7 @@ export function creditTxnLabel(label: string) {
     'credits.purchased': 'Credits added',
     'credits.spent': 'Lead unlocked',
     'credits.membership': 'Membership credits',
+    'credits.expired': 'Credits expired (no recharge for 12 months)',
   };
   return map[label] ?? label;
 }
