@@ -19,6 +19,7 @@ import {
   type SupportTicketStatus,
 } from '@/api';
 import {Button} from '@/components/ui/Button';
+import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {supportStatusLabels} from '@/lib/support-utils';
 import {can} from '@/lib/permissions';
@@ -47,6 +48,7 @@ export function SupportDetailModal({
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<SupportTicketStatus>('new');
   const [saving, setSaving] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -54,12 +56,18 @@ export function SupportDetailModal({
 
   useEffect(() => {
     if (!open) {
+      setConfirmSave(false);
       return;
     }
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
+      if (event.key !== 'Escape') {
+        return;
       }
+      if (confirmSave) {
+        setConfirmSave(false);
+        return;
+      }
+      onClose();
     };
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
@@ -68,7 +76,7 @@ export function SupportDetailModal({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose]);
+  }, [open, onClose, confirmSave]);
 
   useEffect(() => {
     if (!open || ticketId == null) {
@@ -140,9 +148,11 @@ export function SupportDetailModal({
       });
       setTicket(next);
       setStatus(next.status);
+      setConfirmSave(false);
       onUpdated?.(next);
       onClose();
     } catch (err) {
+      setConfirmSave(false);
       setError(isApiError(err) ? err.message : 'Could not update status.');
     } finally {
       setSaving(false);
@@ -162,6 +172,7 @@ export function SupportDetailModal({
   const dirty = ticket != null && status !== ticket.status;
 
   return createPortal(
+    <>
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
       <button
         type="button"
@@ -330,13 +341,31 @@ export function SupportDetailModal({
             <Button
               type="button"
               disabled={saving || !dirty}
-              onClick={() => void saveStatus()}>
+              onClick={() => setConfirmSave(true)}>
               {saving ? 'Saving…' : 'Save'}
             </Button>
           ) : null}
         </div>
       </div>
-    </div>,
+    </div>
+
+    <ConfirmDialog
+      open={confirmSave}
+      title="Update ticket status?"
+      body={
+        ticket
+          ? `Change status from "${supportStatusLabels[ticket.status]}" to "${supportStatusLabels[status]}"?`
+          : 'Change this ticket status?'
+      }
+      confirmLabel={saving ? 'Saving…' : 'Update status'}
+      onClose={() => {
+        if (!saving) setConfirmSave(false);
+      }}
+      onConfirm={() => {
+        if (!saving) void saveStatus();
+      }}
+    />
+    </>,
     document.body,
   );
 }
