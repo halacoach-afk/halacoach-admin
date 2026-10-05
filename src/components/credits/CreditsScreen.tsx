@@ -346,6 +346,11 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   const [creatingCreditPackage, setCreatingCreditPackage] = useState(false);
   const [editingCreditPackageId, setEditingCreditPackageId] = useState<number | null>(null);
   const [txnFilter, setTxnFilter] = useState<TxnFilter>('all');
+  const [txnCounts, setTxnCounts] = useState<Record<string, number>>({
+    all: 0,
+    credited: 0,
+    spent: 0,
+  });
   const [promoDrafts, setPromoDrafts] = useState<Record<number, PromoDraft>>({});
   const [promoForm, setPromoForm] = useState<PromoDraft>(emptyPromoForm);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -390,12 +395,16 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  const load = async (nextPage = txnPage) => {
+  const load = async (nextPage = txnPage, nextFilter = txnFilter) => {
     setLoading(true);
     setError(null);
     try {
       const meta = await request<Omit<CreditsOverview, 'packs' | 'promos'>>(
-        `/v1/credits-meta${buildListQuery({page: nextPage, perPage: DEFAULT_PER_PAGE})}`,
+        `/v1/credits-meta${buildListQuery({
+          page: nextPage,
+          perPage: DEFAULT_PER_PAGE,
+          filter: nextFilter === 'all' ? undefined : nextFilter,
+        })}`,
       );
       setOverview({...meta, packs: [], promos: []});
       setTxnMeta(
@@ -407,6 +416,9 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         },
       );
       setTxnPage(meta.meta?.page ?? nextPage);
+      if (meta.counts) {
+        setTxnCounts(meta.counts);
+      }
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load credits module.');
     } finally {
@@ -417,24 +429,15 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   useEffect(() => {
     void loadPackages();
     void loadPromos();
-    void load(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const transactions = useMemo(() => {
-    if (!overview) {
-      return [];
-    }
-    if (txnFilter === 'all') {
-      return overview.transactions;
-    }
-    if (txnFilter === 'credited') {
-      // Purchases, membership grants, and other credit-adding rows
-      return overview.transactions.filter(item => item.credits > 0);
-    }
-    // Spending / unlocks / other credit-removing rows
-    return overview.transactions.filter(item => item.credits < 0);
-  }, [overview, txnFilter]);
+  useEffect(() => {
+    void load(1, txnFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txnFilter]);
+
+  const transactions = overview?.transactions ?? [];
 
   const oneTimePackages = useMemo(
     () => packages.items.filter(pack => (pack.type ?? 'one_time') === 'one_time'),
@@ -1323,7 +1326,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
             size="sm"
             variant={txnFilter === key ? 'primary' : 'outline'}
             onClick={() => setTxnFilter(key)}>
-            {label}
+            {label} ({txnCounts[key] ?? 0})
           </Button>
         ))}
       </FilterBar>

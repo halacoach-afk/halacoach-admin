@@ -263,6 +263,11 @@ export type CreditsOverview = {
   promos: PromoCode[];
   transactions: CreditLedgerEntry[];
   meta?: PaginationMeta;
+  counts?: {
+    all: number;
+    credited: number;
+    spent: number;
+  };
   stats: {
     totalCreditsInWallets: number;
     purchaseCount: number;
