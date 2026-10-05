@@ -290,7 +290,6 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
         />
       ) : (
         <DataTable
-          tableClassName="min-w-[900px]"
           columns={[
             'Coach',
             'Email',
@@ -364,9 +363,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                           );
                         }
                         return (
-                      <DataTable
-                        tableClassName="min-w-[700px]"
-                        columns={['Document', 'Expires', 'Type', 'Status', '']}>
+                      <DataTable columns={['Document', 'Expires', 'Type', 'Status', '']}>
                         {actionDocs.map(meta => {
                           const file = fileByType.get(meta.id);
                           const display = file?.displayStatus ?? file?.status;

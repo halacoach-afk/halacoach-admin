@@ -15,7 +15,7 @@ export function DataTable({
   footer?: ReactNode;
   className?: string;
   tableClassName?: string;
-  /** @deprecated Prefer content-sized columns; percentage widths fight scrollable layout. */
+  /** Optional column widths; prefer content-sized columns when omitted. */
   columnWidths?: string[];
   columnHeaderClassNames?: (string | undefined)[];
 }) {
@@ -23,7 +23,8 @@ export function DataTable({
     <div className={cn('overflow-x-auto overflow-y-hidden rounded-2xl border border-border bg-card', className)}>
       <table
         className={cn(
-          'w-max min-w-full table-auto text-left text-sm',
+          // Fill the card; grow past 100% when nowrap content needs horizontal scroll.
+          'w-full min-w-max table-auto text-left text-sm',
           '[&_th]:whitespace-nowrap [&_td]:whitespace-nowrap',
           tableClassName,
         )}>
