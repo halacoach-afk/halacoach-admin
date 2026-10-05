@@ -36,7 +36,7 @@ function Cell({
 }) {
   return (
     <td className={`px-4 py-3 align-top text-sm text-foreground ${className ?? ''}`}>
-      <div className="max-w-[180px] whitespace-normal break-words">{value}</div>
+      {value}
     </td>
   );
 }

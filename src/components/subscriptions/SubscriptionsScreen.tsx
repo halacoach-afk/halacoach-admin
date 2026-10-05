@@ -179,7 +179,7 @@ export function SubscriptionsScreen({
             'Period end',
             '',
           ]}
-          columnWidths={['22%', '16%', '12%', '10%', '14%', '16%', '10%']}>
+        >
           {rows.map(sub => (
             <tr key={sub.id} className="border-b border-border last:border-0">
               <td className="px-4 py-3">

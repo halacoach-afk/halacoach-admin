@@ -175,10 +175,8 @@ export function ProfessionalsScreen() {
                 <td className="px-4 py-3 text-sm text-muted-foreground">
                   {formatCoachYearsExperience(row.years)}
                 </td>
-                <td className="max-w-[240px] px-4 py-3 text-sm text-muted-foreground">
-                  <div className="line-clamp-2 break-words">
-                    {about || '—'}
-                  </div>
+                <td className="px-4 py-3 text-sm text-muted-foreground">
+                  {about || '—'}
                 </td>
                 <td className="px-4 py-3">
                   <Badge tone={verificationTone(row.verificationStatus)}>

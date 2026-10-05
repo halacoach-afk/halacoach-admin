@@ -197,13 +197,11 @@ export function SupportScreen({
                 <td className="px-4 py-3 text-sm tabular-nums text-muted-foreground whitespace-nowrap">
                   {row.id}
                 </td>
-                <td className="px-4 py-3 text-sm font-medium text-foreground max-w-[180px]">
+                <td className="px-4 py-3 text-sm font-medium text-foreground">
                   {row.subject}
                 </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground max-w-[280px]">
-                  <p className="line-clamp-2 whitespace-pre-wrap break-words">
-                    {row.body?.trim() ? row.body : '—'}
-                  </p>
+                <td className="px-4 py-3 text-sm text-muted-foreground">
+                  {row.body?.trim() ? row.body : '—'}
                 </td>
                 <td className="px-4 py-3 text-sm text-foreground">
                   {href ? (

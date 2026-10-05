@@ -434,26 +434,9 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
       ...(showVat ? ['Incl. VAT'] : []),
       ...(canWrite ? ['Actions'] : []),
     ];
-    const columnWidths = canWrite
-      ? showVat
-        ? showPurchaseLimit
-          ? ['14%', '8%', '11%', '10%', '12%', '12%', '10%', '23%']
-          : ['16%', '10%', '14%', '12%', '14%', '12%', '22%']
-        : showPurchaseLimit
-          ? ['16%', '9%', '12%', '11%', '14%', '14%', '24%']
-          : ['18%', '12%', '16%', '14%', '16%', '24%']
-      : showVat
-        ? showPurchaseLimit
-          ? ['18%', '10%', '12%', '10%', '14%', '14%', '12%']
-          : ['20%', '12%', '16%', '14%', '18%', '20%']
-        : showPurchaseLimit
-          ? ['20%', '10%', '14%', '14%', '20%', '22%']
-          : ['24%', '14%', '18%', '20%', '24%'];
     return (
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={columnWidths}
           columnHeaderClassNames={
             canWrite
               ? [...Array(columns.length - 1).fill(undefined), 'text-right']
@@ -524,7 +507,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                         }
                       />
                     ) : (
-                      <span className="truncate font-medium text-foreground">{pack.name}</span>
+                      <span className="font-medium text-foreground">{pack.name}</span>
                     )}
                   </CreditPackageTableCell>
                 </td>
@@ -1046,10 +1029,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
       <h2 className="mb-3 text-lg font-semibold text-foreground">Promo codes</h2>
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={
-            canWrite ? ['16%', '22%', '16%', '12%', '34%'] : ['30%', '35%', '35%']
-          }
           columnHeaderClassNames={
             canWrite
               ? [undefined, undefined, undefined, undefined, 'text-right']
@@ -1144,7 +1123,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                   <CreditPackageTableCell>
                     {isEditing ? (
                       <input
-                        className={cn(tableInputClass, 'max-w-[7rem]')}
+                        className={tableInputClass}
                         type="number"
                         min={benefitInput.min}
                         max={'max' in benefitInput ? benefitInput.max : undefined}
@@ -1227,7 +1206,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
               <td className="px-4 py-2">
                 <CreditPackageTableCell>
                   <input
-                    className={cn(tableInputClass, 'max-w-[7rem]')}
+                    className={tableInputClass}
                     type="number"
                     min={promoBenefitInputProps(promoForm.benefitType).min}
                     max={

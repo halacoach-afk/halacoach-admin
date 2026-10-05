@@ -266,8 +266,6 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       <h2 className="mb-3 text-lg font-semibold text-foreground">Support contact</h2>
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={canWrite ? ['38%', '38%', '24%'] : ['50%', '50%']}
           columnHeaderClassNames={
             canWrite ? [undefined, undefined, 'text-right'] : undefined
           }
@@ -289,7 +287,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
                     disabled={saving}
                   />
                 ) : (
-                  <span className="truncate font-medium text-foreground">{displayEmail}</span>
+                  <span className="font-medium text-foreground">{displayEmail}</span>
                 )}
               </TableCell>
             </td>
@@ -305,7 +303,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
                     disabled={saving}
                   />
                 ) : (
-                  <span className="truncate text-foreground">{displayPhone}</span>
+                  <span className="text-foreground">{displayPhone}</span>
                 )}
               </TableCell>
             </td>
@@ -358,8 +356,6 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       <h2 className="mb-3 text-lg font-semibold text-foreground">Features</h2>
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={['74%', '16%', '10%']}
           columnHeaderClassNames={[undefined, undefined, 'text-right']}
           columns={['Feature', 'Status', 'Actions']}>
           {FEATURE_FLAGS.map(flag => {
@@ -399,8 +395,6 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       </p>
       <div className="mb-8">
         <DataTable
-          tableClassName="table-fixed"
-          columnWidths={canWrite ? ['76%', '24%'] : ['100%']}
           columnHeaderClassNames={canWrite ? [undefined, 'text-right'] : undefined}
           columns={canWrite ? ['VAT (%)', 'Actions'] : ['VAT (%)']}>
           <tr
@@ -416,7 +410,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
                     min={0}
                     max={100}
                     step={0.01}
-                    className={cn(tableInputClass, 'max-w-[8rem]')}
+                    className={tableInputClass}
                     value={draftVatPercent}
                     onChange={event => setDraftVatPercent(event.target.value)}
                     disabled={savingBilling}

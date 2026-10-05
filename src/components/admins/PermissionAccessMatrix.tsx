@@ -75,10 +75,7 @@ export function PermissionAccessMatrix({
     allGranted || permissions.includes(key);
 
   return (
-    <DataTable
-      tableClassName="table-fixed"
-      columnWidths={['28%', '18%', '18%', '18%', '18%']}
-      columns={['Module', ...ACCESS_COLUMNS.map(column => column.label)]}>
+    <DataTable columns={['Module', ...ACCESS_COLUMNS.map(column => column.label)]}>
       {moduleRows.map(row => (
         <tr key={row.module} className="border-b border-border last:border-0">
           <td className="px-4 py-3 text-sm font-medium text-foreground">{row.label}</td>

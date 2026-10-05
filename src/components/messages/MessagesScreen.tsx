@@ -102,10 +102,8 @@ export function MessagesScreen() {
                 <td className="px-4 py-3">
                   <p className="text-sm font-medium text-foreground">{goal || '-'}</p>
                 </td>
-                <td className="max-w-md px-4 py-3">
-                  <p className="line-clamp-2 text-sm text-muted-foreground">
-                    {row.lastMessage || '-'}
-                  </p>
+                <td className="px-4 py-3 text-sm text-muted-foreground">
+                  {row.lastMessage || '-'}
                 </td>
                 <td className="px-4 py-3">
                   <Badge tone="muted">{row.messageCount}</Badge>

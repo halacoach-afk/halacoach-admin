@@ -198,8 +198,6 @@ export function AdminsScreen({actor}: {actor: SessionUser}) {
           <EmptyState title="No users" body="Add the first operator below." />
         ) : (
           <DataTable
-            tableClassName="table-fixed"
-            columnWidths={['16%', '20%', '14%', '14%', '16%', '20%']}
             columnHeaderClassNames={[
               undefined,
               undefined,
@@ -323,8 +321,6 @@ export function AdminsScreen({actor}: {actor: SessionUser}) {
           <EmptyState title="No roles" body="Create the first role below." />
         ) : (
           <DataTable
-            tableClassName="table-fixed"
-            columnWidths={canWrite ? ['32%', '48%', '20%'] : ['36%', '48%', '16%']}
             columnHeaderClassNames={[undefined, undefined, 'text-right']}
             columns={['Role', 'Permissions', 'Actions']}>
             {roles.map(role => {

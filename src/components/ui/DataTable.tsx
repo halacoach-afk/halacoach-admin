@@ -15,12 +15,18 @@ export function DataTable({
   footer?: ReactNode;
   className?: string;
   tableClassName?: string;
+  /** @deprecated Prefer content-sized columns; percentage widths fight scrollable layout. */
   columnWidths?: string[];
   columnHeaderClassNames?: (string | undefined)[];
 }) {
   return (
     <div className={cn('overflow-x-auto overflow-y-hidden rounded-2xl border border-border bg-card', className)}>
-      <table className={cn('w-full min-w-[640px] text-left text-sm', tableClassName)}>
+      <table
+        className={cn(
+          'w-max min-w-full table-auto text-left text-sm',
+          '[&_th]:whitespace-nowrap [&_td]:whitespace-nowrap',
+          tableClassName,
+        )}>
         {columnWidths?.length ? (
           <colgroup>
             {columnWidths.map((width, index) => (
