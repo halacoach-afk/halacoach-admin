@@ -200,8 +200,14 @@ export function SupportScreen({
                 <td className="px-4 py-3 text-sm font-medium text-foreground">
                   {row.subject}
                 </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {row.body?.trim() ? row.body : '—'}
+                <td
+                  className="max-w-[14rem] truncate px-4 py-3 text-sm text-muted-foreground"
+                  title={row.body?.trim() || undefined}>
+                  {row.body?.trim()
+                    ? row.body.trim().length > 72
+                      ? `${row.body.trim().slice(0, 72)}…`
+                      : row.body.trim()
+                    : '—'}
                 </td>
                 <td className="px-4 py-3 text-sm text-foreground">
                   {href ? (
