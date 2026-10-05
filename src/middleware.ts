@@ -6,9 +6,11 @@ import {decodeSession} from '@/lib/session';
 export function middleware(request: NextRequest) {
   const raw = request.cookies.get(appConfig.sessionCookie)?.value;
   const user = decodeSession(raw);
-  const isLogin = request.nextUrl.pathname === '/login';
+  const pathname = request.nextUrl.pathname;
+  const isPublicAuth =
+    pathname === '/login' || pathname === '/forgot-password';
 
-  if (!user && !isLogin) {
+  if (!user && !isPublicAuth) {
     const response = NextResponse.redirect(new URL('/login', request.url));
     if (raw) {
       response.cookies.delete(appConfig.sessionCookie);
@@ -16,7 +18,7 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  if (user && isLogin) {
+  if (user && isPublicAuth) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 

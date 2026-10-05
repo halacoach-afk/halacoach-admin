@@ -1,6 +1,7 @@
 'use client';
 
 import {FormEvent, useState} from 'react';
+import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {ShieldCheck} from 'lucide-react';
 import {isApiError, login} from '@/api';
@@ -115,6 +116,13 @@ export default function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 required
               />
+              <div className="flex justify-end">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-semibold text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
 
               {error ? (
                 <p

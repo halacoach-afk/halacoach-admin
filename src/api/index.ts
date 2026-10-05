@@ -129,6 +129,37 @@ export function login(email: string, password: string) {
   });
 }
 
+export function forgotPassword(email: string) {
+  return request<{ok: boolean; message: string}>('/v1/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({email: email.trim().toLowerCase()}),
+  });
+}
+
+export function resendForgotPassword(email: string) {
+  return request<{ok: boolean; message: string}>('/v1/auth/forgot-password/resend', {
+    method: 'POST',
+    body: JSON.stringify({email: email.trim().toLowerCase()}),
+  });
+}
+
+export function resetPassword(input: {
+  email: string;
+  code: string;
+  password: string;
+  passwordConfirmation: string;
+}) {
+  return request<SessionResponse & {ok: boolean; message: string}>('/v1/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: input.email.trim().toLowerCase(),
+      code: input.code.trim(),
+      password: input.password,
+      passwordConfirmation: input.passwordConfirmation,
+    }),
+  });
+}
+
 export function listAdmins() {
   return request<AdminUser[]>('/v1/admins');
 }
