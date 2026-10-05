@@ -160,12 +160,11 @@ export function ClientDetailScreen({id}: {id: string}) {
     try {
       const [detail, allLeads, catalog] = await Promise.all([
         getClient(id),
-        listLeads(),
+        listLeads({clientId: id, perPage: 100}),
         listServices(),
       ]);
       setClient(detail);
-      const clientKey = String(detail.id);
-      setLeads(allLeads.filter(lead => String(lead.clientId) === clientKey));
+      setLeads(allLeads.data);
       setServices(catalog);
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load client.');

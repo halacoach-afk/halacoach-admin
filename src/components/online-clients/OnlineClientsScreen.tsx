@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {ChevronRight} from 'lucide-react';
 import {isApiError, listOnlinePlans, type OnlinePlanSummary} from '@/api';
 import {Badge} from '@/components/ui/Badge';
@@ -11,6 +11,12 @@ import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
+import {PaginationBar} from '@/components/ui/PaginationBar';
+import {
+  DEFAULT_PER_PAGE,
+  emptyPaginationMeta,
+  type PaginationMeta,
+} from '@/lib/pagination';
 
 function statusTone(status: string): 'primary' | 'muted' | 'warning' | 'danger' {
   if (status === 'published') {
@@ -24,15 +30,19 @@ function statusTone(status: string): 'primary' | 'muted' | 'warning' | 'danger' 
 
 export function OnlineClientsScreen() {
   const [rows, setRows] = useState<OnlinePlanSummary[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
 
-  const load = async () => {
+  const load = async (nextPage = page) => {
     setLoading(true);
     setError(null);
     try {
-      setRows(await listOnlinePlans());
+      const res = await listOnlinePlans({page: nextPage, perPage: DEFAULT_PER_PAGE});
+      setRows(res.data);
+      setMeta(res.meta);
+      setPage(res.meta.page);
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load online plans.');
     } finally {
@@ -41,28 +51,15 @@ export function OnlineClientsScreen() {
   };
 
   useEffect(() => {
-    void load();
+    void load(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) {
-      return rows;
-    }
-    return rows.filter(
-      row =>
-        row.name.toLowerCase().includes(q) ||
-        row.coachName.toLowerCase().includes(q) ||
-        row.goal.toLowerCase().includes(q) ||
-        (row.clientUserEmail ?? '').toLowerCase().includes(q),
-    );
-  }, [rows, query]);
-
-  if (loading) {
+  if (loading && rows.length === 0) {
     return <LoadingState label="Loading online plans..." />;
   }
 
-  if (error) {
+  if (error && rows.length === 0) {
     return <ErrorState body={error} onRetry={() => void load()} />;
   }
 
@@ -78,16 +75,7 @@ export function OnlineClientsScreen() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <input
-          className="h-9 w-full max-w-sm rounded-xl border border-border px-3 text-sm"
-          placeholder="Search client, coach, or goal..."
-          value={query}
-          onChange={event => setQuery(event.target.value)}
-        />
-      </div>
-
-      {visible.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState
           title="No online plans yet"
           body="When coaches generate or publish plans in the mobile Clients tab, they appear here."
@@ -95,7 +83,7 @@ export function OnlineClientsScreen() {
       ) : (
         <DataTable
           columns={['Goal', 'Client', 'Coach', 'Status', 'PAR-Q', 'Updated', '']}>
-          {visible.map(row => (
+          {rows.map(row => (
             <tr key={row.id} className="border-t border-border">
               <td className="px-4 py-3 text-sm text-muted-foreground">{row.goal}</td>
               <td className="px-4 py-3 text-sm">
@@ -142,6 +130,12 @@ export function OnlineClientsScreen() {
           ))}
         </DataTable>
       )}
+
+      <PaginationBar
+        meta={meta}
+        disabled={loading}
+        onPageChange={next => void load(next)}
+      />
     </>
   );
 }

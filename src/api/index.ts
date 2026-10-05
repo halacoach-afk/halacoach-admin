@@ -1,4 +1,5 @@
 import {request, requestBlob} from './client';
+import {buildListQuery} from '@/lib/pagination';
 import type {
   AdminUser,
   AdminUserDetail,
@@ -11,6 +12,7 @@ import type {
   InviteAdminInput,
   LeadDetail,
   LeadSummary,
+  Paginated,
   Professional,
   ProfessionalSummary,
   RejectVerificationInput,
@@ -78,6 +80,8 @@ export type {
   OnlinePlanDetail,
   OnlinePlanRevision,
   OnlinePlanSummary,
+  Paginated,
+  PaginationMeta,
   Professional,
   ProfessionalSummary,
   ProfessionalTxn,
@@ -182,12 +186,16 @@ export function updateAdmin(id: number, input: UpdateAdminInput & {actorId: numb
   });
 }
 
-export async function getCreditsOverview(): Promise<CreditsOverview> {
+export async function getCreditsOverview(
+  params: {page?: number; perPage?: number} = {},
+): Promise<CreditsOverview> {
   const {listCreditPackages, listPromoCodes} = await import('@/lib/apis');
   const [packs, promos, rest] = await Promise.all([
     listCreditPackages(),
     listPromoCodes(),
-    request<Omit<CreditsOverview, 'packs' | 'promos'>>('/v1/credits-meta'),
+    request<Omit<CreditsOverview, 'packs' | 'promos'>>(
+      `/v1/credits-meta${buildListQuery(params)}`,
+    ),
   ]);
   return {...rest, packs, promos};
 }
@@ -202,8 +210,10 @@ export function adjustCredits(input: AdjustCreditsInput) {
   });
 }
 
-export function listProfessionals() {
-  return request<ProfessionalSummary[]>('/v1/professionals');
+export function listProfessionals(
+  params: {page?: number; perPage?: number; q?: string; filter?: string} = {},
+) {
+  return request<Paginated<ProfessionalSummary>>(`/v1/professionals${buildListQuery(params)}`);
 }
 
 export function getProfessional(id: string) {
@@ -217,16 +227,41 @@ export function updateProfessional(id: string, input: UpdateProfessionalInput) {
   });
 }
 
-export async function listVerificationQueue(): Promise<VerificationQueueResponse> {
-  const data = await request<VerificationQueueResponse | VerificationQueueItem[]>(
-    '/v1/verification',
-  );
-  if (Array.isArray(data)) {
-    return {documentTypes: [], items: data};
+export async function listVerificationQueue(
+  params: {page?: number; perPage?: number; status?: string; q?: string} = {},
+): Promise<
+  VerificationQueueResponse & {
+    meta: Paginated<VerificationQueueItem>['meta'];
+    counts: Record<string, number>;
   }
+> {
+  const data = await request<
+    | (VerificationQueueResponse & {
+        data?: VerificationQueueItem[];
+        meta?: Paginated<VerificationQueueItem>['meta'];
+        counts?: Record<string, number>;
+      })
+    | VerificationQueueItem[]
+  >(`/v1/verification${buildListQuery(params)}`);
+  if (Array.isArray(data)) {
+    return {
+      documentTypes: [],
+      items: data,
+      meta: {page: 1, perPage: data.length || 20, total: data.length, lastPage: 1},
+      counts: {all: data.length, pending: 0, rejected: 0},
+    };
+  }
+  const items = data.data ?? data.items ?? [];
   return {
     documentTypes: data.documentTypes ?? [],
-    items: data.items ?? [],
+    items,
+    meta: data.meta ?? {
+      page: 1,
+      perPage: items.length || 20,
+      total: items.length,
+      lastPage: 1,
+    },
+    counts: data.counts ?? {all: items.length, pending: 0, rejected: 0},
   };
 }
 
@@ -282,8 +317,10 @@ export async function openVerificationFile(professionalId: string, fileId: strin
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-export function listClients() {
-  return request<ClientSummary[]>('/v1/clients');
+export function listClients(
+  params: {page?: number; perPage?: number; q?: string; filter?: string} = {},
+) {
+  return request<Paginated<ClientSummary>>(`/v1/clients${buildListQuery(params)}`);
 }
 
 export function getClient(id: string) {
@@ -297,8 +334,16 @@ export function updateClient(id: string, input: UpdateClientInput) {
   });
 }
 
-export function listLeads() {
-  return request<LeadSummary[]>('/v1/leads');
+export function listLeads(
+  params: {
+    page?: number;
+    perPage?: number;
+    status?: string;
+    clientId?: string | number;
+    assignedCoachId?: string | number;
+  } = {},
+) {
+  return request<Paginated<LeadSummary>>(`/v1/leads${buildListQuery(params)}`);
 }
 
 export function getLead(id: number) {
@@ -312,8 +357,10 @@ export function updateLead(id: number, input: UpdateLeadInput) {
   });
 }
 
-export function listSupportTickets() {
-  return request<SupportTicketSummary[]>('/v1/support');
+export function listSupportTickets(
+  params: {page?: number; perPage?: number; status?: string; q?: string} = {},
+) {
+  return request<Paginated<SupportTicketSummary>>(`/v1/support${buildListQuery(params)}`);
 }
 
 export function getSupportTicket(id: number) {
@@ -374,16 +421,16 @@ export function updateFeaturesSettings(input: Partial<FeaturesSettings>) {
   });
 }
 
-export function listConversations() {
-  return request<ConversationSummary[]>('/v1/messages');
+export function listConversations(params: {page?: number; perPage?: number} = {}) {
+  return request<Paginated<ConversationSummary>>(`/v1/messages${buildListQuery(params)}`);
 }
 
 export function getConversation(id: string) {
   return request<ConversationDetail>(`/v1/messages/${id}`);
 }
 
-export function listOnlinePlans() {
-  return request<OnlinePlanSummary[]>('/v1/online-plans');
+export function listOnlinePlans(params: {page?: number; perPage?: number} = {}) {
+  return request<Paginated<OnlinePlanSummary>>(`/v1/online-plans${buildListQuery(params)}`);
 }
 
 export function getOnlinePlan(id: number) {

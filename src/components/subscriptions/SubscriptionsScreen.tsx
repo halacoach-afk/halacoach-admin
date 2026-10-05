@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {ChevronRight} from 'lucide-react';
 import {isApiError, type SessionUser} from '@/api';
 import type {CreditSubscriptionAdmin} from '@/api/types';
@@ -12,7 +12,13 @@ import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
+import {PaginationBar} from '@/components/ui/PaginationBar';
 import {formatAed} from '@/lib/credit-utils';
+import {
+  DEFAULT_PER_PAGE,
+  emptyPaginationMeta,
+  type PaginationMeta,
+} from '@/lib/pagination';
 
 type Filter = 'all' | 'active' | 'canceled' | 'expired' | 'past_due';
 
@@ -38,16 +44,42 @@ function formatDate(value: string | null | undefined) {
 
 export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
   const [rows, setRows] = useState<CreditSubscriptionAdmin[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
+  const [counts, setCounts] = useState<Record<string, number>>({
+    all: 0,
+    active: 0,
+    canceled: 0,
+    expired: 0,
+    past_due: 0,
+  });
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
 
-  const load = async () => {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  const load = async (nextPage = page, nextFilter = filter) => {
     setLoading(true);
     setError(null);
     try {
-      setRows(await listCreditSubscriptions());
+      const res = await listCreditSubscriptions({
+        page: nextPage,
+        perPage: DEFAULT_PER_PAGE,
+        status: nextFilter === 'all' ? undefined : nextFilter,
+        q: debouncedQ || undefined,
+      });
+      setRows(res.data);
+      setMeta(res.meta);
+      setPage(res.meta.page);
+      if (res.counts) {
+        setCounts(res.counts);
+      }
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load subscriptions.');
     } finally {
@@ -56,37 +88,9 @@ export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
   };
 
   useEffect(() => {
-    void load();
-  }, []);
-
-  const counts = useMemo(
-    () => ({
-      all: rows.length,
-      active: rows.filter(row => row.status === 'active').length,
-      canceled: rows.filter(row => row.status === 'canceled').length,
-      expired: rows.filter(row => row.status === 'expired').length,
-      past_due: rows.filter(row => row.status === 'past_due').length,
-    }),
-    [rows],
-  );
-
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter(row => {
-      if (filter !== 'all' && row.status !== filter) {
-        return false;
-      }
-      if (!q) {
-        return true;
-      }
-      return (
-        row.professionalName.toLowerCase().includes(q) ||
-        (row.professionalEmail ?? '').toLowerCase().includes(q) ||
-        (row.package?.name ?? '').toLowerCase().includes(q) ||
-        row.id.includes(q)
-      );
-    });
-  }, [rows, filter, query]);
+    void load(1, filter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, debouncedQ]);
 
   if (loading && rows.length === 0) {
     return <LoadingState label="Loading subscriptions..." />;
@@ -107,11 +111,11 @@ export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
         <div className="flex flex-wrap gap-2">
           {(
             [
-              ['all', `All (${counts.all})`],
-              ['active', `Active (${counts.active})`],
-              ['past_due', `Past due (${counts.past_due})`],
-              ['canceled', `Canceled (${counts.canceled})`],
-              ['expired', `Expired (${counts.expired})`],
+              ['all', `All (${counts.all ?? 0})`],
+              ['active', `Active (${counts.active ?? 0})`],
+              ['past_due', `Past due (${counts.past_due ?? 0})`],
+              ['canceled', `Canceled (${counts.canceled ?? 0})`],
+              ['expired', `Expired (${counts.expired ?? 0})`],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -135,7 +139,7 @@ export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
         />
       </FilterBar>
 
-      {visible.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState
           title="No subscriptions"
           body={
@@ -156,7 +160,7 @@ export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
             '',
           ]}
           columnWidths={['22%', '16%', '12%', '10%', '14%', '16%', '10%']}>
-          {visible.map(sub => (
+          {rows.map(sub => (
             <tr key={sub.id} className="border-b border-border last:border-0">
               <td className="px-4 py-3">
                 <p className="font-medium text-foreground">{sub.professionalName}</p>
@@ -200,6 +204,12 @@ export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
           ))}
         </DataTable>
       )}
+
+      <PaginationBar
+        meta={meta}
+        disabled={loading}
+        onPageChange={next => void load(next)}
+      />
     </>
   );
 }

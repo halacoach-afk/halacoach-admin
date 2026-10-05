@@ -244,11 +244,25 @@ export type CreditLedgerEntry = {
   totalAed?: number;
 };
 
+export type PaginationMeta = {
+  page: number;
+  perPage: number;
+  total: number;
+  lastPage: number;
+};
+
+export type Paginated<T> = {
+  data: T[];
+  meta: PaginationMeta;
+  counts?: Record<string, number>;
+};
+
 export type CreditsOverview = {
   vatRate: number;
   packs: CreditPackage[];
   promos: PromoCode[];
   transactions: CreditLedgerEntry[];
+  meta?: PaginationMeta;
   stats: {
     totalCreditsInWallets: number;
     purchaseCount: number;
@@ -606,6 +620,8 @@ export type VerificationQueueItem = {
 export type VerificationQueueResponse = {
   documentTypes: VerificationDocTypeMeta[];
   items: VerificationQueueItem[];
+  meta?: PaginationMeta;
+  counts?: Record<string, number>;
 };
 
 export type RejectVerificationInput = {

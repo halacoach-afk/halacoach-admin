@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {ChevronRight} from 'lucide-react';
 import {isApiError, listConversations, type ConversationSummary} from '@/api';
 import {Badge} from '@/components/ui/Badge';
@@ -11,7 +11,13 @@ import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
+import {PaginationBar} from '@/components/ui/PaginationBar';
 import {formatMessageTime} from '@/lib/message-utils';
+import {
+  DEFAULT_PER_PAGE,
+  emptyPaginationMeta,
+  type PaginationMeta,
+} from '@/lib/pagination';
 
 function conversationGoal(row: ConversationSummary) {
   return (row.goal || row.professionalSpecialty || '').trim();
@@ -19,15 +25,19 @@ function conversationGoal(row: ConversationSummary) {
 
 export function MessagesScreen() {
   const [rows, setRows] = useState<ConversationSummary[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
 
-  const load = async () => {
+  const load = async (nextPage = page) => {
     setLoading(true);
     setError(null);
     try {
-      setRows(await listConversations());
+      const res = await listConversations({page: nextPage, perPage: DEFAULT_PER_PAGE});
+      setRows(res.data);
+      setMeta(res.meta);
+      setPage(res.meta.page);
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load conversations.');
     } finally {
@@ -36,32 +46,15 @@ export function MessagesScreen() {
   };
 
   useEffect(() => {
-    void load();
+    void load(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) {
-      return rows;
-    }
-    return rows.filter(row => {
-      const goal = conversationGoal(row).toLowerCase();
-      return (
-        row.id.toLowerCase().includes(q) ||
-        row.clientName.toLowerCase().includes(q) ||
-        row.professionalName.toLowerCase().includes(q) ||
-        row.lastMessage.toLowerCase().includes(q) ||
-        goal.includes(q) ||
-        (row.leadId != null && String(row.leadId).includes(q))
-      );
-    });
-  }, [rows, query]);
-
-  if (loading) {
+  if (loading && rows.length === 0) {
     return <LoadingState label="Loading conversations..." />;
   }
 
-  if (error) {
+  if (error && rows.length === 0) {
     return <ErrorState body={error} onRetry={() => void load()} />;
   }
 
@@ -77,16 +70,7 @@ export function MessagesScreen() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <input
-          className="h-9 w-full max-w-sm rounded-xl border border-border px-3 text-sm"
-          placeholder="Search ID, client, coach, goal, or message..."
-          value={query}
-          onChange={event => setQuery(event.target.value)}
-        />
-      </div>
-
-      {visible.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState
           title="No conversations yet"
           body="When a coach unlocks a lead or a client messages a coach, threads appear here."
@@ -94,7 +78,7 @@ export function MessagesScreen() {
       ) : (
         <DataTable
           columns={['ID', 'Client', 'Coach', 'Goal', 'Last message', 'Messages', 'Updated', '']}>
-          {visible.map(row => {
+          {rows.map(row => {
             const goal = conversationGoal(row);
             return (
               <tr key={row.id} className="border-t border-border">
@@ -142,6 +126,12 @@ export function MessagesScreen() {
           })}
         </DataTable>
       )}
+
+      <PaginationBar
+        meta={meta}
+        disabled={loading}
+        onPageChange={next => void load(next)}
+      />
     </>
   );
 }

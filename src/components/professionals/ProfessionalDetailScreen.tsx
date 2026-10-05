@@ -265,14 +265,11 @@ export function ProfessionalDetailScreen({
       const [detail, catalog, allLeads] = await Promise.all([
         getProfessional(id),
         listServices(),
-        listLeads(),
+        listLeads({assignedCoachId: id, perPage: 100}),
       ]);
       setPro(detail);
       setServices(catalog);
-      const coachKey = String(detail.id);
-      setLeads(
-        allLeads.filter(lead => String(lead.assignedCoachId) === coachKey),
-      );
+      setLeads(allLeads.data);
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load professional.');
     } finally {

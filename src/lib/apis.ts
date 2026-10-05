@@ -1,4 +1,5 @@
 import {request} from '@/lib/request';
+import {buildListQuery} from '@/lib/pagination';
 import type {
   AdminRolesResponse,
   AdminRoleRecord,
@@ -9,6 +10,7 @@ import type {
   CreateCreditPackageInput,
   CreatePromoInput,
   CreateServiceInput,
+  Paginated,
   PromoCode,
   ReorderServicesInput,
   UpdateCreditPackageInput,
@@ -53,8 +55,12 @@ export function listCreditPackages() {
   return request<CreditPackage[]>('/v1/credit-packages');
 }
 
-export function listCreditSubscriptions() {
-  return request<CreditSubscriptionAdmin[]>('/v1/credit-subscriptions');
+export function listCreditSubscriptions(
+  params: {page?: number; perPage?: number; status?: string; q?: string} = {},
+) {
+  return request<Paginated<CreditSubscriptionAdmin>>(
+    `/v1/credit-subscriptions${buildListQuery(params)}`,
+  );
 }
 
 export function getCreditSubscription(id: string) {

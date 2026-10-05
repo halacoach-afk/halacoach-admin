@@ -23,7 +23,13 @@ import {ErrorState} from '@/components/ui/ErrorState';
 import {FileViewerModal} from '@/components/ui/FileViewerModal';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
+import {PaginationBar} from '@/components/ui/PaginationBar';
 import {can} from '@/lib/permissions';
+import {
+  DEFAULT_PER_PAGE,
+  emptyPaginationMeta,
+  type PaginationMeta,
+} from '@/lib/pagination';
 import {verificationLabels} from '@/lib/professional-utils';
 
 const REJECT_REASON_OPTIONS = [
@@ -113,11 +119,19 @@ function ReasonSelect({
 export function VerificationScreen({actor}: {actor: SessionUser}) {
   const canWrite = can(actor, 'verification:write');
   const [queue, setQueue] = useState<VerificationQueueItem[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
+  const [counts, setCounts] = useState<Record<string, number>>({
+    all: 0,
+    pending: 0,
+    rejected: 0,
+  });
+  const [page, setPage] = useState(1);
   const [documentTypes, setDocumentTypes] = useState<VerificationDocTypeMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [pendingFileReject, setPendingFileReject] = useState<{
@@ -136,6 +150,11 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     name: string;
   } | null>(null);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
   const loadViewerFile = useCallback(async () => {
     if (!viewer) {
       throw new Error('Unable to open file.');
@@ -143,13 +162,23 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     return fetchVerificationFileBlob(viewer.professionalId, viewer.fileId);
   }, [viewer]);
 
-  const load = async () => {
+  const load = async (nextPage = page, nextFilter = filter) => {
     setLoading(true);
     setError(null);
     try {
-      const queueRes = await listVerificationQueue();
+      const queueRes = await listVerificationQueue({
+        page: nextPage,
+        perPage: DEFAULT_PER_PAGE,
+        status: nextFilter === 'all' ? undefined : nextFilter,
+        q: debouncedQ || undefined,
+      });
       setQueue(queueRes.items);
       setDocumentTypes(queueRes.documentTypes);
+      setMeta(queueRes.meta);
+      setPage(queueRes.meta.page);
+      if (queueRes.counts) {
+        setCounts(queueRes.counts);
+      }
       setSelectedId(current =>
         current && queueRes.items.some(item => item.id === current) ? current : null,
       );
@@ -161,39 +190,9 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   };
 
   useEffect(() => {
-    void load();
-  }, []);
-
-  const counts = useMemo(
-    () => ({
-      all: queue.length,
-      pending: queue.filter(item => item.verificationStatus !== 'rejected').length,
-      rejected: queue.filter(item => item.verificationStatus === 'rejected').length,
-    }),
-    [queue],
-  );
-
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return queue.filter(item => {
-      if (filter === 'pending' && item.verificationStatus === 'rejected') {
-        return false;
-      }
-      if (filter === 'rejected' && item.verificationStatus !== 'rejected') {
-        return false;
-      }
-      if (!q) {
-        return true;
-      }
-      return (
-        item.name.toLowerCase().includes(q) ||
-        item.email.toLowerCase().includes(q) ||
-        item.specialty.toLowerCase().includes(q) ||
-        item.location.toLowerCase().includes(q) ||
-        item.phone.toLowerCase().includes(q)
-      );
-    });
-  }, [queue, filter, query]);
+    void load(1, filter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, debouncedQ]);
 
   const selected = queue.find(item => item.id === selectedId) ?? null;
 
@@ -273,7 +272,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
             variant={filter === key ? 'primary' : 'outline'}
             size="sm"
             onClick={() => setFilter(key)}>
-            {label} ({counts[key]})
+            {label} ({counts[key] ?? 0})
           </Button>
         ))}
         <input
@@ -289,11 +288,6 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
           title="Queue is clear"
           body="No coaches are waiting for document review right now."
         />
-      ) : visible.length === 0 ? (
-        <EmptyState
-          title="No coaches match"
-          body="Try another filter or clear the search box."
-        />
       ) : (
         <DataTable
           tableClassName="min-w-[900px]"
@@ -306,7 +300,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
             'Submitted',
             '',
           ]}>
-          {visible.map(item => {
+          {queue.map(item => {
             const status = item.verificationStatus ?? 'pending';
             const docs = documentsProgressForItem(item, documentTypes);
             const expanded = selectedId === item.id;
@@ -538,6 +532,12 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
           })}
         </DataTable>
       )}
+
+      <PaginationBar
+        meta={meta}
+        disabled={loading || acting}
+        onPageChange={next => void load(next)}
+      />
 
       <FileViewerModal
         open={viewer !== null}

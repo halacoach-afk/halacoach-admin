@@ -29,8 +29,15 @@ import {DataTable, FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
+import {PaginationBar} from '@/components/ui/PaginationBar';
 import {creditTxnLabel, formatAed, formatPromoBenefit, VAT_RATE} from '@/lib/credit-utils';
 import {cn} from '@/lib/cn';
+import {
+  DEFAULT_PER_PAGE,
+  buildListQuery,
+  emptyPaginationMeta,
+  type PaginationMeta,
+} from '@/lib/pagination';
 import {can} from '@/lib/permissions';
 
 type TxnFilter = 'all' | 'credited' | 'spent';
@@ -310,6 +317,8 @@ function CatalogActions({
 export function CreditsScreen({actor}: {actor: SessionUser}) {
   const canWrite = can(actor, 'credits:write');
   const [overview, setOverview] = useState<CreditsOverview | null>(null);
+  const [txnMeta, setTxnMeta] = useState<PaginationMeta>(emptyPaginationMeta());
+  const [txnPage, setTxnPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -381,12 +390,23 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  const load = async () => {
+  const load = async (nextPage = txnPage) => {
     setLoading(true);
     setError(null);
     try {
-      const meta = await request<Omit<CreditsOverview, 'packs' | 'promos'>>('/v1/credits-meta');
+      const meta = await request<Omit<CreditsOverview, 'packs' | 'promos'>>(
+        `/v1/credits-meta${buildListQuery({page: nextPage, perPage: DEFAULT_PER_PAGE})}`,
+      );
       setOverview({...meta, packs: [], promos: []});
+      setTxnMeta(
+        meta.meta ?? {
+          page: nextPage,
+          perPage: DEFAULT_PER_PAGE,
+          total: meta.transactions?.length ?? 0,
+          lastPage: 1,
+        },
+      );
+      setTxnPage(meta.meta?.page ?? nextPage);
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load credits module.');
     } finally {
@@ -397,7 +417,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   useEffect(() => {
     void loadPackages();
     void loadPromos();
-    void load();
+    void load(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const transactions = useMemo(() => {
@@ -1323,6 +1344,12 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
           ))}
         </DataTable>
       )}
+
+      <PaginationBar
+        meta={txnMeta}
+        disabled={loading}
+        onPageChange={next => void load(next)}
+      />
 
       </>
       ) : null}

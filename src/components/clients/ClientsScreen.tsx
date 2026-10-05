@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {ChevronRight} from 'lucide-react';
 import {isApiError, listClients, type ClientSummary} from '@/api';
 import {Button} from '@/components/ui/Button';
@@ -10,7 +10,13 @@ import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
+import {PaginationBar} from '@/components/ui/PaginationBar';
 import {formatDobWithBand} from '@/lib/age-display';
+import {
+  DEFAULT_PER_PAGE,
+  emptyPaginationMeta,
+  type PaginationMeta,
+} from '@/lib/pagination';
 import {completionPercent} from '@/lib/professional-utils';
 
 type Filter = 'all' | 'onboarded' | 'incomplete' | 'suspended';
@@ -32,16 +38,41 @@ function contactCell(value: string, verified: boolean) {
 
 export function ClientsScreen() {
   const [rows, setRows] = useState<ClientSummary[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
+  const [counts, setCounts] = useState<Record<string, number>>({
+    all: 0,
+    onboarded: 0,
+    incomplete: 0,
+    suspended: 0,
+  });
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
 
-  const load = async () => {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  const load = async (nextPage = page, nextFilter = filter) => {
     setLoading(true);
     setError(null);
     try {
-      setRows(await listClients());
+      const res = await listClients({
+        page: nextPage,
+        perPage: DEFAULT_PER_PAGE,
+        q: debouncedQ || undefined,
+        filter: nextFilter === 'all' ? undefined : nextFilter,
+      });
+      setRows(res.data);
+      setMeta(res.meta);
+      setPage(res.meta.page);
+      if (res.counts) {
+        setCounts(res.counts);
+      }
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load clients.');
     } finally {
@@ -50,49 +81,15 @@ export function ClientsScreen() {
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(1, filter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQ, filter]);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter(row => {
-      if (filter === 'onboarded' && !row.onboarded) {
-        return false;
-      }
-      if (filter === 'incomplete' && row.onboarded) {
-        return false;
-      }
-      if (filter === 'suspended' && !row.suspended) {
-        return false;
-      }
-      if (!q) {
-        return true;
-      }
-      return (
-        row.id.toLowerCase().includes(q) ||
-        row.name.toLowerCase().includes(q) ||
-        row.email.toLowerCase().includes(q) ||
-        row.phone.toLowerCase().includes(q) ||
-        row.location.toLowerCase().includes(q)
-      );
-    });
-  }, [rows, filter, query]);
-
-  const counts = useMemo(
-    () => ({
-      all: rows.length,
-      onboarded: rows.filter(row => row.onboarded).length,
-      incomplete: rows.filter(row => !row.onboarded).length,
-      suspended: rows.filter(row => row.suspended).length,
-    }),
-    [rows],
-  );
-
-  if (loading) {
+  if (loading && rows.length === 0) {
     return <LoadingState label="Loading clients..." />;
   }
 
-  if (error) {
+  if (error && rows.length === 0) {
     return <ErrorState body={error} onRetry={() => void load()} />;
   }
 
@@ -117,7 +114,7 @@ export function ClientsScreen() {
             variant={filter === key ? 'primary' : 'outline'}
             size="sm"
             onClick={() => setFilter(key)}>
-            {label} ({counts[key]})
+            {label} ({counts[key] ?? 0})
           </Button>
         ))}
         <input
@@ -128,12 +125,12 @@ export function ClientsScreen() {
         />
       </FilterBar>
 
-      {visible.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState title="No clients match" body="Try another filter or clear the search box." />
       ) : (
         <DataTable
           columns={['ID', 'Name', 'Email', 'Number', 'Birth date', 'Profile', '']}>
-          {visible.map(row => {
+          {rows.map(row => {
             const pct = completionPercent(row.profileCompletion);
             return (
               <tr key={row.id} className="border-b border-border last:border-0">
@@ -174,6 +171,12 @@ export function ClientsScreen() {
           })}
         </DataTable>
       )}
+
+      <PaginationBar
+        meta={meta}
+        disabled={loading}
+        onPageChange={next => void load(next)}
+      />
     </>
   );
 }

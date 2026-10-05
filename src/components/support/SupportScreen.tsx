@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {ChevronRight} from 'lucide-react';
 import {
@@ -19,6 +19,12 @@ import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
+import {PaginationBar} from '@/components/ui/PaginationBar';
+import {
+  DEFAULT_PER_PAGE,
+  emptyPaginationMeta,
+  type PaginationMeta,
+} from '@/lib/pagination';
 import {
   formatSupportTimestamp,
   supportStatusLabels,
@@ -46,17 +52,42 @@ export function SupportScreen({
 }) {
   const router = useRouter();
   const [rows, setRows] = useState<SupportTicketSummary[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
+  const [counts, setCounts] = useState<Record<string, number>>({
+    all: 0,
+    new: 0,
+    in_progress: 0,
+    closed: 0,
+  });
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [openTicketId, setOpenTicketId] = useState<number | null>(initialTicketId);
 
-  const load = async () => {
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  const load = async (nextPage = page, nextFilter = filter) => {
     setLoading(true);
     setError(null);
     try {
-      setRows(await listSupportTickets());
+      const res = await listSupportTickets({
+        page: nextPage,
+        perPage: DEFAULT_PER_PAGE,
+        status: nextFilter === 'all' ? undefined : nextFilter,
+        q: debouncedQ || undefined,
+      });
+      setRows(res.data);
+      setMeta(res.meta);
+      setPage(res.meta.page);
+      if (res.counts) {
+        setCounts(res.counts);
+      }
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load support inbox.');
     } finally {
@@ -65,8 +96,9 @@ export function SupportScreen({
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load(1, filter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, debouncedQ]);
 
   useEffect(() => {
     setOpenTicketId(initialTicketId);
@@ -98,40 +130,11 @@ export function SupportScreen({
     );
   }, []);
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter(row => {
-      if (filter !== 'all' && row.status !== filter) {
-        return false;
-      }
-      if (!q) {
-        return true;
-      }
-      return (
-        row.subject.toLowerCase().includes(q) ||
-        (row.body || '').toLowerCase().includes(q) ||
-        row.userName.toLowerCase().includes(q) ||
-        row.userEmail.toLowerCase().includes(q) ||
-        (row.userPhone || '').toLowerCase().includes(q)
-      );
-    });
-  }, [rows, filter, query]);
-
-  const counts = useMemo(
-    () => ({
-      all: rows.length,
-      new: rows.filter(row => row.status === 'new').length,
-      in_progress: rows.filter(row => row.status === 'in_progress').length,
-      closed: rows.filter(row => row.status === 'closed').length,
-    }),
-    [rows],
-  );
-
-  if (loading) {
+  if (loading && rows.length === 0) {
     return <LoadingState label="Loading support inbox..." />;
   }
 
-  if (error) {
+  if (error && rows.length === 0) {
     return <ErrorState body={error} onRetry={() => void load()} />;
   }
 
@@ -160,7 +163,7 @@ export function SupportScreen({
             variant={filter === key ? 'primary' : 'outline'}
             size="sm"
             onClick={() => setFilter(key)}>
-            {label} ({counts[key]})
+            {label} ({counts[key] ?? 0})
           </Button>
         ))}
         <input
@@ -171,7 +174,7 @@ export function SupportScreen({
         />
       </FilterBar>
 
-      {visible.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState title="No tickets match" body="Try another filter or clear the search box." />
       ) : (
         <DataTable
@@ -187,7 +190,7 @@ export function SupportScreen({
             'Received',
             '',
           ]}>
-          {visible.map(row => {
+          {rows.map(row => {
             const href = profileHref(row);
             return (
               <tr key={row.id} className="border-t border-border">
@@ -249,6 +252,12 @@ export function SupportScreen({
           })}
         </DataTable>
       )}
+
+      <PaginationBar
+        meta={meta}
+        disabled={loading}
+        onPageChange={next => void load(next)}
+      />
 
       <SupportDetailModal
         actor={actor}
