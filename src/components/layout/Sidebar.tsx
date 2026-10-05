@@ -59,7 +59,10 @@ export function Sidebar({actor}: {actor: SessionUser}) {
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
         {items.map(item => {
           const active =
-            item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+            item.href === '/'
+              ? pathname === '/'
+              : pathname.startsWith(item.href) ||
+                (item.href === '/billing' && pathname.startsWith('/subscriptions'));
           const Icon = item.icon;
           const count = item.badgeKey && badges ? badges[item.badgeKey] : 0;
           const badgeLabel = formatBadgeCount(count);

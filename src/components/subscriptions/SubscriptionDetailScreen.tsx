@@ -94,10 +94,10 @@ export function SubscriptionDetailScreen({
     <>
       <div className="mb-4">
         <Link
-          href="/subscriptions"
+          href="/billing"
           className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">
           <ArrowLeft size={16} />
-          Back to subscriptions
+          Back to billing
         </Link>
       </div>
 

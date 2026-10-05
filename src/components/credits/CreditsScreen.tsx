@@ -25,22 +25,12 @@ import type {
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
-import {DataTable, FilterBar} from '@/components/ui/DataTable';
-import {EmptyState} from '@/components/ui/EmptyState';
+import {DataTable} from '@/components/ui/DataTable';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
-import {PaginationBar} from '@/components/ui/PaginationBar';
-import {creditTxnLabel, formatAed, formatPromoBenefit, VAT_RATE} from '@/lib/credit-utils';
+import {formatAed, formatPromoBenefit, VAT_RATE} from '@/lib/credit-utils';
 import {cn} from '@/lib/cn';
-import {
-  DEFAULT_PER_PAGE,
-  buildListQuery,
-  emptyPaginationMeta,
-  type PaginationMeta,
-} from '@/lib/pagination';
 import {can} from '@/lib/permissions';
-
-type TxnFilter = 'all' | 'credited' | 'spent';
 
 type CreditPackageDraft = {
   name: string;
@@ -317,8 +307,6 @@ function CatalogActions({
 export function CreditsScreen({actor}: {actor: SessionUser}) {
   const canWrite = can(actor, 'credits:write');
   const [overview, setOverview] = useState<CreditsOverview | null>(null);
-  const [txnMeta, setTxnMeta] = useState<PaginationMeta>(emptyPaginationMeta());
-  const [txnPage, setTxnPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -345,12 +333,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   const [savingCreditPackage, setSavingCreditPackage] = useState<number | null>(null);
   const [creatingCreditPackage, setCreatingCreditPackage] = useState(false);
   const [editingCreditPackageId, setEditingCreditPackageId] = useState<number | null>(null);
-  const [txnFilter, setTxnFilter] = useState<TxnFilter>('all');
-  const [txnCounts, setTxnCounts] = useState<Record<string, number>>({
-    all: 0,
-    credited: 0,
-    spent: 0,
-  });
   const [promoDrafts, setPromoDrafts] = useState<Record<number, PromoDraft>>({});
   const [promoForm, setPromoForm] = useState<PromoDraft>(emptyPromoForm);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -395,30 +377,14 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  const load = async (nextPage = txnPage, nextFilter = txnFilter) => {
+  const loadMeta = async () => {
     setLoading(true);
     setError(null);
     try {
       const meta = await request<Omit<CreditsOverview, 'packs' | 'promos'>>(
-        `/v1/credits-meta${buildListQuery({
-          page: nextPage,
-          perPage: DEFAULT_PER_PAGE,
-          filter: nextFilter === 'all' ? undefined : nextFilter,
-        })}`,
+        '/v1/credits-meta?page=1&perPage=1',
       );
       setOverview({...meta, packs: [], promos: []});
-      setTxnMeta(
-        meta.meta ?? {
-          page: nextPage,
-          perPage: DEFAULT_PER_PAGE,
-          total: meta.transactions?.length ?? 0,
-          lastPage: 1,
-        },
-      );
-      setTxnPage(meta.meta?.page ?? nextPage);
-      if (meta.counts) {
-        setTxnCounts(meta.counts);
-      }
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not load credits module.');
     } finally {
@@ -429,15 +395,9 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   useEffect(() => {
     void loadPackages();
     void loadPromos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void loadMeta();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial catalog + VAT load
   }, []);
-
-  useEffect(() => {
-    void load(1, txnFilter);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txnFilter]);
-
-  const transactions = overview?.transactions ?? [];
 
   const oneTimePackages = useMemo(
     () => packages.items.filter(pack => (pack.type ?? 'one_time') === 'one_time'),
@@ -1037,7 +997,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     <>
       <PageHeader
         title="Credits"
-        description="Packs, memberships, promo codes, VAT, and transactions."
+        description="Packs, memberships, promo codes, and VAT configuration."
         actions={
           <Button
             variant="outline"
@@ -1045,7 +1005,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
             onClick={() => {
               void loadPackages();
               void loadPromos();
-              void load();
+              void loadMeta();
             }}>
             Refresh
           </Button>
@@ -1310,64 +1270,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         </DataTable>
         {promoError ? <p className="mt-2 text-sm text-destructive">{promoError}</p> : null}
       </div>
-
-      {overview ? (<>
-      <h2 className="mb-3 mt-8 text-lg font-semibold text-foreground">Transactions</h2>
-      <FilterBar>
-        {(
-          [
-            ['all', 'All'],
-            ['credited', 'Purchasings'],
-            ['spent', 'Spendings'],
-          ] as const
-        ).map(([key, label]) => (
-          <Button
-            key={key}
-            size="sm"
-            variant={txnFilter === key ? 'primary' : 'outline'}
-            onClick={() => setTxnFilter(key)}>
-            {label} ({txnCounts[key] ?? 0})
-          </Button>
-        ))}
-      </FilterBar>
-      {transactions.length === 0 ? (
-        <EmptyState title="No transactions" body="Try another filter." />
-      ) : (
-        <DataTable columns={['When', 'Coach', 'Type', 'Credits', 'Details', 'Paid']}>
-          {transactions.map(txn => (
-            <tr key={txn.id} className="border-b border-border last:border-0">
-              <td className="px-4 py-3 text-sm text-muted-foreground">
-                {new Date(txn.at).toLocaleString()}
-              </td>
-              <td className="px-4 py-3 text-sm">{txn.professionalName}</td>
-              <td className="px-4 py-3">
-                <Badge tone={txn.type === 'purchase' ? 'primary' : txn.type === 'spend' ? 'coral' : 'sky'}>
-                  {txn.type}
-                </Badge>
-              </td>
-              <td className="px-4 py-3 font-medium">
-                {txn.credits > 0 ? `+${txn.credits}` : String(txn.credits)}
-              </td>
-              <td className="px-4 py-3 text-sm text-muted-foreground">
-                {creditTxnLabel(txn.label)}
-                {txn.orderId ? ` | ${txn.orderId}` : ''}
-              </td>
-              <td className="px-4 py-3 text-sm">
-                {txn.totalAed ? formatAed(txn.totalAed) : '-'}
-              </td>
-            </tr>
-          ))}
-        </DataTable>
-      )}
-
-      <PaginationBar
-        meta={txnMeta}
-        disabled={loading}
-        onPageChange={next => void load(next)}
-      />
-
-      </>
-      ) : null}
     </>
   );
 }

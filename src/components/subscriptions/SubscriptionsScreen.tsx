@@ -43,7 +43,15 @@ function formatDate(value: string | null | undefined) {
   return new Date(value).toLocaleString();
 }
 
-export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
+export function SubscriptionsScreen({
+  actor: _actor,
+  embedded = false,
+  refreshKey = 0,
+}: {
+  actor: SessionUser;
+  embedded?: boolean;
+  refreshKey?: number;
+}) {
   const [rows, setRows] = useState<CreditSubscriptionAdmin[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
   const [counts, setCounts] = useState<Record<string, number>>({
@@ -93,6 +101,14 @@ export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, debouncedQ]);
 
+  useEffect(() => {
+    if (refreshKey === 0) {
+      return;
+    }
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
+
   if (loading && rows.length === 0) {
     return <LoadingState label="Loading subscriptions..." />;
   }
@@ -103,15 +119,19 @@ export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
 
   return (
     <>
-      <PageHeader
-        title="Subscriptions"
-        description="Membership plans, period usage, wallet balance, and renewal status for coaches."
-        actions={
-          <Button variant="outline" size="sm" onClick={() => void load()}>
-            Refresh
-          </Button>
-        }
-      />
+      {embedded ? (
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Subscriptions</h2>
+      ) : (
+        <PageHeader
+          title="Subscriptions"
+          description="Membership plans, period usage, wallet balance, and renewal status for coaches."
+          actions={
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              Refresh
+            </Button>
+          }
+        />
+      )}
 
       <FilterBar>
         {(
