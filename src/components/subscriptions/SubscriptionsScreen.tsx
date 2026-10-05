@@ -7,6 +7,7 @@ import {isApiError, type SessionUser} from '@/api';
 import type {CreditSubscriptionAdmin} from '@/api/types';
 import {listCreditSubscriptions} from '@/lib/apis';
 import {Badge} from '@/components/ui/Badge';
+import {Button} from '@/components/ui/Button';
 import {DataTable, FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
@@ -105,6 +106,11 @@ export function SubscriptionsScreen({actor: _actor}: {actor: SessionUser}) {
       <PageHeader
         title="Subscriptions"
         description="Membership plans, period usage, wallet balance, and renewal status for coaches."
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            Refresh
+          </Button>
+        }
       />
 
       <FilterBar>

@@ -167,6 +167,11 @@ export function AdminsScreen({actor}: {actor: SessionUser}) {
       <PageHeader
         title="Access Management"
         description="Invite operators and assign roles with permissions."
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            Refresh
+          </Button>
+        }
       />
 
       {error ? (

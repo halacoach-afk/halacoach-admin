@@ -98,6 +98,11 @@ export function ClientsScreen() {
       <PageHeader
         title="Clients"
         description="Browse and manage client accounts."
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            Refresh
+          </Button>
+        }
       />
 
       <FilterBar>

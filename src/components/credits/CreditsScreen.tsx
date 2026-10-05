@@ -1035,6 +1035,18 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
       <PageHeader
         title="Credits"
         description="Packs, memberships, promo codes, VAT, and transactions."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              void loadPackages();
+              void loadPromos();
+              void load();
+            }}>
+            Refresh
+          </Button>
+        }
       />
 
       {error ? (

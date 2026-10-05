@@ -105,6 +105,11 @@ export function ProfessionalsScreen() {
       <PageHeader
         title="Professionals"
         description="Browse and manage coach accounts."
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            Refresh
+          </Button>
+        }
       />
 
       <FilterBar>

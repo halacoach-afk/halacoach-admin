@@ -205,7 +205,14 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
 
   return (
     <>
-      <PageHeader title="Services" />
+      <PageHeader
+        title="Services"
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            Refresh
+          </Button>
+        }
+      />
 
       {error ? (
         <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-destructive">{error}</p>
