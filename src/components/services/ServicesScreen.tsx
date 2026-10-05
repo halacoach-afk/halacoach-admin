@@ -13,6 +13,7 @@ import {
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
+import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {DataTable} from '@/components/ui/DataTable';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {cn} from '@/lib/cn';
@@ -23,7 +24,7 @@ const tableInputClass =
 const tableCellClass = 'flex h-9 min-w-0 items-center';
 const nameCellClass = 'min-w-[12rem] max-w-md px-4 py-2 whitespace-normal';
 const actionButtonClass = 'w-[4.75rem] shrink-0 justify-center';
-const archiveButtonClass = 'min-w-[5.5rem] shrink-0 justify-center';
+const deleteButtonClass = 'min-w-[5.5rem] shrink-0 justify-center';
 const addButtonClass = cn(
   actionButtonClass,
   'transform-gpu disabled:opacity-100 disabled:bg-primary-soft disabled:text-primary',
@@ -39,16 +40,14 @@ function CatalogActions({
   onCancel,
   onSave,
   onEdit,
-  toggleLabel,
-  onToggle,
+  onDelete,
 }: {
   isEditing: boolean;
   saving: boolean;
   onCancel: () => void;
   onSave: () => void;
   onEdit: () => void;
-  toggleLabel: string;
-  onToggle: () => void;
+  onDelete: () => void;
 }) {
   return (
     <TableCell className="flex-nowrap justify-end gap-1">
@@ -75,8 +74,8 @@ function CatalogActions({
           Edit
         </Button>
       )}
-      <Button size="sm" variant="outline" className={archiveButtonClass} onClick={onToggle}>
-        {toggleLabel}
+      <Button size="sm" variant="destructive" className={deleteButtonClass} onClick={onDelete}>
+        Delete
       </Button>
     </TableCell>
   );
@@ -109,12 +108,14 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
   const [reordering, setReordering] = useState(false);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dropTargetId, setDropTargetId] = useState<number | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<CatalogService | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const dragIdRef = useRef<number | null>(null);
 
   const load = async () => {
     setServices(state => ({...state, isLoading: true, error: null}));
     try {
-      const items = await listServices();
+      const items = (await listServices()).filter(item => item.active);
       setServices({items, isLoading: false, error: null});
       setDrafts(Object.fromEntries(items.map(item => [item.id, item.name])));
     } catch (err) {
@@ -160,13 +161,28 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  const toggleActive = async (service: CatalogService) => {
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const target = pendingDelete;
+    setDeleting(true);
     setError(null);
     try {
-      await updateService(service.id, {active: !service.active});
-      await load();
+      await updateService(target.id, {active: false});
+      setPendingDelete(null);
+      setEditingId(current => (current === target.id ? null : current));
+      setServices(state => ({
+        ...state,
+        items: state.items.filter(item => item.id !== target.id),
+      }));
+      setDrafts(state => {
+        const next = {...state};
+        delete next[target.id];
+        return next;
+      });
     } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not update service.');
+      setError(isApiError(err) ? err.message : 'Could not delete service.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -175,7 +191,9 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     setError(null);
     setServices(state => ({...state, items: next}));
     try {
-      const reordered = await reorderServices({orderedIds: next.map(item => item.id)});
+      const reordered = (await reorderServices({orderedIds: next.map(item => item.id)})).filter(
+        item => item.active,
+      );
       setServices({items: reordered, isLoading: false, error: null});
       setDrafts(Object.fromEntries(reordered.map(item => [item.id, item.name])));
     } catch (err) {
@@ -302,7 +320,6 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                 onDrop={event => onDrop(event, service.id)}
                 className={cn(
                   'border-b border-border last:border-0',
-                  !service.active && 'bg-muted/30',
                   isEditing && 'bg-primary-soft/30',
                   isDragging && 'opacity-50',
                   isDropTarget && 'bg-sky-soft ring-1 ring-inset ring-sky',
@@ -350,11 +367,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap">
                   <TableCell className="flex-nowrap">
-                    {service.active ? (
-                      <Badge tone="primary">Active</Badge>
-                    ) : (
-                      <Badge tone="muted">Archived</Badge>
-                    )}
+                    <Badge tone="primary">Active</Badge>
                   </TableCell>
                 </td>
                 {canWrite ? (
@@ -365,8 +378,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                       onCancel={() => cancelEdit(service)}
                       onSave={() => void save(service.id)}
                       onEdit={() => startEdit(service)}
-                      toggleLabel={service.active ? 'Archive' : 'Restore'}
-                      onToggle={() => void toggleActive(service)}
+                      onDelete={() => setPendingDelete(service)}
                     />
                   </td>
                 ) : null}
@@ -409,13 +421,25 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                       'Add'
                     )}
                   </Button>
-                  <span className={archiveButtonClass} aria-hidden />
+                  <span className={deleteButtonClass} aria-hidden />
                 </TableCell>
               </td>
             </tr>
           ) : null}
         </DataTable>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete this service?"
+        body="This can’t be undone from the list."
+        confirmLabel={deleting ? 'Deleting...' : 'Delete'}
+        destructive
+        onClose={() => {
+          if (!deleting) setPendingDelete(null);
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
     </>
   );
 }
