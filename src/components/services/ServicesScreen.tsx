@@ -74,7 +74,7 @@ function CatalogActions({
           Edit
         </Button>
       )}
-      <Button size="sm" variant="destructive" className={deleteButtonClass} onClick={onDelete}>
+      <Button size="sm" variant="danger" className={deleteButtonClass} onClick={onDelete}>
         Delete
       </Button>
     </TableCell>

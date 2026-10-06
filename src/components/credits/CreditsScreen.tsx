@@ -296,7 +296,7 @@ function CatalogActions({
           Edit
         </Button>
       )}
-      <Button size="sm" variant="destructive" className={creditPackageDeleteButtonClass} onClick={onDelete}>
+      <Button size="sm" variant="danger" className={creditPackageDeleteButtonClass} onClick={onDelete}>
         Delete
       </Button>
     </CreditPackageTableCell>

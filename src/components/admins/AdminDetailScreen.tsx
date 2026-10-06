@@ -250,7 +250,7 @@ export function AdminDetailScreen({actor, id}: {actor: SessionUser; id: string})
                       </Button>
                       <Button
                         size="sm"
-                        variant="destructive"
+                        variant="danger"
                         disabled={isSelf || deleting}
                         onClick={() => setPendingDelete(true)}>
                         Delete
