@@ -139,7 +139,7 @@ export function TransactionsScreen({
                 {txn.orderId ? ` | ${txn.orderId}` : ''}
               </td>
               <td className="px-4 py-3 text-sm">
-                {txn.totalAed ? formatAed(txn.totalAed) : '-'}
+                {typeof txn.totalAed === 'number' ? formatAed(txn.totalAed) : '-'}
               </td>
             </tr>
           ))}
