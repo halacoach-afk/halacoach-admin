@@ -25,6 +25,7 @@ import type {
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
+import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {DataTable} from '@/components/ui/DataTable';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
@@ -136,7 +137,7 @@ const tableSelectClass =
   'h-9 w-full rounded-lg border border-border bg-background px-2.5 text-sm outline-none focus:border-primary';
 const creditPackageTableCellClass = 'flex h-9 items-center';
 const creditPackageActionButtonClass = 'w-[4.75rem] shrink-0 justify-center';
-const creditPackageArchiveButtonClass = 'min-w-[5.5rem] shrink-0 justify-center';
+const creditPackageDeleteButtonClass = 'min-w-[5.5rem] shrink-0 justify-center';
 const creditPackageAddButtonClass = cn(
   creditPackageActionButtonClass,
   'transform-gpu disabled:opacity-100 disabled:bg-primary-soft disabled:text-primary',
@@ -261,16 +262,14 @@ function CatalogActions({
   onCancel,
   onSave,
   onEdit,
-  toggleLabel,
-  onToggle,
+  onDelete,
 }: {
   isEditing: boolean;
   saving: boolean;
   onCancel: () => void;
   onSave: () => void;
   onEdit: () => void;
-  toggleLabel: string;
-  onToggle: () => void;
+  onDelete: () => void;
 }) {
   return (
     <CreditPackageTableCell className="flex-nowrap justify-end gap-1">
@@ -297,8 +296,8 @@ function CatalogActions({
           Edit
         </Button>
       )}
-      <Button size="sm" variant="outline" className={creditPackageArchiveButtonClass} onClick={onToggle}>
-        {toggleLabel}
+      <Button size="sm" variant="destructive" className={creditPackageDeleteButtonClass} onClick={onDelete}>
+        Delete
       </Button>
     </CreditPackageTableCell>
   );
@@ -339,11 +338,15 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   const [savingPromo, setSavingPromo] = useState<number | null>(null);
   const [creatingPromo, setCreatingPromo] = useState(false);
   const [editingPromoId, setEditingPromoId] = useState<number | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<
+    {kind: 'package'; id: number} | {kind: 'promo'; id: number} | null
+  >(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadPackages = async () => {
     setPackages(s => ({...s, isLoading: true, error: null}));
     try {
-      const items = await listCreditPackages();
+      const items = (await listCreditPackages()).filter(item => item.active);
       setPackages({items, isLoading: false, error: null});
       setCreditPackageDrafts(
         Object.fromEntries(
@@ -369,7 +372,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   const loadPromos = async () => {
     setPromos(s => ({...s, isLoading: true, error: null}));
     try {
-      const items = await listPromoCodes();
+      const items = (await listPromoCodes()).filter(item => item.active);
       setPromos({items, isLoading: false, error: null});
       setPromoDrafts(Object.fromEntries(items.map(promo => [promo.id, promoDraftFromPromo(promo)])));
     } catch (err) {
@@ -636,8 +639,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                       onCancel={() => cancelEditCreditPackage(pack)}
                       onSave={() => void saveCreditPackage(pack.id)}
                       onEdit={() => startEditCreditPackage(pack)}
-                      toggleLabel={pack.active ? 'Archive' : 'Restore'}
-                      onToggle={() => void toggleCreditPackage(pack.id, !pack.active)}
+                      onDelete={() => setPendingDelete({kind: 'package', id: pack.id})}
                     />
                   </td>
                 ) : null}
@@ -749,7 +751,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                       'Add'
                     )}
                   </Button>
-                  <span className={creditPackageArchiveButtonClass} aria-hidden />
+                  <span className={creditPackageDeleteButtonClass} aria-hidden />
                 </CreditPackageTableCell>
               </td>
             </tr>
@@ -884,23 +886,42 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     setEditingCreditPackageId(current => (current === pack.id ? null : current));
   };
 
-  const toggleCreditPackage = async (packId: number, active: boolean) => {
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const target = pendingDelete;
+    setDeleting(true);
+    setError(null);
     try {
-      await updateCreditPackage(packId, {active});
-      setEditingCreditPackageId(current => (current === packId ? null : current));
-      await loadPackages();
+      if (target.kind === 'package') {
+        await updateCreditPackage(target.id, {active: false});
+        setEditingCreditPackageId(current => (current === target.id ? null : current));
+        setPackages(state => ({
+          ...state,
+          items: state.items.filter(item => item.id !== target.id),
+        }));
+        setCreditPackageDrafts(state => {
+          const next = {...state};
+          delete next[target.id];
+          return next;
+        });
+      } else {
+        await updatePromoCode(target.id, {active: false});
+        setEditingPromoId(current => (current === target.id ? null : current));
+        setPromos(state => ({
+          ...state,
+          items: state.items.filter(item => item.id !== target.id),
+        }));
+        setPromoDrafts(state => {
+          const next = {...state};
+          delete next[target.id];
+          return next;
+        });
+      }
+      setPendingDelete(null);
     } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not update credit package.');
-    }
-  };
-
-  const togglePromo = async (id: number, active: boolean) => {
-    try {
-      await updatePromoCode(id, {active});
-      setEditingPromoId(current => (current === id ? null : current));
-      await loadPromos();
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not update promo code.');
+      setError(isApiError(err) ? err.message : 'Could not delete.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -1158,8 +1179,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                       onCancel={() => cancelEditPromo(promo)}
                       onSave={() => void savePromo(promo.id)}
                       onEdit={() => startEditPromo(promo)}
-                      toggleLabel={promo.active ? 'Deactivate' : 'Activate'}
-                      onToggle={() => void togglePromo(promo.id, !promo.active)}
+                      onDelete={() => setPendingDelete({kind: 'promo', id: promo.id})}
                     />
                   </td>
                 ) : null}
@@ -1241,7 +1261,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                       'Add'
                     )}
                   </Button>
-                  <span className={creditPackageArchiveButtonClass} aria-hidden />
+                  <span className={creditPackageDeleteButtonClass} aria-hidden />
                 </CreditPackageTableCell>
               </td>
             </tr>
@@ -1249,6 +1269,18 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         </DataTable>
         {promoError ? <p className="mt-2 text-sm text-destructive">{promoError}</p> : null}
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete this?"
+        body="This can’t be undone from the list."
+        confirmLabel={deleting ? 'Deleting...' : 'Delete'}
+        destructive
+        onClose={() => {
+          if (!deleting) setPendingDelete(null);
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
     </>
   );
 }
