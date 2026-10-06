@@ -1,12 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import {usePathname} from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {LogOut} from 'lucide-react';
 import {getNavBadges, type NavBadges, type SessionUser} from '@/api';
 import {cn} from '@/lib/cn';
+import {roleLabel} from '@/lib/helpers';
 import {navItems} from '@/lib/nav';
 import {can} from '@/lib/permissions';
+import {clearSessionCookie} from '@/lib/session';
 
 function formatBadgeCount(value: number) {
   if (value <= 0) return null;
@@ -15,6 +18,7 @@ function formatBadgeCount(value: number) {
 
 export function Sidebar({actor}: {actor: SessionUser}) {
   const pathname = usePathname();
+  const router = useRouter();
   const items = useMemo(
     () => navItems.filter(item => can(actor, item.permission)),
     [actor],
@@ -99,6 +103,31 @@ export function Sidebar({actor}: {actor: SessionUser}) {
           );
         })}
       </nav>
+      <div className="border-t border-border p-3">
+        <div
+          className="flex items-center gap-2.5 rounded-2xl bg-muted/70 px-3 py-2"
+          title={actor.email}>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold leading-tight text-foreground">{actor.name}</p>
+            <p className="truncate text-[11px] font-medium leading-tight text-muted-foreground">{actor.email}</p>
+            <p className="truncate text-[11px] font-medium leading-tight text-muted-foreground">
+              {roleLabel(actor.role)}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="flex size-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-card hover:text-destructive"
+            onClick={() => {
+              clearSessionCookie();
+              router.replace('/login');
+              router.refresh();
+            }}
+            aria-label="Sign out"
+            title="Sign out">
+            <LogOut size={16} strokeWidth={1.8} />
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }
