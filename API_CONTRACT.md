@@ -124,7 +124,7 @@ Lightweight action-required counts for the admin sidebar (no activity feed).
 }
 ```
 
-- `pendingVerifications` — active coaches with `verification_status: pending` (Verification nav badge)
+- `pendingVerifications` — active coaches who still have documents to review (`verification_status: pending`, or any file `submitted` / `under_review`, including already-verified coaches) (Verification nav badge)
 - `openSupportTickets` — tickets in `new` or `in_progress` (Support nav badge)
 
 ---
@@ -183,7 +183,9 @@ Full profile including wallet `txns`, documents, public fields, `notificationPre
 
 ### `GET /admin/verification`
 
-Pending queue items (newest submission first).
+Queue items (newest submission first). Query `status=pending` includes coaches who still have a file in `submitted` or `under_review`, even when the profile is already `verified` (one qualifying licence approved is enough to unlock leads).
+
+Unlock / live uses profile `verified` = any one required licence (`reps_uae`, `muahal`, `ministry_or_federation`) is approved. Replacing that only approved licence (same document type) drops the coach out of `verified` until another required licence is approved.
 
 ### `POST /admin/verification/:id/approve`
 
