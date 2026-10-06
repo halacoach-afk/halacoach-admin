@@ -12,7 +12,7 @@ import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {PaginationBar} from '@/components/ui/PaginationBar';
 import {SearchField} from '@/components/ui/SearchField';
-import {formatDobWithBand} from '@/lib/age-display';
+import {dobWithBandParts} from '@/lib/age-display';
 import {
   DEFAULT_PER_PAGE,
   emptyPaginationMeta,
@@ -100,7 +100,6 @@ export function ClientsScreen() {
     <>
       <PageHeader
         title="Clients"
-        description="Browse and manage client accounts."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
             Refresh
@@ -151,8 +150,21 @@ export function ClientsScreen() {
                 <td className="px-4 py-3">
                   {contactCell(row.phone, Boolean(row.phoneVerified))}
                 </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {formatDobWithBand(row.birthDate) ?? '—'}
+                <td className="px-4 py-3">
+                  {(() => {
+                    const parts = dobWithBandParts(row.birthDate);
+                    if (!parts) {
+                      return <span className="text-sm text-muted-foreground">—</span>;
+                    }
+                    return (
+                      <div>
+                        <div className="text-sm text-foreground">{parts.date}</div>
+                        {parts.band ? (
+                          <div className="text-xs text-muted-foreground">{parts.band}</div>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">

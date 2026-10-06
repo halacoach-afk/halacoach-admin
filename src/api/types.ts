@@ -236,6 +236,7 @@ export type CreditLedgerEntry = {
   id: string;
   professionalId: string;
   professionalName: string;
+  professionalEmail?: string | null;
   type: 'purchase' | 'spend' | 'adjustment' | 'membership_grant';
   credits: number;
   label: string;

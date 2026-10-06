@@ -3,9 +3,15 @@ import {Badge} from '@/components/ui/Badge';
 
 type PermissionPill = {label: string; tone: 'primary' | 'sky' | 'muted'};
 
-/** Show "update" for both update and adjust actions. */
+function capitalize(value: string) {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/** Show "Update" for both update and adjust actions. */
 export function actionLabel(action: string) {
-  return action === 'adjust' ? 'update' : action;
+  const normalized = action === 'adjust' ? 'update' : action;
+  return capitalize(normalized);
 }
 
 function normalizeAction(action: string) {
@@ -58,7 +64,7 @@ export function permissionPills(
     const count = counts.get(action) ?? 0;
     const total = totals.get(action) ?? 0;
     const isAll = total > 0 && count >= total;
-    const value = isAll ? 'all' : String(count);
+    const value = isAll ? 'All' : String(count);
     return {
       label: `${actionLabel(action)}: ${value}`,
       tone: isAll ? 'sky' : 'muted',

@@ -39,9 +39,22 @@ function statusTone(status: string): 'sky' | 'warning' | 'muted' | 'danger' | 'p
   }
 }
 
-function formatDate(value: string | null | undefined) {
-  if (!value) return '-';
-  return new Date(value).toLocaleString();
+function statusLabel(status: string) {
+  return status
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function formatDateParts(
+  value: string | null | undefined,
+): {date: string; time: string} | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  return {
+    date: date.toLocaleDateString(),
+    time: date.toLocaleTimeString(),
+  };
 }
 
 export function SubscriptionsScreen({
@@ -173,19 +186,31 @@ export function SubscriptionsScreen({
       ) : (
         <DataTable
           columns={[
+            'ID',
             'Coach',
             'Plan',
             'Status',
-            'Wallet',
-            'Period remaining',
             'Period end',
             '',
           ]}
         >
           {rows.map(sub => (
             <tr key={sub.id} className="border-b border-border last:border-0">
+              <td className="px-4 py-3 text-sm tabular-nums text-muted-foreground">
+                {sub.id}
+              </td>
               <td className="px-4 py-3">
-                <p className="font-medium text-foreground">{sub.professionalName}</p>
+                <p className="font-medium text-foreground">
+                  {sub.professionalId ? (
+                    <Link
+                      href={`/professionals/${sub.professionalId}`}
+                      className="text-primary hover:underline">
+                      {sub.professionalName}
+                    </Link>
+                  ) : (
+                    sub.professionalName
+                  )}
+                </p>
                 <p className="text-xs text-muted-foreground">
                   {sub.professionalEmail ?? sub.professionalId}
                 </p>
@@ -199,20 +224,24 @@ export function SubscriptionsScreen({
                 </p>
               </td>
               <td className="px-4 py-3">
-                <Badge tone={statusTone(sub.status)}>{sub.status}</Badge>
+                <Badge tone={statusTone(sub.status)}>{statusLabel(sub.status)}</Badge>
                 {sub.cancelAtPeriodEnd ? (
                   <p className="mt-1 text-xs text-muted-foreground">Cancels at period end</p>
                 ) : null}
               </td>
-              <td className="px-4 py-3 text-sm text-foreground">{sub.walletBalance}</td>
               <td className="px-4 py-3">
-                <p className="text-sm text-foreground">{sub.periodRemainingCredits}</p>
-                <p className="text-xs text-muted-foreground">
-                  {sub.periodGrantedCredits} granted - {sub.periodSpentCredits} spent
-                </p>
-              </td>
-              <td className="px-4 py-3 text-sm text-muted-foreground">
-                {formatDate(sub.currentPeriodEnd)}
+                {(() => {
+                  const parts = formatDateParts(sub.currentPeriodEnd);
+                  if (!parts) {
+                    return <span className="text-sm text-muted-foreground">—</span>;
+                  }
+                  return (
+                    <div>
+                      <div className="text-sm text-foreground">{parts.date}</div>
+                      <div className="text-xs text-muted-foreground">{parts.time}</div>
+                    </div>
+                  );
+                })()}
               </td>
               <td className="px-4 py-3 text-right">
                 <Link

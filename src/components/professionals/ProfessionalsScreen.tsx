@@ -18,7 +18,7 @@ import {
   emptyPaginationMeta,
   type PaginationMeta,
 } from '@/lib/pagination';
-import {completionPercent, formatCoachYearsExperience, verificationLabels} from '@/lib/professional-utils';
+import {completionPercent, verificationLabels} from '@/lib/professional-utils';
 
 type Filter = 'all' | 'onboarded' | 'incomplete' | 'suspended';
 
@@ -107,7 +107,6 @@ export function ProfessionalsScreen() {
     <>
       <PageHeader
         title="Professionals"
-        description="Browse and manage coach accounts."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
             Refresh
@@ -151,8 +150,6 @@ export function ProfessionalsScreen() {
             'Name',
             'Email',
             'Number',
-            'Experience',
-            'About',
             'Verification',
             'Credits',
             'Profile',
@@ -160,7 +157,6 @@ export function ProfessionalsScreen() {
           ]}>
           {rows.map(row => {
             const pct = completionPercent(row.profileCompletion);
-            const about = row.about?.trim() || '';
             return (
               <tr key={row.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 font-medium tabular-nums text-foreground">
@@ -172,12 +168,6 @@ export function ProfessionalsScreen() {
                 </td>
                 <td className="px-4 py-3">
                   {contactCell(row.phone, Boolean(row.phoneVerified))}
-                </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {formatCoachYearsExperience(row.years)}
-                </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {about || '—'}
                 </td>
                 <td className="px-4 py-3">
                   <Badge tone={verificationTone(row.verificationStatus)}>

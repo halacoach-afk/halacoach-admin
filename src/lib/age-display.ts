@@ -50,7 +50,14 @@ export function ageBandLabel(id: string | null | undefined): string | null {
   return BAND_LABELS[id] ?? id;
 }
 
-export function formatDobWithBand(dobIso: string | null | undefined): string | null {
+export type DobWithBandParts = {
+  date: string;
+  band: string | null;
+};
+
+export function dobWithBandParts(
+  dobIso: string | null | undefined,
+): DobWithBandParts | null {
   const parsed = parseDobIso(dobIso ?? null);
   if (!parsed) return null;
   const [y, m, d] = parsed.split('-').map(Number);
@@ -62,9 +69,19 @@ export function formatDobWithBand(dobIso: string | null | undefined): string | n
     timeZone: 'UTC',
   });
   const years = ageYearsFromDobIso(parsed);
-  if (years == null) return formatted;
-  const label = ageBandLabel(ageBandIdFromYears(years));
-  return label ? `${formatted} (${label})` : formatted;
+  if (years == null) {
+    return {date: formatted, band: null};
+  }
+  return {
+    date: formatted,
+    band: ageBandLabel(ageBandIdFromYears(years)),
+  };
+}
+
+export function formatDobWithBand(dobIso: string | null | undefined): string | null {
+  const parts = dobWithBandParts(dobIso);
+  if (!parts) return null;
+  return parts.band ? `${parts.date} (${parts.band})` : parts.date;
 }
 
 export function formatClientAgeDisplay(profile: {

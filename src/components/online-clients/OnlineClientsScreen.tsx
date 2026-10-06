@@ -28,6 +28,11 @@ function statusTone(status: string): 'primary' | 'muted' | 'warning' | 'danger' 
   return 'muted';
 }
 
+function capitalizeLabel(value: string) {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export function OnlineClientsScreen() {
   const [rows, setRows] = useState<OnlinePlanSummary[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
@@ -67,7 +72,6 @@ export function OnlineClientsScreen() {
     <>
       <PageHeader
         title="Online plans"
-        description="Live coaching plans from the coach Clients tab - intake, drafts, and published programs."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
@@ -109,11 +113,11 @@ export function OnlineClientsScreen() {
                 )}
               </td>
               <td className="px-4 py-3">
-                <Badge tone={statusTone(row.status)}>{row.status}</Badge>
+                <Badge tone={statusTone(row.status)}>{capitalizeLabel(row.status)}</Badge>
               </td>
               <td className="px-4 py-3">
                 <Badge tone={row.parq === 'cleared' ? 'primary' : 'danger'}>
-                  {row.parq}
+                  {capitalizeLabel(row.parq)}
                 </Badge>
               </td>
               <td className="px-4 py-3 text-xs text-muted-foreground">

@@ -45,8 +45,13 @@ const REJECT_REASON_OPTIONS = [
 
 type Filter = 'all' | 'pending' | 'rejected' | 'verified';
 
-function formatSubmitted(at: string) {
-  return new Date(at).toLocaleString();
+function formatSubmittedParts(at: string): {date: string; time: string} | null {
+  const date = new Date(at);
+  if (!Number.isFinite(date.getTime())) return null;
+  return {
+    date: date.toLocaleDateString(),
+    time: date.toLocaleTimeString(),
+  };
 }
 
 function statusTone(status?: string) {
@@ -58,7 +63,9 @@ function statusTone(status?: string) {
 }
 
 function statusLabel(status?: string) {
-  return String(status ?? 'submitted').replace(/_/g, ' ');
+  return String(status ?? 'submitted')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
 }
 
 function queueStatusTone(status?: string) {
@@ -135,6 +142,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   const [pendingFileReject, setPendingFileReject] = useState<{
     item: VerificationQueueItem;
     file: VerificationFile;
+    label: string;
   } | null>(null);
   const [pendingFileApprove, setPendingFileApprove] = useState<{
     item: VerificationQueueItem;
@@ -330,8 +338,19 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                       {docs.submitted}/{docs.total} submitted
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-foreground">
-                    {formatSubmitted(item.submittedAt)}
+                  <td className="px-4 py-3">
+                    {(() => {
+                      const parts = formatSubmittedParts(item.submittedAt);
+                      if (!parts) {
+                        return <span className="text-sm text-muted-foreground">—</span>;
+                      }
+                      return (
+                        <div>
+                          <div className="text-sm text-foreground">{parts.date}</div>
+                          <div className="text-xs text-muted-foreground">{parts.time}</div>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-end">
                     <button
@@ -426,10 +445,14 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                                           <Button
                                             size="sm"
                                             variant="destructive"
-                                            disabled={acting}
+                                            disabled={acting || file.status === 'rejected'}
                                             onClick={() => {
                                               setRejectReason('');
-                                              setPendingFileReject({item: selected, file});
+                                              setPendingFileReject({
+                                                item: selected,
+                                                file,
+                                                label: meta.label,
+                                              });
                                             }}>
                                             Reject
                                           </Button>
@@ -498,10 +521,14 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                                           <Button
                                             size="sm"
                                             variant="destructive"
-                                            disabled={acting}
+                                            disabled={acting || file.status === 'rejected'}
                                             onClick={() => {
                                               setRejectReason('');
-                                              setPendingFileReject({item: selected, file});
+                                              setPendingFileReject({
+                                                item: selected,
+                                                file,
+                                                label: 'Untyped document',
+                                              });
                                             }}>
                                             Reject
                                           </Button>
@@ -567,7 +594,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
             className="w-full max-w-md rounded-2xl bg-card p-6 shadow-lg">
             <h2 className="text-lg font-semibold text-foreground">Reject this document?</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {pendingFileReject.file.originalName}
+              {pendingFileReject.label}
             </p>
             <label className="mt-4 block text-sm">
               <span className="font-medium">Reason</span>

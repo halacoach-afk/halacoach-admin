@@ -99,7 +99,6 @@ export function LeadsScreen() {
     <>
       <PageHeader
         title="Leads"
-        description="Client training requests across the marketplace."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
@@ -139,7 +138,7 @@ export function LeadsScreen() {
             'Times',
             'Location',
             'Client',
-            'Assigned coach',
+            'Coach',
             'Posted',
             '',
           ]}>
@@ -151,7 +150,15 @@ export function LeadsScreen() {
               <tr key={row.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 align-top text-sm text-muted-foreground">{row.id}</td>
                 <td className="px-4 py-3 align-top text-sm font-medium text-foreground">{prefs.goal}</td>
-                <Cell value={prefs.goalDetails} className="min-w-[140px]" />
+                <td
+                  className="max-w-[180px] px-4 py-3 align-top text-sm text-foreground"
+                  title={
+                    prefs.goalDetails && prefs.goalDetails !== '-'
+                      ? prefs.goalDetails
+                      : undefined
+                  }>
+                  <span className="block truncate">{prefs.goalDetails}</span>
+                </td>
                 <Cell value={prefs.format} />
                 <Cell value={prefs.frequency} />
                 <Cell value={prefs.days} />

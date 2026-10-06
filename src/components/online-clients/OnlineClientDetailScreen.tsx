@@ -152,6 +152,11 @@ function planStatusTone(status: string): 'primary' | 'muted' | 'warning' | 'dang
   return 'muted';
 }
 
+function capitalizeLabel(value: string) {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 function PersonCard({
   title,
   name,
@@ -545,9 +550,11 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
               <div className="min-w-0 flex-1">
                 <h2 className="text-lg font-semibold text-foreground">{goalTitle}</h2>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <Badge tone={planStatusTone(plan.status)}>{plan.status}</Badge>
+                  <Badge tone={planStatusTone(plan.status)}>
+                    {capitalizeLabel(plan.status)}
+                  </Badge>
                   <Badge tone={plan.parq === 'cleared' ? 'primary' : 'danger'}>
-                    PAR-Q {plan.parq}
+                    PAR-Q {capitalizeLabel(plan.parq)}
                   </Badge>
                   <Badge
                     tone={lifecycleTone(lead.leadStatus, lead.status)}
@@ -588,9 +595,11 @@ export function OnlineClientDetailScreen({id}: {id: string}) {
               <div className="min-w-0 flex-1">
                 <h2 className="text-lg font-semibold text-foreground">{goalTitle}</h2>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <Badge tone={planStatusTone(plan.status)}>{plan.status}</Badge>
+                  <Badge tone={planStatusTone(plan.status)}>
+                    {capitalizeLabel(plan.status)}
+                  </Badge>
                   <Badge tone={plan.parq === 'cleared' ? 'primary' : 'danger'}>
-                    PAR-Q {plan.parq}
+                    PAR-Q {capitalizeLabel(plan.parq)}
                   </Badge>
                 </div>
               </div>

@@ -90,10 +90,10 @@ function ContactValue({value, verified}: {value: string; verified?: boolean}) {
     return <span className="font-normal text-muted-foreground">{'\u2014'}</span>;
   }
   return (
-    <span className="break-all">
-      {display}
+    <span>
+      <span className="break-all">{display}</span>
       {verified === false ? (
-        <span className="ms-1.5 text-xs font-normal text-muted-foreground">
+        <span className="ms-1.5 whitespace-nowrap text-xs font-normal text-muted-foreground">
           (unverified)
         </span>
       ) : null}

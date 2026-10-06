@@ -49,6 +49,12 @@ function statusTone(status: string): 'sky' | 'warning' | 'muted' | 'danger' {
   }
 }
 
+function statusLabel(status: string) {
+  return status
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
 function formatDate(value: string | null | undefined) {
   if (!value) return '-';
   return new Date(value).toLocaleString();
@@ -104,7 +110,7 @@ export function SubscriptionDetailScreen({
       <PageHeader
         title={sub.package?.name ?? `Subscription #${sub.id}`}
         description={`${sub.professionalName} - ${sub.professionalEmail ?? sub.professionalId}`}
-        actions={<Badge tone={statusTone(sub.status)}>{sub.status}</Badge>}
+        actions={<Badge tone={statusTone(sub.status)}>{statusLabel(sub.status)}</Badge>}
       />
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -171,7 +177,7 @@ export function SubscriptionDetailScreen({
             <Field label="Provider" value={sub.provider ?? '-'} />
             <Field label="Provider subscription id" value={sub.providerSubscriptionId ?? '-'} />
             <Field label="Subscription id" value={sub.id} />
-            <Field label="Status" value={sub.status} />
+            <Field label="Status" value={statusLabel(sub.status)} />
           </dl>
         </Section>
       </div>
