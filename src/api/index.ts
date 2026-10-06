@@ -186,6 +186,10 @@ export function updateAdmin(id: number, input: UpdateAdminInput & {actorId: numb
   });
 }
 
+export function deleteAdmin(id: number) {
+  return request<{ok: boolean}>(`/v1/admins/${id}`, {method: 'DELETE'});
+}
+
 export async function getCreditsOverview(
   params: {page?: number; perPage?: number} = {},
 ): Promise<CreditsOverview> {

@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import {useRouter} from 'next/navigation';
 import {useEffect, useState} from 'react';
 import {ArrowLeft} from 'lucide-react';
-import {getAdmin, isApiError, updateAdmin, type SessionUser} from '@/api';
+import {deleteAdmin, getAdmin, isApiError, updateAdmin, type SessionUser} from '@/api';
 import type {AdminRoleRecord, AdminUserDetail} from '@/api/types';
 import {listAdminRoles} from '@/lib/apis';
 import {cn} from '@/lib/cn';
@@ -30,6 +31,7 @@ function formatWhen(value: string | null) {
 }
 
 export function AdminDetailScreen({actor, id}: {actor: SessionUser; id: string}) {
+  const router = useRouter();
   const canWrite = can(actor, 'admins:write');
   const [admin, setAdmin] = useState<AdminUserDetail | null>(null);
   const [roles, setRoles] = useState<AdminRoleRecord[]>([]);
@@ -39,6 +41,8 @@ export function AdminDetailScreen({actor, id}: {actor: SessionUser; id: string})
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingDisable, setPendingDisable] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
 
@@ -109,6 +113,22 @@ export function AdminDetailScreen({actor, id}: {actor: SessionUser; id: string})
     }
   };
 
+  const confirmDelete = async () => {
+    if (!admin) return;
+    setDeleting(true);
+    setSaveError(null);
+    try {
+      await deleteAdmin(admin.id);
+      setPendingDelete(false);
+      router.push('/admins');
+    } catch (err) {
+      setSaveError(isApiError(err) ? err.message : 'Could not delete user.');
+      setPendingDelete(false);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return <LoadingState label="Loading user..." />;
   }
@@ -118,6 +138,7 @@ export function AdminDetailScreen({actor, id}: {actor: SessionUser; id: string})
   }
 
   const roleName = roles.find(item => item.slug === admin.role)?.name ?? roleLabel(admin.role);
+  const isSelf = admin.id === actor.id;
 
   return (
     <>
@@ -221,11 +242,18 @@ export function AdminDetailScreen({actor, id}: {actor: SessionUser; id: string})
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={admin.id === actor.id}
+                        disabled={isSelf}
                         onClick={() =>
                           admin.active ? setPendingDisable(true) : void toggleActive()
                         }>
                         {admin.active ? 'Disable' : 'Enable'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={isSelf || deleting}
+                        onClick={() => setPendingDelete(true)}>
+                        Delete
                       </Button>
                     </>
                   )}
@@ -248,11 +276,23 @@ export function AdminDetailScreen({actor, id}: {actor: SessionUser; id: string})
       <ConfirmDialog
         open={pendingDisable}
         title="Disable this user?"
-        body={`${admin.name} will not be able to sign in until you enable the account again.`}
+        body="They won’t be able to sign in until enabled again."
         confirmLabel="Disable"
         destructive
         onClose={() => setPendingDisable(false)}
         onConfirm={() => void toggleActive()}
+      />
+
+      <ConfirmDialog
+        open={pendingDelete}
+        title="Delete this user?"
+        body="This can’t be undone."
+        confirmLabel={deleting ? 'Deleting...' : 'Delete'}
+        destructive
+        onClose={() => {
+          if (!deleting) setPendingDelete(false);
+        }}
+        onConfirm={() => void confirmDelete()}
       />
     </>
   );
