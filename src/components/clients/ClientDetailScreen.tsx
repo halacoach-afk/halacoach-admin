@@ -448,7 +448,6 @@ export function ClientDetailScreen({
           <p className="text-sm text-muted-foreground">No leads for this client.</p>
         ) : (
           <DataTable
-            tableClassName="min-w-[1200px]"
             columns={[
               'ID',
               'Goal',

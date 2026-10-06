@@ -621,7 +621,6 @@ export function ProfessionalDetailScreen({
           <p className="text-sm text-muted-foreground">None submitted</p>
         ) : (
           <DataTable
-            tableClassName="min-w-[720px]"
             columns={['Name', 'Submitted', 'Verification', 'Expiry', 'Status', '']}>
             {(pro.verificationFiles ?? []).map(file => {
               const status = file.displayStatus ?? file.status;
@@ -680,7 +679,6 @@ export function ProfessionalDetailScreen({
           );
           return (
             <DataTable
-              tableClassName="min-w-[560px]"
               columns={['Description', 'Date', 'Amount']}
               footer={
                 <tr className="border-t border-border bg-muted/40">
@@ -732,7 +730,6 @@ export function ProfessionalDetailScreen({
           </p>
         ) : (
           <DataTable
-            tableClassName="min-w-[1000px]"
             columns={['ID', 'Goal', 'Format', 'Frequency', 'Status', 'Posted', '']}>
             {coachLeads.map(row => {
               const status = resolvedLeadStatus(row);

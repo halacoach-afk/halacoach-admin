@@ -27,7 +27,7 @@ export function SearchField({
   return (
     <div
       className={cn(
-        'relative ms-auto w-full min-w-[16rem] max-w-md flex-1 sm:max-w-sm sm:flex-none sm:w-80',
+        'relative w-full min-w-0 max-w-md flex-1 sm:ms-auto sm:max-w-sm sm:flex-none sm:w-80',
         className,
       )}>
       <Search

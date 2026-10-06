@@ -146,7 +146,6 @@ export function ProfessionalsScreen() {
         />
       ) : (
         <DataTable
-          tableClassName="min-w-[1100px]"
           columns={[
             'ID',
             'Name',

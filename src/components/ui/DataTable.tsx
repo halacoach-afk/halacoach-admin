@@ -20,7 +20,7 @@ export function DataTable({
   columnHeaderClassNames?: (string | undefined)[];
 }) {
   return (
-    <div className={cn('overflow-x-auto overflow-y-hidden rounded-2xl border border-border bg-card', className)}>
+    <div className={cn('max-w-full overflow-x-auto overflow-y-hidden rounded-2xl border border-border bg-card', className)}>
       <table
         className={cn(
           // Fill the card; grow past 100% when nowrap content needs horizontal scroll.
@@ -55,7 +55,7 @@ export function DataTable({
 
 export function FilterBar({children, className}: {children: ReactNode; className?: string}) {
   return (
-    <div className={cn('mb-4 flex flex-wrap items-center gap-2 gap-y-3', className)}>
+    <div className={cn('mb-4 flex min-w-0 flex-wrap items-center gap-2 gap-y-3', className)}>
       {children}
     </div>
   );

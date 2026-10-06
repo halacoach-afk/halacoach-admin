@@ -16,7 +16,7 @@ function formatBadgeCount(value: number) {
   return value > 99 ? '99+' : String(value);
 }
 
-export function Sidebar({actor}: {actor: SessionUser}) {
+export function Sidebar({actor, className}: {actor: SessionUser; className?: string}) {
   const pathname = usePathname();
   const router = useRouter();
   const items = useMemo(
@@ -55,19 +55,12 @@ export function Sidebar({actor}: {actor: SessionUser}) {
   }, [loadBadges]);
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-e border-border bg-card">
-      <div className="border-b border-border px-5 py-5">
-        <Link href="/" className="inline-flex" aria-label="HalaCoach admin home">
-          <img
-            src="/logo.png"
-            alt="HalaCoach"
-            width={158}
-            height={36}
-            className="h-9 w-auto max-w-full"
-          />
-        </Link>
-      </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+    <aside
+      className={cn(
+        'flex min-h-0 w-64 shrink-0 flex-col border-e border-border bg-card',
+        className,
+      )}>
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-3">
         {items.map(item => {
           const active =
             item.href === '/'
@@ -82,7 +75,7 @@ export function Sidebar({actor}: {actor: SessionUser}) {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
+                'flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
                 active
                   ? 'bg-primary-soft text-primary-deep'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -103,7 +96,7 @@ export function Sidebar({actor}: {actor: SessionUser}) {
           );
         })}
       </nav>
-      <div className="border-t border-border p-3">
+      <div className="mt-auto shrink-0 border-t border-border p-3">
         <div
           className="flex items-center gap-2.5 rounded-2xl bg-muted/70 px-3 py-2"
           title={actor.email}>
@@ -116,7 +109,7 @@ export function Sidebar({actor}: {actor: SessionUser}) {
           </div>
           <button
             type="button"
-            className="flex size-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-card hover:text-destructive"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-card hover:text-destructive"
             onClick={() => {
               clearSessionCookie();
               router.replace('/login');

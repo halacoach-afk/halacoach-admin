@@ -34,7 +34,7 @@ export function ConfirmDialog({
           {title}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">{body}</p>
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>

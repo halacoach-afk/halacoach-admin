@@ -9,7 +9,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <div className={cn('rounded-2xl border border-border bg-card p-5 shadow-sm', className)}>
+    <div className={cn('min-w-0 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5', className)}>
       {children}
     </div>
   );
