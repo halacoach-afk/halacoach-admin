@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import {usePathname, useRouter} from 'next/navigation';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {LogOut} from 'lucide-react';
 import {getNavBadges, type NavBadges, type SessionUser} from '@/api';
 import {cn} from '@/lib/cn';
 import {roleLabel} from '@/lib/helpers';
 import {navItems} from '@/lib/nav';
 import {can} from '@/lib/permissions';
+import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {clearSessionCookie} from '@/lib/session';
 
 function formatBadgeCount(value: number) {
@@ -28,6 +30,7 @@ export function Sidebar({actor, className}: {actor: SessionUser; className?: str
     [items],
   );
   const [badges, setBadges] = useState<NavBadges | null>(null);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   const loadBadges = useCallback(async () => {
     if (!needsBadges) {
@@ -110,17 +113,32 @@ export function Sidebar({actor, className}: {actor: SessionUser; className?: str
           <button
             type="button"
             className="flex size-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-card hover:text-destructive"
-            onClick={() => {
-              clearSessionCookie();
-              router.replace('/login');
-              router.refresh();
-            }}
+            onClick={() => setSignOutOpen(true)}
             aria-label="Sign out"
             title="Sign out">
             <LogOut size={16} strokeWidth={1.8} />
           </button>
         </div>
       </div>
+      {typeof document !== 'undefined'
+        ? createPortal(
+            <ConfirmDialog
+              open={signOutOpen}
+              title="Sign out?"
+              body="You can sign back in anytime with your account details."
+              confirmLabel="Sign out"
+              destructive
+              onClose={() => setSignOutOpen(false)}
+              onConfirm={() => {
+                setSignOutOpen(false);
+                clearSessionCookie();
+                router.replace('/login');
+                router.refresh();
+              }}
+            />,
+            document.body,
+          )
+        : null}
     </aside>
   );
 }
