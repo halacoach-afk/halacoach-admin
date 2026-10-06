@@ -53,8 +53,15 @@ export function Sidebar({actor}: {actor: SessionUser}) {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-e border-border bg-card">
       <div className="border-b border-border px-5 py-5">
-        <p className="text-lg font-bold tracking-tight text-primary">HalaCoach</p>
-        <p className="text-xs font-medium text-muted-foreground">Admin console</p>
+        <Link href="/" className="inline-flex" aria-label="HalaCoach admin home">
+          <img
+            src="/logo.png"
+            alt="HalaCoach"
+            width={158}
+            height={36}
+            className="h-9 w-auto max-w-full"
+          />
+        </Link>
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
         {items.map(item => {
