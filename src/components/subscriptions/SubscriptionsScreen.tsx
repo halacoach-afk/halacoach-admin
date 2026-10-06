@@ -76,6 +76,7 @@ export function SubscriptionsScreen({
     past_due: 0,
   });
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
@@ -94,7 +95,7 @@ export function SubscriptionsScreen({
     try {
       const res = await listCreditSubscriptions({
         page: nextPage,
-        perPage: DEFAULT_PER_PAGE,
+        perPage,
         status: nextFilter === 'all' ? undefined : nextFilter,
         q: debouncedQ || undefined,
       });
@@ -115,7 +116,7 @@ export function SubscriptionsScreen({
   useEffect(() => {
     void load(1, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, debouncedQ]);
+  }, [filter, debouncedQ, perPage]);
 
   useEffect(() => {
     if (refreshKey === 0) {
@@ -193,6 +194,18 @@ export function SubscriptionsScreen({
             'Period end',
             '',
           ]}
+          pagination={
+            <PaginationBar
+              variant="embedded"
+              meta={meta}
+              disabled={loading}
+              onPageChange={next => void load(next)}
+              onPerPageChange={next => {
+                setPage(1);
+                setPerPage(next);
+              }}
+            />
+          }
         >
           {rows.map(sub => (
             <tr key={sub.id} className="border-b border-border last:border-0">
@@ -255,12 +268,6 @@ export function SubscriptionsScreen({
           ))}
         </DataTable>
       )}
-
-      <PaginationBar
-        meta={meta}
-        disabled={loading}
-        onPageChange={next => void load(next)}
-      />
     </>
   );
 }

@@ -50,6 +50,7 @@ export function LeadsScreen() {
     closed: 0,
   });
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [services, setServices] = useState<CatalogService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +61,7 @@ export function LeadsScreen() {
     setError(null);
     try {
       const [leads, catalog] = await Promise.all([
-        listLeads({page: nextPage, perPage: DEFAULT_PER_PAGE, status: nextFilter}),
+        listLeads({page: nextPage, perPage, status: nextFilter}),
         listServices(),
       ]);
       setRows(leads.data);
@@ -80,7 +81,7 @@ export function LeadsScreen() {
   useEffect(() => {
     void load(1, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, [filter, perPage]);
 
   const serviceNameById = useMemo(
     () => new Map(services.map(item => [item.id, item.name])),
@@ -141,7 +142,19 @@ export function LeadsScreen() {
             'Coach',
             'Posted',
             '',
-          ]}>
+          ]}
+          pagination={
+            <PaginationBar
+              variant="embedded"
+              meta={meta}
+              disabled={loading}
+              onPageChange={next => void load(next)}
+              onPerPageChange={next => {
+                setPage(1);
+                setPerPage(next);
+              }}
+            />
+          }>
           {rows.map(row => {
             const serviceName =
               serviceNameById.get(row.serviceId) ?? row.service ?? row.goal ?? `Service #${row.serviceId}`;
@@ -202,12 +215,6 @@ export function LeadsScreen() {
           })}
         </DataTable>
       )}
-
-      <PaginationBar
-        meta={meta}
-        disabled={loading}
-        onPageChange={next => void load(next)}
-      />
     </>
   );
 }

@@ -130,6 +130,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     verified: 0,
   });
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [documentTypes, setDocumentTypes] = useState<VerificationDocTypeMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +175,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     try {
       const queueRes = await listVerificationQueue({
         page: nextPage,
-        perPage: DEFAULT_PER_PAGE,
+        perPage,
         status: nextFilter === 'all' ? undefined : nextFilter,
         q: debouncedQ || undefined,
       });
@@ -199,7 +200,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   useEffect(() => {
     void load(1, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, debouncedQ]);
+  }, [filter, debouncedQ, perPage]);
 
   const selected = queue.find(item => item.id === selectedId) ?? null;
 
@@ -307,7 +308,19 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
             'Documents',
             'Submitted',
             '',
-          ]}>
+          ]}
+          pagination={
+            <PaginationBar
+              variant="embedded"
+              meta={meta}
+              disabled={loading || acting}
+              onPageChange={next => void load(next)}
+              onPerPageChange={next => {
+                setPage(1);
+                setPerPage(next);
+              }}
+            />
+          }>
           {queue.map(item => {
             const status = item.verificationStatus ?? 'pending';
             const docs = documentsProgressForItem(item, documentTypes);
@@ -550,12 +563,6 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
           })}
         </DataTable>
       )}
-
-      <PaginationBar
-        meta={meta}
-        disabled={loading || acting}
-        onPageChange={next => void load(next)}
-      />
 
       <FileViewerModal
         open={viewer !== null}

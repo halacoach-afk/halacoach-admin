@@ -54,6 +54,7 @@ export function ProfessionalsScreen() {
     suspended: 0,
   });
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
@@ -72,7 +73,7 @@ export function ProfessionalsScreen() {
     try {
       const res = await listProfessionals({
         page: nextPage,
-        perPage: DEFAULT_PER_PAGE,
+        perPage,
         q: debouncedQ || undefined,
         filter: nextFilter === 'all' ? undefined : nextFilter,
       });
@@ -93,7 +94,7 @@ export function ProfessionalsScreen() {
   useEffect(() => {
     void load(1, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQ, filter]);
+  }, [debouncedQ, filter, perPage]);
 
   if (!hasLoaded && loading) {
     return <LoadingState label="Loading professionals..." />;
@@ -154,7 +155,19 @@ export function ProfessionalsScreen() {
             'Credits',
             'Profile',
             '',
-          ]}>
+          ]}
+          pagination={
+            <PaginationBar
+              variant="embedded"
+              meta={meta}
+              disabled={loading}
+              onPageChange={next => void load(next)}
+              onPerPageChange={next => {
+                setPage(1);
+                setPerPage(next);
+              }}
+            />
+          }>
           {rows.map(row => {
             const pct = completionPercent(row.profileCompletion);
             return (
@@ -201,12 +214,6 @@ export function ProfessionalsScreen() {
           })}
         </DataTable>
       )}
-
-      <PaginationBar
-        meta={meta}
-        disabled={loading}
-        onPageChange={next => void load(next)}
-      />
     </>
   );
 }

@@ -45,6 +45,7 @@ export function TransactionsScreen({
     spent: 0,
   });
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<TxnFilter>('all');
@@ -56,7 +57,7 @@ export function TransactionsScreen({
       const res = await request<Omit<CreditsOverview, 'packs' | 'promos'>>(
         `/v1/credits-meta${buildListQuery({
           page: nextPage,
-          perPage: DEFAULT_PER_PAGE,
+          perPage,
           filter: nextFilter === 'all' ? undefined : nextFilter,
         })}`,
       );
@@ -64,7 +65,7 @@ export function TransactionsScreen({
       setMeta(
         res.meta ?? {
           page: nextPage,
-          perPage: DEFAULT_PER_PAGE,
+          perPage,
           total: res.transactions?.length ?? 0,
           lastPage: 1,
         },
@@ -83,7 +84,7 @@ export function TransactionsScreen({
   useEffect(() => {
     void load(1, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, [filter, perPage]);
 
   useEffect(() => {
     if (refreshKey === 0) {
@@ -126,7 +127,20 @@ export function TransactionsScreen({
       {transactions.length === 0 ? (
         <EmptyState title="No transactions" body="Try another filter." />
       ) : (
-        <DataTable columns={['ID', 'Coach', 'Type', 'Credits', 'Details', 'Paid', 'When']}>
+        <DataTable
+          columns={['ID', 'Coach', 'Type', 'Credits', 'Details', 'Paid', 'When']}
+          pagination={
+            <PaginationBar
+              variant="embedded"
+              meta={meta}
+              disabled={loading}
+              onPageChange={next => void load(next)}
+              onPerPageChange={next => {
+                setPage(1);
+                setPerPage(next);
+              }}
+            />
+          }>
           {transactions.map(txn => {
             const when = formatWhenParts(txn.at);
             return (
@@ -187,12 +201,6 @@ export function TransactionsScreen({
           })}
         </DataTable>
       )}
-
-      <PaginationBar
-        meta={meta}
-        disabled={loading}
-        onPageChange={next => void load(next)}
-      />
     </>
   );
 }
