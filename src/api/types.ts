@@ -284,16 +284,19 @@ export type AdjustCreditsInput = {
 export type CatalogService = {
   id: number;
   name: string;
+  nameAr?: string | null;
   active: boolean;
   sortOrder?: number;
 };
 
 export type CreateServiceInput = {
   name: string;
+  nameAr?: string | null;
 };
 
 export type UpdateServiceInput = {
   name?: string;
+  nameAr?: string | null;
   active?: boolean;
 };
 

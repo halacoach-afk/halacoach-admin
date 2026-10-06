@@ -151,15 +151,15 @@ Invite admin. **Body:** `{ name, email, role, password }` · **Super only.**
 
 Alphabetical by name. Admin returns all; public returns active only.
 
-**Response item:** `{ id, name, active }`
+**Response item:** `{ id, name, nameAr, active, sortOrder }`
 
 ### `POST /v1/services`
 
-**Body:** `{ name }`
+**Body:** `{ name, nameAr? }`
 
 ### `PATCH /v1/services/:id`
 
-**Body:** `{ name?, active? }`
+**Body:** `{ name?, nameAr?, active? }`
 
 ---
 
