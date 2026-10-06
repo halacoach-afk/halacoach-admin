@@ -53,6 +53,10 @@ export function DataTable({
   );
 }
 
-export function FilterBar({children}: {children: ReactNode}) {
-  return <div className="mb-4 flex flex-wrap items-center gap-2">{children}</div>;
+export function FilterBar({children, className}: {children: ReactNode; className?: string}) {
+  return (
+    <div className={cn('mb-4 flex flex-wrap items-center gap-2 gap-y-3', className)}>
+      {children}
+    </div>
+  );
 }

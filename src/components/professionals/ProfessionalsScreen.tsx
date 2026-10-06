@@ -12,6 +12,7 @@ import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {PaginationBar} from '@/components/ui/PaginationBar';
+import {SearchField} from '@/components/ui/SearchField';
 import {
   DEFAULT_PER_PAGE,
   emptyPaginationMeta,
@@ -58,9 +59,10 @@ export function ProfessionalsScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 300);
+    const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 400);
     return () => window.clearTimeout(timer);
   }, [query]);
 
@@ -84,6 +86,7 @@ export function ProfessionalsScreen() {
       setError(isApiError(err) ? err.message : 'Could not load professionals.');
     } finally {
       setLoading(false);
+      setHasLoaded(true);
     }
   };
 
@@ -92,11 +95,11 @@ export function ProfessionalsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQ, filter]);
 
-  if (loading && rows.length === 0) {
+  if (!hasLoaded && loading) {
     return <LoadingState label="Loading professionals..." />;
   }
 
-  if (error && rows.length === 0) {
+  if (!hasLoaded && error) {
     return <ErrorState body={error} onRetry={() => void load()} />;
   }
 
@@ -106,11 +109,13 @@ export function ProfessionalsScreen() {
         title="Professionals"
         description="Browse and manage coach accounts."
         actions={
-          <Button variant="outline" size="sm" onClick={() => void load()}>
+          <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
             Refresh
           </Button>
         }
       />
+
+      {error ? <ErrorState body={error} onRetry={() => void load()} /> : null}
 
       <FilterBar>
         {(
@@ -129,15 +134,12 @@ export function ProfessionalsScreen() {
             {label} ({counts[key] ?? 0})
           </Button>
         ))}
-        <input
-          className="ms-auto h-9 min-w-[200px] rounded-xl border border-border px-3 text-sm"
-          placeholder="Search id, name, email, phone..."
-          value={query}
-          onChange={event => setQuery(event.target.value)}
-        />
+        <SearchField value={query} onChange={setQuery} />
       </FilterBar>
 
-      {rows.length === 0 ? (
+      {loading && rows.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Searching…</p>
+      ) : rows.length === 0 ? (
         <EmptyState
           title="No professionals match"
           body="Try another filter or clear the search box."

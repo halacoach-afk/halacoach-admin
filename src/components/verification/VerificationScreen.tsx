@@ -24,6 +24,7 @@ import {FileViewerModal} from '@/components/ui/FileViewerModal';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {PaginationBar} from '@/components/ui/PaginationBar';
+import {SearchField} from '@/components/ui/SearchField';
 import {can} from '@/lib/permissions';
 import {
   DEFAULT_PER_PAGE,
@@ -128,6 +129,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [pendingFileReject, setPendingFileReject] = useState<{
@@ -147,7 +149,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   } | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 300);
+    const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 400);
     return () => window.clearTimeout(timer);
   }, [query]);
 
@@ -182,6 +184,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
       setError(isApiError(err) ? err.message : 'Could not load verification queue.');
     } finally {
       setLoading(false);
+      setHasLoaded(true);
     }
   };
 
@@ -234,11 +237,11 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  if (loading) {
+  if (!hasLoaded && loading) {
     return <LoadingState label="Loading verification queue..." />;
   }
 
-  if (error && queue.length === 0) {
+  if (!hasLoaded && error) {
     return <ErrorState body={error} onRetry={() => void load()} />;
   }
 
@@ -247,7 +250,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
       <PageHeader
         title="Verification"
         actions={
-          <Button variant="outline" size="sm" onClick={() => void load()} disabled={acting}>
+          <Button variant="outline" size="sm" onClick={() => void load()} disabled={acting || loading}>
             Refresh
           </Button>
         }
@@ -272,15 +275,12 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
             {label} ({counts[key] ?? 0})
           </Button>
         ))}
-        <input
-          className="ms-auto h-9 min-w-[200px] rounded-xl border border-border px-3 text-sm"
-          placeholder="Search name, email, location..."
-          value={query}
-          onChange={event => setQuery(event.target.value)}
-        />
+        <SearchField value={query} onChange={setQuery} />
       </FilterBar>
 
-      {queue.length === 0 ? (
+      {loading && queue.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Searching…</p>
+      ) : queue.length === 0 ? (
         <EmptyState
           title={filter === 'verified' ? 'No verified coaches' : 'Queue is clear'}
           body={
