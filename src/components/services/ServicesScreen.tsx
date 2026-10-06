@@ -34,6 +34,12 @@ function TableCell({children, className}: {children: React.ReactNode; className?
   return <div className={cn(tableCellClass, className)}>{children}</div>;
 }
 
+type NameDraft = {name: string; nameAr: string};
+
+function draftFrom(service: CatalogService): NameDraft {
+  return {name: service.name, nameAr: service.nameAr ?? ''};
+}
+
 function CatalogActions({
   isEditing,
   saving,
@@ -99,8 +105,9 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     isLoading: boolean;
     error: string | null;
   }>({items: [], isLoading: true, error: null});
-  const [drafts, setDrafts] = useState<Record<number, string>>({});
+  const [drafts, setDrafts] = useState<Record<number, NameDraft>>({});
   const [createName, setCreateName] = useState('');
+  const [createNameAr, setCreateNameAr] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
@@ -117,7 +124,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     try {
       const items = (await listServices()).filter(item => item.active);
       setServices({items, isLoading: false, error: null});
-      setDrafts(Object.fromEntries(items.map(item => [item.id, item.name])));
+      setDrafts(Object.fromEntries(items.map(item => [item.id, draftFrom(item)])));
     } catch (err) {
       setServices(state => ({
         ...state,
@@ -133,17 +140,18 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
 
   const startEdit = (service: CatalogService) => {
     setEditingId(service.id);
-    setDrafts(state => ({...state, [service.id]: service.name}));
+    setDrafts(state => ({...state, [service.id]: draftFrom(service)}));
     setError(null);
   };
 
   const cancelEdit = (service: CatalogService) => {
     setEditingId(current => (current === service.id ? null : current));
-    setDrafts(state => ({...state, [service.id]: service.name}));
+    setDrafts(state => ({...state, [service.id]: draftFrom(service)}));
   };
 
   const save = async (id: number) => {
-    const name = (drafts[id] ?? '').trim();
+    const name = (drafts[id]?.name ?? '').trim();
+    const nameAr = (drafts[id]?.nameAr ?? '').trim();
     if (!name) {
       setError('Service name cannot be empty.');
       return;
@@ -151,7 +159,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     setSavingId(id);
     setError(null);
     try {
-      await updateService(id, {name});
+      await updateService(id, {name, nameAr: nameAr || null});
       setEditingId(current => (current === id ? null : current));
       await load();
     } catch (err) {
@@ -195,7 +203,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
         item => item.active,
       );
       setServices({items: reordered, isLoading: false, error: null});
-      setDrafts(Object.fromEntries(reordered.map(item => [item.id, item.name])));
+      setDrafts(Object.fromEntries(reordered.map(item => [item.id, draftFrom(item)])));
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not reorder services.');
       await load();
@@ -248,8 +256,9 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     setCreating(true);
     setError(null);
     try {
-      await createService({name});
+      await createService({name, nameAr: createNameAr.trim() || null});
       setCreateName('');
+      setCreateNameAr('');
       await load();
     } catch (err) {
       setError(isApiError(err) ? err.message : 'Could not create service.');
@@ -258,7 +267,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  const colCount = canWrite ? 4 : 3;
+  const colCount = canWrite ? 5 : 4;
 
   return (
     <>
@@ -288,9 +297,13 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
         <DataTable
           tableClassName="min-w-0"
           columnHeaderClassNames={
-            canWrite ? [undefined, undefined, undefined, 'text-right'] : undefined
+            canWrite ? [undefined, undefined, undefined, undefined, 'text-right'] : undefined
           }
-          columns={canWrite ? ['#', 'Name', 'Status', 'Actions'] : ['#', 'Name', 'Status']}>
+          columns={
+            canWrite
+              ? ['#', 'English', 'Arabic', 'Status', 'Actions']
+              : ['#', 'English', 'Arabic', 'Status']
+          }>
           {services.isLoading && services.items.length === 0 ? (
             <tr>
               <td colSpan={colCount} className="px-4 py-8 text-center">
@@ -309,7 +322,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
             </tr>
           ) : null}
           {services.items.map((service, index) => {
-            const draft = drafts[service.id] ?? service.name;
+            const draft = drafts[service.id] ?? draftFrom(service);
             const isEditing = canWrite && editingId === service.id;
             const isDragging = draggingId === service.id;
             const isDropTarget = dropTargetId === service.id && draggingId !== service.id;
@@ -353,14 +366,41 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                     {isEditing ? (
                       <input
                         className={tableInputClass}
-                        value={draft}
+                        value={draft.name}
                         onChange={e =>
-                          setDrafts(state => ({...state, [service.id]: e.target.value}))
+                          setDrafts(state => ({
+                            ...state,
+                            [service.id]: {...draft, name: e.target.value},
+                          }))
                         }
                       />
                     ) : (
                       <span className="truncate font-medium text-foreground" title={service.name}>
                         {service.name}
+                      </span>
+                    )}
+                  </TableCell>
+                </td>
+                <td className={nameCellClass}>
+                  <TableCell>
+                    {isEditing ? (
+                      <input
+                        className={cn(tableInputClass, 'text-end')}
+                        dir="rtl"
+                        value={draft.nameAr}
+                        onChange={e =>
+                          setDrafts(state => ({
+                            ...state,
+                            [service.id]: {...draft, nameAr: e.target.value},
+                          }))
+                        }
+                      />
+                    ) : (
+                      <span
+                        className="truncate font-medium text-foreground"
+                        dir={service.nameAr ? 'rtl' : undefined}
+                        title={service.nameAr ?? ''}>
+                        {service.nameAr?.trim() || '—'}
                       </span>
                     )}
                   </TableCell>
@@ -399,6 +439,17 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                     value={createName}
                     onChange={e => setCreateName(e.target.value)}
                     placeholder="Personal Training"
+                  />
+                </TableCell>
+              </td>
+              <td className={nameCellClass}>
+                <TableCell>
+                  <input
+                    className={cn(tableInputClass, 'text-end')}
+                    dir="rtl"
+                    value={createNameAr}
+                    onChange={e => setCreateNameAr(e.target.value)}
+                    placeholder="تدريب شخصي"
                   />
                 </TableCell>
               </td>
