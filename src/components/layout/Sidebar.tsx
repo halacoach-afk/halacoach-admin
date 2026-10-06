@@ -1,20 +1,24 @@
 'use client';
 
 import Link from 'next/link';
-import {usePathname} from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import {useCallback, useEffect, useMemo, useState} from 'react';
+import {LogOut} from 'lucide-react';
 import {getNavBadges, type NavBadges, type SessionUser} from '@/api';
 import {cn} from '@/lib/cn';
+import {roleLabel} from '@/lib/helpers';
 import {navItems} from '@/lib/nav';
 import {can} from '@/lib/permissions';
+import {clearSessionCookie} from '@/lib/session';
 
 function formatBadgeCount(value: number) {
   if (value <= 0) return null;
   return value > 99 ? '99+' : String(value);
 }
 
-export function Sidebar({actor}: {actor: SessionUser}) {
+export function Sidebar({actor, className}: {actor: SessionUser; className?: string}) {
   const pathname = usePathname();
+  const router = useRouter();
   const items = useMemo(
     () => navItems.filter(item => can(actor, item.permission)),
     [actor],
@@ -51,12 +55,12 @@ export function Sidebar({actor}: {actor: SessionUser}) {
   }, [loadBadges]);
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-e border-border bg-card">
-      <div className="border-b border-border px-5 py-5">
-        <p className="text-lg font-bold tracking-tight text-primary">HalaCoach</p>
-        <p className="text-xs font-medium text-muted-foreground">Admin console</p>
-      </div>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+    <aside
+      className={cn(
+        'flex min-h-0 w-64 shrink-0 flex-col border-e border-border bg-card',
+        className,
+      )}>
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-3">
         {items.map(item => {
           const active =
             item.href === '/'
@@ -71,7 +75,7 @@ export function Sidebar({actor}: {actor: SessionUser}) {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
+                'flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
                 active
                   ? 'bg-primary-soft text-primary-deep'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -92,6 +96,31 @@ export function Sidebar({actor}: {actor: SessionUser}) {
           );
         })}
       </nav>
+      <div className="mt-auto shrink-0 border-t border-border p-3">
+        <div
+          className="flex items-center gap-2.5 rounded-2xl bg-muted/70 px-3 py-2"
+          title={actor.email}>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold leading-tight text-foreground">{actor.name}</p>
+            <p className="truncate text-[11px] font-medium leading-tight text-muted-foreground">{actor.email}</p>
+            <p className="truncate text-[11px] font-medium leading-tight text-muted-foreground">
+              {roleLabel(actor.role)}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-card hover:text-destructive"
+            onClick={() => {
+              clearSessionCookie();
+              router.replace('/login');
+              router.refresh();
+            }}
+            aria-label="Sign out"
+            title="Sign out">
+            <LogOut size={16} strokeWidth={1.8} />
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }

@@ -24,6 +24,7 @@ import {FileViewerModal} from '@/components/ui/FileViewerModal';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {PaginationBar} from '@/components/ui/PaginationBar';
+import {SearchField} from '@/components/ui/SearchField';
 import {can} from '@/lib/permissions';
 import {
   DEFAULT_PER_PAGE,
@@ -42,7 +43,7 @@ const REJECT_REASON_OPTIONS = [
   'Expiry date is missing or unclear',
 ] as const;
 
-type Filter = 'all' | 'pending' | 'rejected';
+type Filter = 'all' | 'pending' | 'rejected' | 'verified';
 
 function formatSubmitted(at: string) {
   return new Date(at).toLocaleString();
@@ -60,15 +61,10 @@ function statusLabel(status?: string) {
   return String(status ?? 'submitted').replace(/_/g, ' ');
 }
 
-function needsDocumentAction(file?: VerificationFile) {
-  if (!file) return false;
-  const status = file.displayStatus ?? file.status;
-  return status !== 'approved' && status !== 'expiring_soon';
-}
-
 function queueStatusTone(status?: string) {
   if (status === 'rejected') return 'danger' as const;
   if (status === 'pending') return 'warning' as const;
+  if (status === 'verified') return 'primary' as const;
   return 'muted' as const;
 }
 
@@ -124,6 +120,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     all: 0,
     pending: 0,
     rejected: 0,
+    verified: 0,
   });
   const [page, setPage] = useState(1);
   const [documentTypes, setDocumentTypes] = useState<VerificationDocTypeMeta[]>([]);
@@ -132,6 +129,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [pendingFileReject, setPendingFileReject] = useState<{
@@ -151,7 +149,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   } | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 300);
+    const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 400);
     return () => window.clearTimeout(timer);
   }, [query]);
 
@@ -186,6 +184,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
       setError(isApiError(err) ? err.message : 'Could not load verification queue.');
     } finally {
       setLoading(false);
+      setHasLoaded(true);
     }
   };
 
@@ -238,11 +237,11 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  if (loading) {
+  if (!hasLoaded && loading) {
     return <LoadingState label="Loading verification queue..." />;
   }
 
-  if (error && queue.length === 0) {
+  if (!hasLoaded && error) {
     return <ErrorState body={error} onRetry={() => void load()} />;
   }
 
@@ -251,7 +250,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
       <PageHeader
         title="Verification"
         actions={
-          <Button variant="outline" size="sm" onClick={() => void load()} disabled={acting}>
+          <Button variant="outline" size="sm" onClick={() => void load()} disabled={acting || loading}>
             Refresh
           </Button>
         }
@@ -265,6 +264,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
             ['all', 'All'],
             ['pending', 'Pending'],
             ['rejected', 'Rejected'],
+            ['verified', 'Verified'],
           ] as const
         ).map(([key, label]) => (
           <Button
@@ -275,18 +275,19 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
             {label} ({counts[key] ?? 0})
           </Button>
         ))}
-        <input
-          className="ms-auto h-9 min-w-[200px] rounded-xl border border-border px-3 text-sm"
-          placeholder="Search name, email, location..."
-          value={query}
-          onChange={event => setQuery(event.target.value)}
-        />
+        <SearchField value={query} onChange={setQuery} />
       </FilterBar>
 
-      {queue.length === 0 ? (
+      {loading && queue.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Searching…</p>
+      ) : queue.length === 0 ? (
         <EmptyState
-          title="Queue is clear"
-          body="No coaches are waiting for document review right now."
+          title={filter === 'verified' ? 'No verified coaches' : 'Queue is clear'}
+          body={
+            filter === 'verified'
+              ? 'No verified coaches match this view right now.'
+              : 'No coaches are waiting for document review right now.'
+          }
         />
       ) : (
         <DataTable
@@ -349,176 +350,169 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                   <tr className="border-b border-border bg-muted/30 last:border-0">
                     <td colSpan={7} className="px-4 py-4">
                       {(() => {
-                        const actionDocs = documentTypes.filter(meta =>
-                          needsDocumentAction(fileByType.get(meta.id)),
+                        const submittedDocs = documentTypes.filter(meta =>
+                          fileByType.has(meta.id),
                         );
-                        const actionUntyped = untypedFiles.filter(file =>
-                          needsDocumentAction(file),
-                        );
-                        if (actionDocs.length === 0 && actionUntyped.length === 0) {
+                        if (submittedDocs.length === 0 && untypedFiles.length === 0) {
                           return (
                             <p className="px-1 py-2 text-sm text-muted-foreground">
-                              No documents need action right now.
+                              No documents uploaded for this coach.
                             </p>
                           );
                         }
                         return (
-                      <DataTable columns={['Document', 'Expires', 'Type', 'Status', '']}>
-                        {actionDocs.map(meta => {
-                          const file = fileByType.get(meta.id);
-                          const display = file?.displayStatus ?? file?.status;
-                          return (
-                            <tr
-                              key={meta.id}
-                              className="border-b border-border last:border-0">
-                              <td className="px-4 py-3">
-                                <div className="font-medium text-foreground">{meta.label}</div>
-                                {meta.description ? (
-                                  <div className="text-xs text-muted-foreground">
-                                    {meta.description}
-                                  </div>
-                                ) : null}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-muted-foreground">
-                                {file?.expiresAt || '—'}
-                              </td>
-                              <td className="px-4 py-3">
-                                <Badge tone={meta.required ? 'warning' : 'muted'}>
-                                  {meta.required ? 'Required' : 'Optional'}
-                                </Badge>
-                              </td>
-                              <td className="px-4 py-3">
-                                <Badge tone={file ? statusTone(display) : 'muted'}>
-                                  {file ? statusLabel(display) : 'Not submitted'}
-                                </Badge>
-                                {file?.rejectedReason ? (
-                                  <div className="mt-1 text-xs text-destructive">
-                                    {file.rejectedReason}
-                                  </div>
-                                ) : null}
-                              </td>
-                              <td className="px-4 py-3 text-end">
-                                {file ? (
-                                  <div className="inline-flex flex-wrap justify-end gap-1">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() =>
-                                        setViewer({
-                                          professionalId: selected.id,
-                                          fileId: file.id,
-                                          name: file.originalName,
-                                        })
-                                      }>
-                                      View
-                                    </Button>
-                                    {canWrite ? (
-                                      <>
-                                        <Button
-                                          size="sm"
-                                          disabled={acting || file.status === 'approved'}
-                                          onClick={() =>
-                                            setPendingFileApprove({
-                                              item: selected,
-                                              file,
-                                              label: meta.label,
-                                            })
-                                          }>
-                                          Approve
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="destructive"
-                                          disabled={acting}
-                                          onClick={() => {
-                                            setRejectReason('');
-                                            setPendingFileReject({item: selected, file});
-                                          }}>
-                                          Reject
-                                        </Button>
-                                      </>
+                          <DataTable columns={['Document', 'Expires', 'Type', 'Status', '']}>
+                            {submittedDocs.map(meta => {
+                              const file = fileByType.get(meta.id)!;
+                              const display = file.displayStatus ?? file.status;
+                              return (
+                                <tr
+                                  key={meta.id}
+                                  className="border-b border-border last:border-0">
+                                  <td className="px-4 py-3">
+                                    <div className="font-medium text-foreground">{meta.label}</div>
+                                    {meta.description ? (
+                                      <div className="text-xs text-muted-foreground">
+                                        {meta.description}
+                                      </div>
                                     ) : null}
-                                  </div>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">—</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                        {actionUntyped.map(file => {
-                          const display = file.displayStatus ?? file.status;
-                          return (
-                            <tr
-                              key={file.id}
-                              className="border-b border-border last:border-0">
-                              <td className="px-4 py-3">
-                                <div className="font-medium text-foreground">
-                                  Untyped document
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-sm text-muted-foreground">
-                                {file.expiresAt || '—'}
-                              </td>
-                              <td className="px-4 py-3">
-                                <Badge tone="muted">Optional</Badge>
-                              </td>
-                              <td className="px-4 py-3">
-                                <Badge tone={statusTone(display)}>
-                                  {statusLabel(display)}
-                                </Badge>
-                                {file.rejectedReason ? (
-                                  <div className="mt-1 text-xs text-destructive">
-                                    {file.rejectedReason}
-                                  </div>
-                                ) : null}
-                              </td>
-                              <td className="px-4 py-3 text-end">
-                                <div className="inline-flex flex-wrap justify-end gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                      setViewer({
-                                        professionalId: selected.id,
-                                        fileId: file.id,
-                                        name: file.originalName,
-                                      })
-                                    }>
-                                    View
-                                  </Button>
-                                  {canWrite ? (
-                                    <>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                                    {file.expiresAt || '—'}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <Badge tone={meta.required ? 'warning' : 'muted'}>
+                                      {meta.required ? 'Required' : 'Optional'}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <Badge tone={statusTone(display)}>
+                                      {statusLabel(display)}
+                                    </Badge>
+                                    {file.rejectedReason ? (
+                                      <div className="mt-1 text-xs text-destructive">
+                                        {file.rejectedReason}
+                                      </div>
+                                    ) : null}
+                                  </td>
+                                  <td className="px-4 py-3 text-end">
+                                    <div className="inline-flex flex-wrap justify-end gap-1">
                                       <Button
                                         size="sm"
-                                        disabled={acting || file.status === 'approved'}
+                                        variant="outline"
                                         onClick={() =>
-                                          setPendingFileApprove({
-                                            item: selected,
-                                            file,
-                                            label: file.originalName || 'Untyped document',
+                                          setViewer({
+                                            professionalId: selected.id,
+                                            fileId: file.id,
+                                            name: file.originalName,
                                           })
                                         }>
-                                        Approve
+                                        View
                                       </Button>
+                                      {canWrite ? (
+                                        <>
+                                          <Button
+                                            size="sm"
+                                            disabled={acting || file.status === 'approved'}
+                                            onClick={() =>
+                                              setPendingFileApprove({
+                                                item: selected,
+                                                file,
+                                                label: meta.label,
+                                              })
+                                            }>
+                                            Approve
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            disabled={acting}
+                                            onClick={() => {
+                                              setRejectReason('');
+                                              setPendingFileReject({item: selected, file});
+                                            }}>
+                                            Reject
+                                          </Button>
+                                        </>
+                                      ) : null}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {untypedFiles.map(file => {
+                              const display = file.displayStatus ?? file.status;
+                              return (
+                                <tr
+                                  key={file.id}
+                                  className="border-b border-border last:border-0">
+                                  <td className="px-4 py-3">
+                                    <div className="font-medium text-foreground">
+                                      Untyped document
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                                    {file.expiresAt || '—'}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <Badge tone="muted">Optional</Badge>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <Badge tone={statusTone(display)}>
+                                      {statusLabel(display)}
+                                    </Badge>
+                                    {file.rejectedReason ? (
+                                      <div className="mt-1 text-xs text-destructive">
+                                        {file.rejectedReason}
+                                      </div>
+                                    ) : null}
+                                  </td>
+                                  <td className="px-4 py-3 text-end">
+                                    <div className="inline-flex flex-wrap justify-end gap-1">
                                       <Button
                                         size="sm"
-                                        variant="destructive"
-                                        disabled={acting}
-                                        onClick={() => {
-                                          setRejectReason('');
-                                          setPendingFileReject({item: selected, file});
-                                        }}>
-                                        Reject
+                                        variant="outline"
+                                        onClick={() =>
+                                          setViewer({
+                                            professionalId: selected.id,
+                                            fileId: file.id,
+                                            name: file.originalName,
+                                          })
+                                        }>
+                                        View
                                       </Button>
-                                    </>
-                                  ) : null}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </DataTable>
+                                      {canWrite ? (
+                                        <>
+                                          <Button
+                                            size="sm"
+                                            disabled={acting || file.status === 'approved'}
+                                            onClick={() =>
+                                              setPendingFileApprove({
+                                                item: selected,
+                                                file,
+                                                label: file.originalName || 'Untyped document',
+                                              })
+                                            }>
+                                            Approve
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            disabled={acting}
+                                            onClick={() => {
+                                              setRejectReason('');
+                                              setPendingFileReject({item: selected, file});
+                                            }}>
+                                            Reject
+                                          </Button>
+                                        </>
+                                      ) : null}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </DataTable>
                         );
                       })()}
                     </td>

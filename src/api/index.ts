@@ -186,6 +186,10 @@ export function updateAdmin(id: number, input: UpdateAdminInput & {actorId: numb
   });
 }
 
+export function deleteAdmin(id: number) {
+  return request<{ok: boolean}>(`/v1/admins/${id}`, {method: 'DELETE'});
+}
+
 export async function getCreditsOverview(
   params: {page?: number; perPage?: number} = {},
 ): Promise<CreditsOverview> {
@@ -248,7 +252,7 @@ export async function listVerificationQueue(
       documentTypes: [],
       items: data,
       meta: {page: 1, perPage: data.length || 20, total: data.length, lastPage: 1},
-      counts: {all: data.length, pending: 0, rejected: 0},
+      counts: {all: data.length, pending: 0, rejected: 0, verified: 0},
     };
   }
   const items = data.data ?? data.items ?? [];
@@ -261,7 +265,7 @@ export async function listVerificationQueue(
       total: items.length,
       lastPage: 1,
     },
-    counts: data.counts ?? {all: items.length, pending: 0, rejected: 0},
+    counts: data.counts ?? {all: items.length, pending: 0, rejected: 0, verified: 0},
   };
 }
 

@@ -129,7 +129,6 @@ export function LeadsScreen() {
         <EmptyState title="No leads match" body="Try another status tab." />
       ) : (
         <DataTable
-          tableClassName="min-w-[1600px]"
           columns={[
             'ID',
             'Goal',

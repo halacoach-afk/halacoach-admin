@@ -22,15 +22,18 @@ import {
   isApiError,
   listLeads,
   listServices,
+  updateClient,
   type CatalogService,
   type Client,
   type LeadLifecycleStatus,
   type LeadSummary,
   type ProfileCompletionPayload,
+  type SessionUser,
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
+import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {DataTable} from '@/components/ui/DataTable';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
@@ -38,6 +41,7 @@ import {NotificationPrefsPanel} from '@/components/support/NotificationPrefsPane
 import {formatDobWithBand} from '@/lib/age-display';
 import {leadPreferenceDisplay} from '@/lib/lead-preference-labels';
 import {formatPostedAt} from '@/lib/lead-utils';
+import {can} from '@/lib/permissions';
 import {completionPercent} from '@/lib/professional-utils';
 
 function Section({title, children}: {title: string; children: ReactNode}) {
@@ -147,12 +151,21 @@ function completionItems(value: Client['profileCompletion']): ProfileCompletionP
   return Array.isArray(value.items) ? value.items : [];
 }
 
-export function ClientDetailScreen({id}: {id: string}) {
+export function ClientDetailScreen({
+  actor,
+  id,
+}: {
+  actor: SessionUser;
+  id: string;
+}) {
+  const canWrite = can(actor, 'clients:write');
   const [client, setClient] = useState<Client | null>(null);
   const [leads, setLeads] = useState<LeadSummary[]>([]);
   const [services, setServices] = useState<CatalogService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pendingSuspend, setPendingSuspend] = useState<boolean | null>(null);
+  const [acting, setActing] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -190,12 +203,33 @@ export function ClientDetailScreen({id}: {id: string}) {
     return leads.filter(lead => String(lead.clientId) === clientKey);
   }, [client, leads]);
 
+  const toggleSuspended = async () => {
+    if (!client || pendingSuspend === null) {
+      return;
+    }
+    setActing(true);
+    setError(null);
+    try {
+      const updated = await updateClient(client.id, {suspended: pendingSuspend});
+      setClient(updated);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not update suspension.');
+    } finally {
+      setPendingSuspend(null);
+      setActing(false);
+    }
+  };
+
   if (loading) {
     return <LoadingState label="Loading client..." />;
   }
 
-  if (error || !client) {
+  if (error && !client) {
     return <ErrorState body={error ?? 'Client not found.'} onRetry={() => void load()} />;
+  }
+
+  if (!client) {
+    return <ErrorState body="Client not found." onRetry={() => void load()} />;
   }
 
   const profile = client.profile ?? {};
@@ -212,10 +246,23 @@ export function ClientDetailScreen({id}: {id: string}) {
           <ArrowLeft size={16} />
           Back to clients
         </Link>
-        <Button variant="outline" size="sm" onClick={() => void load()}>
-          Refresh
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {canWrite ? (
+            <Button
+              variant={client.suspended ? 'primary' : 'destructive'}
+              size="sm"
+              disabled={acting}
+              onClick={() => setPendingSuspend(!client.suspended)}>
+              {client.suspended ? 'Unsuspend' : 'Suspend'}
+            </Button>
+          ) : null}
+          <Button variant="outline" size="sm" onClick={() => void load()} disabled={acting}>
+            Refresh
+          </Button>
+        </div>
       </div>
+
+      {error ? <ErrorState body={error} onRetry={() => void load()} /> : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Profile">
@@ -401,7 +448,6 @@ export function ClientDetailScreen({id}: {id: string}) {
           <p className="text-sm text-muted-foreground">No leads for this client.</p>
         ) : (
           <DataTable
-            tableClassName="min-w-[1200px]"
             columns={[
               'ID',
               'Goal',
@@ -463,6 +509,22 @@ export function ClientDetailScreen({id}: {id: string}) {
           </DataTable>
         )}
       </div>
+
+      <ConfirmDialog
+        open={pendingSuspend !== null}
+        title={pendingSuspend ? 'Suspend this client?' : 'Unsuspend this client?'}
+        body={
+          pendingSuspend
+            ? 'They will be signed out and cannot log in until unsuspended. Their leads stay in the system but leave the marketplace.'
+            : 'They will be able to log in and use the app again.'
+        }
+        confirmLabel={pendingSuspend ? 'Suspend' : 'Unsuspend'}
+        destructive={pendingSuspend === true}
+        onClose={() => {
+          if (!acting) setPendingSuspend(null);
+        }}
+        onConfirm={() => void toggleSuspended()}
+      />
     </>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import {useEffect, useState} from 'react';
-import {ChevronDown, ChevronUp} from 'lucide-react';
+import {useEffect, useRef, useState, type DragEvent} from 'react';
+import {GripVertical} from 'lucide-react';
 import {
   createService,
   isApiError,
@@ -13,17 +13,18 @@ import {
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
+import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {DataTable} from '@/components/ui/DataTable';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {cn} from '@/lib/cn';
 import {can} from '@/lib/permissions';
 
 const tableInputClass =
-  'h-9 w-full rounded-lg border border-border bg-background px-2.5 text-sm outline-none focus:border-primary';
-const tableCellClass = 'flex h-9 items-center';
+  'h-9 w-full min-w-0 max-w-md rounded-lg border border-border bg-background px-2.5 text-sm outline-none focus:border-primary';
+const tableCellClass = 'flex h-9 min-w-0 items-center';
+const nameCellClass = 'min-w-[12rem] max-w-md px-4 py-2 whitespace-normal';
 const actionButtonClass = 'w-[4.75rem] shrink-0 justify-center';
-const archiveButtonClass = 'min-w-[5.5rem] shrink-0 justify-center';
-const sortButtonClass = 'size-8 shrink-0 justify-center px-0';
+const deleteButtonClass = 'min-w-[5.5rem] shrink-0 justify-center';
 const addButtonClass = cn(
   actionButtonClass,
   'transform-gpu disabled:opacity-100 disabled:bg-primary-soft disabled:text-primary',
@@ -39,16 +40,14 @@ function CatalogActions({
   onCancel,
   onSave,
   onEdit,
-  toggleLabel,
-  onToggle,
+  onDelete,
 }: {
   isEditing: boolean;
   saving: boolean;
   onCancel: () => void;
   onSave: () => void;
   onEdit: () => void;
-  toggleLabel: string;
-  onToggle: () => void;
+  onDelete: () => void;
 }) {
   return (
     <TableCell className="flex-nowrap justify-end gap-1">
@@ -75,11 +74,22 @@ function CatalogActions({
           Edit
         </Button>
       )}
-      <Button size="sm" variant="outline" className={archiveButtonClass} onClick={onToggle}>
-        {toggleLabel}
+      <Button size="sm" variant="danger" className={deleteButtonClass} onClick={onDelete}>
+        Delete
       </Button>
     </TableCell>
   );
+}
+
+function reorderList(items: CatalogService[], fromId: number, toId: number) {
+  if (fromId === toId) return null;
+  const fromIndex = items.findIndex(item => item.id === fromId);
+  const toIndex = items.findIndex(item => item.id === toId);
+  if (fromIndex < 0 || toIndex < 0) return null;
+  const next = [...items];
+  const [row] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, row);
+  return next;
 }
 
 export function ServicesScreen({actor}: {actor: SessionUser}) {
@@ -96,11 +106,16 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [reordering, setReordering] = useState(false);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<number | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<CatalogService | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const dragIdRef = useRef<number | null>(null);
 
   const load = async () => {
     setServices(state => ({...state, isLoading: true, error: null}));
     try {
-      const items = await listServices();
+      const items = (await listServices()).filter(item => item.active);
       setServices({items, isLoading: false, error: null});
       setDrafts(Object.fromEntries(items.map(item => [item.id, item.name])));
     } catch (err) {
@@ -146,32 +161,39 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     }
   };
 
-  const toggleActive = async (service: CatalogService) => {
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const target = pendingDelete;
+    setDeleting(true);
     setError(null);
     try {
-      await updateService(service.id, {active: !service.active});
-      await load();
+      await updateService(target.id, {active: false});
+      setPendingDelete(null);
+      setEditingId(current => (current === target.id ? null : current));
+      setServices(state => ({
+        ...state,
+        items: state.items.filter(item => item.id !== target.id),
+      }));
+      setDrafts(state => {
+        const next = {...state};
+        delete next[target.id];
+        return next;
+      });
     } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not update service.');
+      setError(isApiError(err) ? err.message : 'Could not delete service.');
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const moveService = async (id: number, direction: 'up' | 'down') => {
-    const items = services.items;
-    const index = items.findIndex(item => item.id === id);
-    if (index < 0) return;
-    const target = direction === 'up' ? index - 1 : index + 1;
-    if (target < 0 || target >= items.length) return;
-
-    const next = [...items];
-    const [row] = next.splice(index, 1);
-    next.splice(target, 0, row);
-
+  const persistOrder = async (next: CatalogService[]) => {
     setReordering(true);
     setError(null);
     setServices(state => ({...state, items: next}));
     try {
-      const reordered = await reorderServices({orderedIds: next.map(item => item.id)});
+      const reordered = (await reorderServices({orderedIds: next.map(item => item.id)})).filter(
+        item => item.active,
+      );
       setServices({items: reordered, isLoading: false, error: null});
       setDrafts(Object.fromEntries(reordered.map(item => [item.id, item.name])));
     } catch (err) {
@@ -180,6 +202,41 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     } finally {
       setReordering(false);
     }
+  };
+
+  const onDragStart = (event: DragEvent<HTMLButtonElement>, id: number) => {
+    if (!canWrite || reordering || editingId !== null) {
+      event.preventDefault();
+      return;
+    }
+    dragIdRef.current = id;
+    setDraggingId(id);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(id));
+  };
+
+  const onDragOver = (event: DragEvent<HTMLTableRowElement>, id: number) => {
+    if (!canWrite || dragIdRef.current == null || reordering) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    if (dropTargetId !== id) setDropTargetId(id);
+  };
+
+  const onDrop = (event: DragEvent<HTMLTableRowElement>, toId: number) => {
+    event.preventDefault();
+    const fromId = dragIdRef.current ?? Number(event.dataTransfer.getData('text/plain'));
+    setDraggingId(null);
+    setDropTargetId(null);
+    dragIdRef.current = null;
+    if (!canWrite || reordering || !fromId) return;
+    const next = reorderList(services.items, fromId, toId);
+    if (next) void persistOrder(next);
+  };
+
+  const onDragEnd = () => {
+    setDraggingId(null);
+    setDropTargetId(null);
+    dragIdRef.current = null;
   };
 
   const submitCreate = async () => {
@@ -207,6 +264,9 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     <>
       <PageHeader
         title="Services"
+        description={
+          canWrite ? 'Drag the grip handle in the # column to change display order.' : undefined
+        }
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
@@ -224,12 +284,13 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
         </p>
       ) : null}
 
-      <div className="mb-8">
+      <div className="mb-8 min-w-0">
         <DataTable
+          tableClassName="min-w-0"
           columnHeaderClassNames={
             canWrite ? [undefined, undefined, undefined, 'text-right'] : undefined
           }
-          columns={canWrite ? ['Name', 'Status', 'Order', 'Actions'] : ['Name', 'Status', 'Order']}>
+          columns={canWrite ? ['#', 'Name', 'Status', 'Actions'] : ['#', 'Name', 'Status']}>
           {services.isLoading && services.items.length === 0 ? (
             <tr>
               <td colSpan={colCount} className="px-4 py-8 text-center">
@@ -250,15 +311,44 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
           {services.items.map((service, index) => {
             const draft = drafts[service.id] ?? service.name;
             const isEditing = canWrite && editingId === service.id;
+            const isDragging = draggingId === service.id;
+            const isDropTarget = dropTargetId === service.id && draggingId !== service.id;
             return (
               <tr
                 key={service.id}
+                onDragOver={event => onDragOver(event, service.id)}
+                onDrop={event => onDrop(event, service.id)}
                 className={cn(
                   'border-b border-border last:border-0',
-                  !service.active && 'bg-muted/30',
                   isEditing && 'bg-primary-soft/30',
+                  isDragging && 'opacity-50',
+                  isDropTarget && 'bg-sky-soft ring-1 ring-inset ring-sky',
                 )}>
-                <td className="w-full px-4 py-2">
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <TableCell className="flex-nowrap gap-2">
+                    {canWrite ? (
+                      <button
+                        type="button"
+                        draggable={!reordering && !isEditing}
+                        onDragStart={event => onDragStart(event, service.id)}
+                        onDragEnd={onDragEnd}
+                        disabled={reordering || isEditing}
+                        className={cn(
+                          'inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground',
+                          !reordering && !isEditing && 'cursor-grab active:cursor-grabbing hover:bg-muted hover:text-foreground',
+                          (reordering || isEditing) && 'cursor-not-allowed opacity-40',
+                        )}
+                        aria-label={`Drag to reorder ${service.name}`}
+                        title="Drag to reorder">
+                        <GripVertical className="size-4" />
+                      </button>
+                    ) : null}
+                    <span className="w-6 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
+                      {index + 1}
+                    </span>
+                  </TableCell>
+                </td>
+                <td className={nameCellClass}>
                   <TableCell>
                     {isEditing ? (
                       <input
@@ -269,7 +359,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                         }
                       />
                     ) : (
-                      <span className="font-medium text-foreground whitespace-nowrap">
+                      <span className="truncate font-medium text-foreground" title={service.name}>
                         {service.name}
                       </span>
                     )}
@@ -277,40 +367,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap">
                   <TableCell className="flex-nowrap">
-                    {service.active ? (
-                      <Badge tone="primary">Active</Badge>
-                    ) : (
-                      <Badge tone="muted">Archived</Badge>
-                    )}
-                  </TableCell>
-                </td>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  <TableCell className="flex-nowrap gap-1.5">
-                    <span className="w-6 shrink-0 text-sm font-semibold tabular-nums text-muted-foreground">
-                      {index + 1}
-                    </span>
-                    {canWrite ? (
-                      <span className="flex shrink-0 flex-nowrap gap-0.5">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={sortButtonClass}
-                          disabled={reordering || index === 0}
-                          aria-label={`Move ${service.name} up`}
-                          onClick={() => void moveService(service.id, 'up')}>
-                          <ChevronUp className="size-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className={sortButtonClass}
-                          disabled={reordering || index === services.items.length - 1}
-                          aria-label={`Move ${service.name} down`}
-                          onClick={() => void moveService(service.id, 'down')}>
-                          <ChevronDown className="size-4" />
-                        </Button>
-                      </span>
-                    ) : null}
+                    <Badge tone="primary">Active</Badge>
                   </TableCell>
                 </td>
                 {canWrite ? (
@@ -321,8 +378,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                       onCancel={() => cancelEdit(service)}
                       onSave={() => void save(service.id)}
                       onEdit={() => startEdit(service)}
-                      toggleLabel={service.active ? 'Archive' : 'Restore'}
-                      onToggle={() => void toggleActive(service)}
+                      onDelete={() => setPendingDelete(service)}
                     />
                   </td>
                 ) : null}
@@ -331,7 +387,12 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
           })}
           {canWrite ? (
             <tr className="border-t-2 border-border bg-primary-soft/40">
-              <td className="w-full px-4 py-2">
+              <td className="px-4 py-2 whitespace-nowrap">
+                <TableCell>
+                  <span className="text-sm text-muted-foreground">—</span>
+                </TableCell>
+              </td>
+              <td className={nameCellClass}>
                 <TableCell>
                   <input
                     className={tableInputClass}
@@ -344,11 +405,6 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
               <td className="px-4 py-2 whitespace-nowrap">
                 <TableCell className="flex-nowrap">
                   <Badge tone="sky">New</Badge>
-                </TableCell>
-              </td>
-              <td className="px-4 py-2 whitespace-nowrap">
-                <TableCell>
-                  <span className="text-sm text-muted-foreground">—</span>
                 </TableCell>
               </td>
               <td className="px-4 py-2 whitespace-nowrap">
@@ -365,13 +421,25 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                       'Add'
                     )}
                   </Button>
-                  <span className={archiveButtonClass} aria-hidden />
+                  <span className={deleteButtonClass} aria-hidden />
                 </TableCell>
               </td>
             </tr>
           ) : null}
         </DataTable>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete this service?"
+        body="This can’t be undone from the list."
+        confirmLabel={deleting ? 'Deleting...' : 'Delete'}
+        destructive
+        onClose={() => {
+          if (!deleting) setPendingDelete(null);
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
     </>
   );
 }
