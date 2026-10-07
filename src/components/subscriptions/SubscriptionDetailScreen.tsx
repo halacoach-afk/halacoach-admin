@@ -2,15 +2,14 @@
 
 import Link from 'next/link';
 import {useEffect, useState, type ReactNode} from 'react';
-import {ArrowLeft, ExternalLink} from 'lucide-react';
+import {ArrowLeft} from 'lucide-react';
 import {isApiError, type SessionUser} from '@/api';
 import type {CreditSubscriptionDetail} from '@/api/types';
 import {getCreditSubscription} from '@/lib/apis';
-import {Badge} from '@/components/ui/Badge';
 import {Card} from '@/components/ui/Card';
+import {DataTable} from '@/components/ui/DataTable';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
-import {PageHeader} from '@/components/ui/PageHeader';
 import {formatAed} from '@/lib/credit-utils';
 
 function Section({title, children}: {title: string; children: ReactNode}) {
@@ -26,26 +25,11 @@ function Section({title, children}: {title: string; children: ReactNode}) {
 
 function Field({label, value}: {label: string; value: ReactNode}) {
   return (
-    <div>
+    <div className="min-w-0">
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm text-foreground">{value}</dd>
+      <dd className="mt-0.5 break-words text-sm text-foreground">{value}</dd>
     </div>
   );
-}
-
-function statusTone(status: string): 'sky' | 'warning' | 'muted' | 'danger' {
-  switch (status) {
-    case 'active':
-      return 'sky';
-    case 'past_due':
-      return 'warning';
-    case 'canceled':
-      return 'muted';
-    case 'expired':
-      return 'danger';
-    default:
-      return 'muted';
-  }
 }
 
 function statusLabel(status: string) {
@@ -106,34 +90,27 @@ export function SubscriptionDetailScreen({
         </Link>
       </div>
 
-      <PageHeader
-        title={sub.package?.name ?? `Subscription #${sub.id}`}
-        description={`${sub.professionalName} - ${sub.professionalEmail ?? sub.professionalId}`}
-        actions={<Badge tone={statusTone(sub.status)}>{statusLabel(sub.status)}</Badge>}
-      />
-
-      <div className="mb-6 flex flex-wrap gap-2">
-        {sub.package?.type ? <Badge tone="muted">{sub.package.type}</Badge> : null}
-        {sub.package?.badge ? <Badge tone="coral">{sub.package.badge}</Badge> : null}
-      </div>
-
       <div className="grid gap-4 lg:grid-cols-2">
-        <Section title="Coach">
+        <Section title="User">
           <dl className="grid gap-3 sm:grid-cols-2">
-            <Field label="Name" value={sub.professionalName} />
-            <Field label="Email" value={sub.professionalEmail ?? '-'} />
+            <Field label="ID" value={sub.userId} />
             <Field
-              label="Professional"
+              label="Name"
               value={
                 <Link
                   href={`/professionals/${sub.professionalId}`}
-                  className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
-                  Open profile
-                  <ExternalLink size={14} />
+                  className="font-medium text-primary hover:underline">
+                  {sub.professionalName}
                 </Link>
               }
             />
-            <Field label="User id" value={sub.userId} />
+            <Field
+              label="Email"
+              value={
+                <span className="break-all">{sub.professionalEmail ?? '-'}</span>
+              }
+            />
+            <Field label="Phone" value={sub.professionalPhone ?? '-'} />
           </dl>
         </Section>
 
@@ -144,19 +121,6 @@ export function SubscriptionDetailScreen({
             <Field label="Price" value={sub.package ? formatAed(sub.package.price) : '-'} />
             <Field label="Package id" value={sub.packageId} />
           </dl>
-        </Section>
-
-        <Section title="Usage this period">
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <Field label="Wallet balance" value={sub.walletBalance} />
-            <Field label="Granted this period" value={sub.periodGrantedCredits} />
-            <Field label="Spent this period" value={sub.periodSpentCredits} />
-            <Field label="Remaining (grant - spend)" value={sub.periodRemainingCredits} />
-          </dl>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Remaining is period grant minus wallet spends in this period. Wallet balance can
-            include one-time packs and leftover credits.
-          </p>
         </Section>
 
         <Section title="Billing window">
@@ -177,6 +141,40 @@ export function SubscriptionDetailScreen({
             <Field label="Status" value={statusLabel(sub.status)} />
           </dl>
         </Section>
+      </div>
+
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Subscription transactions
+        </h2>
+        {(sub.transactions ?? []).length === 0 ? (
+          <Card>
+            <p className="text-sm text-muted-foreground">
+              No membership grant transactions for this subscription.
+            </p>
+          </Card>
+        ) : (
+          <DataTable columns={['ID', 'When', 'Credits', 'Kind']}>
+            {(sub.transactions ?? []).map(txn => (
+              <tr key={txn.id} className="border-b border-border last:border-0">
+                <td className="px-4 py-3 text-sm tabular-nums text-muted-foreground">
+                  {txn.id}
+                </td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">
+                  {formatDate(txn.createdAt)}
+                </td>
+                <td className="px-4 py-3 text-sm font-semibold tabular-nums text-primary">
+                  +{txn.credits}
+                </td>
+                <td className="px-4 py-3 text-sm text-foreground">
+                  {txn.kind
+                    ? txn.kind.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
+                    : '—'}
+                </td>
+              </tr>
+            ))}
+          </DataTable>
+        )}
       </div>
     </>
   );

@@ -147,6 +147,7 @@ export type CreditSubscriptionAdmin = {
   professionalId: string;
   professionalName: string;
   professionalEmail: string | null;
+  professionalPhone: string | null;
   packageId: string;
   status: string;
   startedAt: string | null;
@@ -156,10 +157,6 @@ export type CreditSubscriptionAdmin = {
   nextGrantAt: string | null;
   provider: string | null;
   providerSubscriptionId: string | null;
-  walletBalance: number;
-  periodGrantedCredits: number;
-  periodSpentCredits: number;
-  periodRemainingCredits: number;
   package: {
     id: string;
     name: string;
@@ -170,7 +167,18 @@ export type CreditSubscriptionAdmin = {
   } | null;
 };
 
-export type CreditSubscriptionDetail = CreditSubscriptionAdmin;
+export type CreditSubscriptionTxn = {
+  id: number;
+  type: string;
+  credits: number;
+  label: string;
+  kind: string | null;
+  createdAt: string | null;
+};
+
+export type CreditSubscriptionDetail = CreditSubscriptionAdmin & {
+  transactions: CreditSubscriptionTxn[];
+};
 
 export type PromoBenefitType = 'percent_off' | 'fixed_off' | 'bonus_credits';
 
