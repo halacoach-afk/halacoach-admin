@@ -1041,8 +1041,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         membershipPackages,
         membershipPackageForm,
         setMembershipPackageForm,
-        'Lite',
-        '149',
+        'Founding Premium Pro',
+        '109',
       )}
       {creditPackageError ? <p className="mb-6 text-sm text-destructive">{creditPackageError}</p> : null}
 
