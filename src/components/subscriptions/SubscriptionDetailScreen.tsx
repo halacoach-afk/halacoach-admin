@@ -8,7 +8,6 @@ import type {CreditSubscriptionDetail} from '@/api/types';
 import {getCreditSubscription} from '@/lib/apis';
 import {Badge} from '@/components/ui/Badge';
 import {Card} from '@/components/ui/Card';
-import {DataTable} from '@/components/ui/DataTable';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
@@ -179,48 +178,6 @@ export function SubscriptionDetailScreen({
           </dl>
         </Section>
       </div>
-
-      <Card className="mt-4">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Membership grants
-        </h2>
-        {sub.grants.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No grant transactions for this subscription.</p>
-        ) : (
-          <DataTable columns={['When', 'Credits', 'Label']}>
-            {sub.grants.map(txn => (
-              <tr key={txn.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {formatDate(txn.createdAt)}
-                </td>
-                <td className="px-4 py-3 text-sm text-foreground">+{txn.credits}</td>
-                <td className="px-4 py-3 text-sm text-foreground">{txn.label}</td>
-              </tr>
-            ))}
-          </DataTable>
-        )}
-      </Card>
-
-      <Card className="mt-4">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Spends this period
-        </h2>
-        {sub.periodSpends.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No spends in the current billing period.</p>
-        ) : (
-          <DataTable columns={['When', 'Credits', 'Label']}>
-            {sub.periodSpends.map(txn => (
-              <tr key={txn.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {formatDate(txn.createdAt)}
-                </td>
-                <td className="px-4 py-3 text-sm text-foreground">-{txn.credits}</td>
-                <td className="px-4 py-3 text-sm text-foreground">{txn.label}</td>
-              </tr>
-            ))}
-          </DataTable>
-        )}
-      </Card>
     </>
   );
 }

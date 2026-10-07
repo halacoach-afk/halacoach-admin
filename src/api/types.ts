@@ -170,25 +170,7 @@ export type CreditSubscriptionAdmin = {
   } | null;
 };
 
-export type CreditSubscriptionGrantTxn = {
-  id: number;
-  credits: number;
-  label: string;
-  createdAt: string | null;
-};
-
-export type CreditSubscriptionSpendTxn = {
-  id: number;
-  credits: number;
-  label: string;
-  createdAt: string | null;
-  meta: Record<string, unknown> | null;
-};
-
-export type CreditSubscriptionDetail = CreditSubscriptionAdmin & {
-  grants: CreditSubscriptionGrantTxn[];
-  periodSpends: CreditSubscriptionSpendTxn[];
-};
+export type CreditSubscriptionDetail = CreditSubscriptionAdmin;
 
 export type PromoBenefitType = 'percent_off' | 'fixed_off' | 'bonus_credits';
 
