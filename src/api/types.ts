@@ -395,6 +395,7 @@ export type Professional = {
   emailVerified?: boolean;
   phoneVerified?: boolean;
   suspended: boolean;
+  deletedAt?: string | null;
   onboarded: boolean;
   createdAt: string;
   lastActiveAt?: string;
@@ -472,6 +473,7 @@ export type ProfessionalSummary = {
   activated: boolean;
   onboarded: boolean;
   suspended: boolean;
+  deletedAt?: string | null;
   profileCompletion: number | ProfileCompletionPayload;
   createdAt: string;
   lastActiveAt: string;
@@ -563,6 +565,7 @@ export type Client = {
   otpVerified: boolean;
   otpVerifiedAt: string | null;
   suspended: boolean;
+  deletedAt?: string | null;
   createdAt: string;
   lastActiveAt: string;
   matchPrefs: MatchPrefs;
@@ -587,6 +590,7 @@ export type ClientSummary = {
   onboarded: boolean;
   otpVerified: boolean;
   suspended: boolean;
+  deletedAt?: string | null;
   profileCompletion: number | ProfileCompletionPayload;
   createdAt: string;
   lastActiveAt: string;

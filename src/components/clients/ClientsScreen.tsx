@@ -20,7 +20,7 @@ import {
 } from '@/lib/pagination';
 import {completionPercent} from '@/lib/professional-utils';
 
-type Filter = 'all' | 'onboarded' | 'incomplete' | 'suspended';
+type Filter = 'all' | 'onboarded' | 'incomplete' | 'suspended' | 'deleted';
 
 function contactCell(value: string, verified: boolean) {
   const display = value.trim();
@@ -45,6 +45,7 @@ export function ClientsScreen() {
     onboarded: 0,
     incomplete: 0,
     suspended: 0,
+    deleted: 0,
   });
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
@@ -117,6 +118,7 @@ export function ClientsScreen() {
             ['onboarded', 'Onboarded'],
             ['incomplete', 'Incomplete'],
             ['suspended', 'Suspended'],
+            ['deleted', 'Deleted'],
           ] as const
         ).map(([key, label]) => (
           <Button
