@@ -149,7 +149,6 @@ export type CreditSubscriptionAdmin = {
   professionalEmail: string | null;
   packageId: string;
   status: string;
-  cancelAtPeriodEnd: boolean;
   startedAt: string | null;
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;

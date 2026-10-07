@@ -114,7 +114,6 @@ export function SubscriptionDetailScreen({
       />
 
       <div className="mb-6 flex flex-wrap gap-2">
-        {sub.cancelAtPeriodEnd ? <Badge tone="warning">Cancels at period end</Badge> : null}
         {sub.package?.type ? <Badge tone="muted">{sub.package.type}</Badge> : null}
         {sub.package?.badge ? <Badge tone="coral">{sub.package.badge}</Badge> : null}
       </div>
@@ -168,7 +167,6 @@ export function SubscriptionDetailScreen({
             <Field label="Period end" value={formatDate(sub.currentPeriodEnd)} />
             <Field label="Next grant" value={formatDate(sub.nextGrantAt)} />
             <Field label="Canceled at" value={formatDate(sub.canceledAt)} />
-            <Field label="Cancel at period end" value={sub.cancelAtPeriodEnd ? 'Yes' : 'No'} />
           </dl>
         </Section>
 

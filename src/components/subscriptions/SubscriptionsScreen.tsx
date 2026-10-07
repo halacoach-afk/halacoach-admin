@@ -238,9 +238,6 @@ export function SubscriptionsScreen({
               </td>
               <td className="px-4 py-3">
                 <Badge tone={statusTone(sub.status)}>{statusLabel(sub.status)}</Badge>
-                {sub.cancelAtPeriodEnd ? (
-                  <p className="mt-1 text-xs text-muted-foreground">Cancels at period end</p>
-                ) : null}
               </td>
               <td className="px-4 py-3">
                 {(() => {
