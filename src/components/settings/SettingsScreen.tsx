@@ -389,10 +389,6 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       </div>
 
       <h2 className="mb-3 text-lg font-semibold text-foreground">Billing</h2>
-      <p className="mb-3 text-sm text-muted-foreground">
-        VAT applied to credit pack checkout. Set to 0 to hide VAT on coach checkout and
-        marketing copy.
-      </p>
       <div className="mb-8">
         <DataTable
           columnHeaderClassNames={canWrite ? [undefined, 'text-right'] : undefined}
@@ -418,11 +414,6 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
                 ) : (
                   <span className="font-medium text-foreground">
                     {vatPercent}%
-                    {vatPercent === 0 ? (
-                      <span className="ms-2 text-sm font-normal text-muted-foreground">
-                        (hidden on checkout)
-                      </span>
-                    ) : null}
                   </span>
                 )}
               </TableCell>

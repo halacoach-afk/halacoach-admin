@@ -1001,7 +1001,6 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     <>
       <PageHeader
         title="Credits"
-        description="Packs, memberships, promo codes, and VAT configuration."
         actions={
           <Button
             variant="outline"

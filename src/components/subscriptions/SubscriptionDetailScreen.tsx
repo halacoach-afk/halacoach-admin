@@ -8,7 +8,6 @@ import type {CreditSubscriptionDetail} from '@/api/types';
 import {getCreditSubscription} from '@/lib/apis';
 import {Badge} from '@/components/ui/Badge';
 import {Card} from '@/components/ui/Card';
-import {DataTable} from '@/components/ui/DataTable';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
@@ -47,6 +46,12 @@ function statusTone(status: string): 'sky' | 'warning' | 'muted' | 'danger' {
     default:
       return 'muted';
   }
+}
+
+function statusLabel(status: string) {
+  return status
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
 }
 
 function formatDate(value: string | null | undefined) {
@@ -104,11 +109,10 @@ export function SubscriptionDetailScreen({
       <PageHeader
         title={sub.package?.name ?? `Subscription #${sub.id}`}
         description={`${sub.professionalName} - ${sub.professionalEmail ?? sub.professionalId}`}
-        actions={<Badge tone={statusTone(sub.status)}>{sub.status}</Badge>}
+        actions={<Badge tone={statusTone(sub.status)}>{statusLabel(sub.status)}</Badge>}
       />
 
       <div className="mb-6 flex flex-wrap gap-2">
-        {sub.cancelAtPeriodEnd ? <Badge tone="warning">Cancels at period end</Badge> : null}
         {sub.package?.type ? <Badge tone="muted">{sub.package.type}</Badge> : null}
         {sub.package?.badge ? <Badge tone="coral">{sub.package.badge}</Badge> : null}
       </div>
@@ -162,7 +166,6 @@ export function SubscriptionDetailScreen({
             <Field label="Period end" value={formatDate(sub.currentPeriodEnd)} />
             <Field label="Next grant" value={formatDate(sub.nextGrantAt)} />
             <Field label="Canceled at" value={formatDate(sub.canceledAt)} />
-            <Field label="Cancel at period end" value={sub.cancelAtPeriodEnd ? 'Yes' : 'No'} />
           </dl>
         </Section>
 
@@ -171,52 +174,10 @@ export function SubscriptionDetailScreen({
             <Field label="Provider" value={sub.provider ?? '-'} />
             <Field label="Provider subscription id" value={sub.providerSubscriptionId ?? '-'} />
             <Field label="Subscription id" value={sub.id} />
-            <Field label="Status" value={sub.status} />
+            <Field label="Status" value={statusLabel(sub.status)} />
           </dl>
         </Section>
       </div>
-
-      <Card className="mt-4">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Membership grants
-        </h2>
-        {sub.grants.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No grant transactions for this subscription.</p>
-        ) : (
-          <DataTable columns={['When', 'Credits', 'Label']}>
-            {sub.grants.map(txn => (
-              <tr key={txn.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {formatDate(txn.createdAt)}
-                </td>
-                <td className="px-4 py-3 text-sm text-foreground">+{txn.credits}</td>
-                <td className="px-4 py-3 text-sm text-foreground">{txn.label}</td>
-              </tr>
-            ))}
-          </DataTable>
-        )}
-      </Card>
-
-      <Card className="mt-4">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Spends this period
-        </h2>
-        {sub.periodSpends.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No spends in the current billing period.</p>
-        ) : (
-          <DataTable columns={['When', 'Credits', 'Label']}>
-            {sub.periodSpends.map(txn => (
-              <tr key={txn.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {formatDate(txn.createdAt)}
-                </td>
-                <td className="px-4 py-3 text-sm text-foreground">-{txn.credits}</td>
-                <td className="px-4 py-3 text-sm text-foreground">{txn.label}</td>
-              </tr>
-            ))}
-          </DataTable>
-        )}
-      </Card>
     </>
   );
 }

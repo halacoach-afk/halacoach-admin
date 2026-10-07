@@ -38,7 +38,7 @@ import {DataTable} from '@/components/ui/DataTable';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {NotificationPrefsPanel} from '@/components/support/NotificationPrefsPanel';
-import {formatDobWithBand} from '@/lib/age-display';
+import {dobWithBandParts} from '@/lib/age-display';
 import {leadPreferenceDisplay} from '@/lib/lead-preference-labels';
 import {formatPostedAt} from '@/lib/lead-utils';
 import {can} from '@/lib/permissions';
@@ -81,10 +81,10 @@ function ContactValue({value, verified}: {value: string; verified?: boolean}) {
     return <span className="font-normal text-muted-foreground">—</span>;
   }
   return (
-    <span className="break-all">
-      {display}
+    <span>
+      <span className="break-all">{display}</span>
       {verified === false ? (
-        <span className="ms-1.5 text-xs font-normal text-muted-foreground">
+        <span className="ms-1.5 whitespace-nowrap text-xs font-normal text-muted-foreground">
           (unverified)
         </span>
       ) : null}
@@ -300,7 +300,20 @@ export function ClientDetailScreen({
             <PrefField
               icon={<CalendarDays className="size-3.5" strokeWidth={1.8} />}
               label="Birth date"
-              value={formatDobWithBand(birthDate) ?? '—'}
+              value={(() => {
+                const parts = dobWithBandParts(birthDate);
+                if (!parts) return '—';
+                return (
+                  <span>
+                    <span className="block">{parts.date}</span>
+                    {parts.band ? (
+                      <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                        {parts.band}
+                      </span>
+                    ) : null}
+                  </span>
+                );
+              })()}
             />
             <PrefField
               icon={<UserRound className="size-3.5" strokeWidth={1.8} />}

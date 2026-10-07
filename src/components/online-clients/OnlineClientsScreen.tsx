@@ -28,10 +28,16 @@ function statusTone(status: string): 'primary' | 'muted' | 'warning' | 'danger' 
   return 'muted';
 }
 
+function capitalizeLabel(value: string) {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export function OnlineClientsScreen() {
   const [rows, setRows] = useState<OnlinePlanSummary[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +45,7 @@ export function OnlineClientsScreen() {
     setLoading(true);
     setError(null);
     try {
-      const res = await listOnlinePlans({page: nextPage, perPage: DEFAULT_PER_PAGE});
+      const res = await listOnlinePlans({page: nextPage, perPage});
       setRows(res.data);
       setMeta(res.meta);
       setPage(res.meta.page);
@@ -53,7 +59,7 @@ export function OnlineClientsScreen() {
   useEffect(() => {
     void load(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [perPage]);
 
   if (loading && rows.length === 0) {
     return <LoadingState label="Loading online plans..." />;
@@ -67,7 +73,6 @@ export function OnlineClientsScreen() {
     <>
       <PageHeader
         title="Online plans"
-        description="Live coaching plans from the coach Clients tab - intake, drafts, and published programs."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
@@ -82,7 +87,19 @@ export function OnlineClientsScreen() {
         />
       ) : (
         <DataTable
-          columns={['Goal', 'Client', 'Coach', 'Status', 'PAR-Q', 'Updated', '']}>
+          columns={['Goal', 'Client', 'Coach', 'Status', 'PAR-Q', 'Updated', '']}
+          pagination={
+            <PaginationBar
+              variant="embedded"
+              meta={meta}
+              disabled={loading}
+              onPageChange={next => void load(next)}
+              onPerPageChange={next => {
+                setPage(1);
+                setPerPage(next);
+              }}
+            />
+          }>
           {rows.map(row => (
             <tr key={row.id} className="border-t border-border">
               <td className="px-4 py-3 text-sm text-muted-foreground">{row.goal}</td>
@@ -109,11 +126,11 @@ export function OnlineClientsScreen() {
                 )}
               </td>
               <td className="px-4 py-3">
-                <Badge tone={statusTone(row.status)}>{row.status}</Badge>
+                <Badge tone={statusTone(row.status)}>{capitalizeLabel(row.status)}</Badge>
               </td>
               <td className="px-4 py-3">
                 <Badge tone={row.parq === 'cleared' ? 'primary' : 'danger'}>
-                  {row.parq}
+                  {capitalizeLabel(row.parq)}
                 </Badge>
               </td>
               <td className="px-4 py-3 text-xs text-muted-foreground">
@@ -130,12 +147,6 @@ export function OnlineClientsScreen() {
           ))}
         </DataTable>
       )}
-
-      <PaginationBar
-        meta={meta}
-        disabled={loading}
-        onPageChange={next => void load(next)}
-      />
     </>
   );
 }

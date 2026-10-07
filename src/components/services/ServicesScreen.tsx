@@ -273,9 +273,6 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
     <>
       <PageHeader
         title="Services"
-        description={
-          canWrite ? 'Drag the grip handle in the # column to change display order.' : undefined
-        }
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh

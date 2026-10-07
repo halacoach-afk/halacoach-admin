@@ -61,6 +61,7 @@ export function SupportScreen({
     closed: 0,
   });
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
@@ -80,7 +81,7 @@ export function SupportScreen({
     try {
       const res = await listSupportTickets({
         page: nextPage,
-        perPage: DEFAULT_PER_PAGE,
+        perPage,
         status: nextFilter === 'all' ? undefined : nextFilter,
         q: debouncedQ || undefined,
       });
@@ -101,7 +102,7 @@ export function SupportScreen({
   useEffect(() => {
     void load(1, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, debouncedQ]);
+  }, [filter, debouncedQ, perPage]);
 
   useEffect(() => {
     setOpenTicketId(initialTicketId);
@@ -191,7 +192,19 @@ export function SupportScreen({
             'Status',
             'Received',
             '',
-          ]}>
+          ]}
+          pagination={
+            <PaginationBar
+              variant="embedded"
+              meta={meta}
+              disabled={loading}
+              onPageChange={next => void load(next)}
+              onPerPageChange={next => {
+                setPage(1);
+                setPerPage(next);
+              }}
+            />
+          }>
           {rows.map(row => {
             const href = profileHref(row);
             return (
@@ -258,12 +271,6 @@ export function SupportScreen({
           })}
         </DataTable>
       )}
-
-      <PaginationBar
-        meta={meta}
-        disabled={loading}
-        onPageChange={next => void load(next)}
-      />
 
       <SupportDetailModal
         actor={actor}

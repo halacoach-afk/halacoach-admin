@@ -12,7 +12,7 @@ import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {PaginationBar} from '@/components/ui/PaginationBar';
 import {SearchField} from '@/components/ui/SearchField';
-import {formatDobWithBand} from '@/lib/age-display';
+import {dobWithBandParts} from '@/lib/age-display';
 import {
   DEFAULT_PER_PAGE,
   emptyPaginationMeta,
@@ -47,6 +47,7 @@ export function ClientsScreen() {
     suspended: 0,
   });
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
@@ -65,7 +66,7 @@ export function ClientsScreen() {
     try {
       const res = await listClients({
         page: nextPage,
-        perPage: DEFAULT_PER_PAGE,
+        perPage,
         q: debouncedQ || undefined,
         filter: nextFilter === 'all' ? undefined : nextFilter,
       });
@@ -86,7 +87,7 @@ export function ClientsScreen() {
   useEffect(() => {
     void load(1, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQ, filter]);
+  }, [debouncedQ, filter, perPage]);
 
   if (!hasLoaded && loading) {
     return <LoadingState label="Loading clients..." />;
@@ -100,7 +101,6 @@ export function ClientsScreen() {
     <>
       <PageHeader
         title="Clients"
-        description="Browse and manage client accounts."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
             Refresh
@@ -136,7 +136,19 @@ export function ClientsScreen() {
         <EmptyState title="No clients match" body="Try another filter or clear the search box." />
       ) : (
         <DataTable
-          columns={['ID', 'Name', 'Email', 'Number', 'Birth date', 'Profile', '']}>
+          columns={['ID', 'Name', 'Email', 'Number', 'Birth date', 'Profile', '']}
+          pagination={
+            <PaginationBar
+              variant="embedded"
+              meta={meta}
+              disabled={loading}
+              onPageChange={next => void load(next)}
+              onPerPageChange={next => {
+                setPage(1);
+                setPerPage(next);
+              }}
+            />
+          }>
           {rows.map(row => {
             const pct = completionPercent(row.profileCompletion);
             return (
@@ -151,8 +163,21 @@ export function ClientsScreen() {
                 <td className="px-4 py-3">
                   {contactCell(row.phone, Boolean(row.phoneVerified))}
                 </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {formatDobWithBand(row.birthDate) ?? '—'}
+                <td className="px-4 py-3">
+                  {(() => {
+                    const parts = dobWithBandParts(row.birthDate);
+                    if (!parts) {
+                      return <span className="text-sm text-muted-foreground">—</span>;
+                    }
+                    return (
+                      <div>
+                        <div className="text-sm text-foreground">{parts.date}</div>
+                        {parts.band ? (
+                          <div className="text-xs text-muted-foreground">{parts.band}</div>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -178,12 +203,6 @@ export function ClientsScreen() {
           })}
         </DataTable>
       )}
-
-      <PaginationBar
-        meta={meta}
-        disabled={loading}
-        onPageChange={next => void load(next)}
-      />
     </>
   );
 }

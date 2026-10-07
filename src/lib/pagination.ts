@@ -13,6 +13,8 @@ export type Paginated<T> = {
 
 export const DEFAULT_PER_PAGE = 20;
 
+export const PER_PAGE_OPTIONS = [10, 20, 50, 100] as const;
+
 export function emptyPaginationMeta(page = 1, perPage = DEFAULT_PER_PAGE): PaginationMeta {
   return {page, perPage, total: 0, lastPage: 1};
 }

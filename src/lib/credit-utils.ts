@@ -24,6 +24,7 @@ export function buildCreditLedger(
         id: txn.id,
         professionalId: pro.id,
         professionalName: pro.name,
+        professionalEmail: pro.email,
         type: txn.type,
         credits: txn.credits,
         label: txn.label,
@@ -88,4 +89,19 @@ export function creditTxnLabel(label: string) {
     'credits.expired': 'Credits expired (no recharge for 12 months)',
   };
   return map[label] ?? label;
+}
+
+/** Human-readable credit transaction type keys. */
+export function creditTxnTypeLabel(type: string) {
+  const map: Record<string, string> = {
+    purchase: 'Purchase',
+    spend: 'Spend',
+    adjustment: 'Adjustment',
+    membership_grant: 'Membership',
+    expiry: 'Expiry',
+  };
+  if (map[type]) return map[type];
+  return type
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase());
 }

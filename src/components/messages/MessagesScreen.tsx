@@ -27,6 +27,7 @@ export function MessagesScreen() {
   const [rows, setRows] = useState<ConversationSummary[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +35,7 @@ export function MessagesScreen() {
     setLoading(true);
     setError(null);
     try {
-      const res = await listConversations({page: nextPage, perPage: DEFAULT_PER_PAGE});
+      const res = await listConversations({page: nextPage, perPage});
       setRows(res.data);
       setMeta(res.meta);
       setPage(res.meta.page);
@@ -48,7 +49,7 @@ export function MessagesScreen() {
   useEffect(() => {
     void load(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [perPage]);
 
   if (loading && rows.length === 0) {
     return <LoadingState label="Loading conversations..." />;
@@ -77,7 +78,19 @@ export function MessagesScreen() {
         />
       ) : (
         <DataTable
-          columns={['ID', 'Client', 'Coach', 'Goal', 'Last message', 'Messages', 'Updated', '']}>
+          columns={['ID', 'Client', 'Coach', 'Goal', 'Last message', 'Messages', 'Updated', '']}
+          pagination={
+            <PaginationBar
+              variant="embedded"
+              meta={meta}
+              disabled={loading}
+              onPageChange={next => void load(next)}
+              onPerPageChange={next => {
+                setPage(1);
+                setPerPage(next);
+              }}
+            />
+          }>
           {rows.map(row => {
             const goal = conversationGoal(row);
             return (
@@ -124,12 +137,6 @@ export function MessagesScreen() {
           })}
         </DataTable>
       )}
-
-      <PaginationBar
-        meta={meta}
-        disabled={loading}
-        onPageChange={next => void load(next)}
-      />
     </>
   );
 }

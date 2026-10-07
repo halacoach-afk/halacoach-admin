@@ -149,7 +149,6 @@ export type CreditSubscriptionAdmin = {
   professionalEmail: string | null;
   packageId: string;
   status: string;
-  cancelAtPeriodEnd: boolean;
   startedAt: string | null;
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
@@ -171,25 +170,7 @@ export type CreditSubscriptionAdmin = {
   } | null;
 };
 
-export type CreditSubscriptionGrantTxn = {
-  id: number;
-  credits: number;
-  label: string;
-  createdAt: string | null;
-};
-
-export type CreditSubscriptionSpendTxn = {
-  id: number;
-  credits: number;
-  label: string;
-  createdAt: string | null;
-  meta: Record<string, unknown> | null;
-};
-
-export type CreditSubscriptionDetail = CreditSubscriptionAdmin & {
-  grants: CreditSubscriptionGrantTxn[];
-  periodSpends: CreditSubscriptionSpendTxn[];
-};
+export type CreditSubscriptionDetail = CreditSubscriptionAdmin;
 
 export type PromoBenefitType = 'percent_off' | 'fixed_off' | 'bonus_credits';
 
@@ -236,6 +217,7 @@ export type CreditLedgerEntry = {
   id: string;
   professionalId: string;
   professionalName: string;
+  professionalEmail?: string | null;
   type: 'purchase' | 'spend' | 'adjustment' | 'membership_grant';
   credits: number;
   label: string;

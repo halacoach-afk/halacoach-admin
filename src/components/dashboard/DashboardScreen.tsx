@@ -18,6 +18,7 @@ import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {
   dashboardActivityLabels,
+  formatActivitySubtitle,
   formatDashboardTime,
 } from '@/lib/dashboard-utils';
 import {can, type Permission} from '@/lib/permissions';
@@ -193,7 +194,9 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
                     <Badge tone="sky">{dashboardActivityLabels[item.kind]}</Badge>
                     <p className="font-medium text-foreground">{item.title}</p>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{item.subtitle}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {formatActivitySubtitle(item)}
+                  </p>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <span className="text-muted-foreground">{formatDashboardTime(item.at)}</span>

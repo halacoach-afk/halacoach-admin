@@ -50,6 +50,7 @@ export function LeadsScreen() {
     closed: 0,
   });
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [services, setServices] = useState<CatalogService[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +61,7 @@ export function LeadsScreen() {
     setError(null);
     try {
       const [leads, catalog] = await Promise.all([
-        listLeads({page: nextPage, perPage: DEFAULT_PER_PAGE, status: nextFilter}),
+        listLeads({page: nextPage, perPage, status: nextFilter}),
         listServices(),
       ]);
       setRows(leads.data);
@@ -80,7 +81,7 @@ export function LeadsScreen() {
   useEffect(() => {
     void load(1, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter]);
+  }, [filter, perPage]);
 
   const serviceNameById = useMemo(
     () => new Map(services.map(item => [item.id, item.name])),
@@ -99,7 +100,6 @@ export function LeadsScreen() {
     <>
       <PageHeader
         title="Leads"
-        description="Client training requests across the marketplace."
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()}>
             Refresh
@@ -139,10 +139,22 @@ export function LeadsScreen() {
             'Times',
             'Location',
             'Client',
-            'Assigned coach',
+            'Coach',
             'Posted',
             '',
-          ]}>
+          ]}
+          pagination={
+            <PaginationBar
+              variant="embedded"
+              meta={meta}
+              disabled={loading}
+              onPageChange={next => void load(next)}
+              onPerPageChange={next => {
+                setPage(1);
+                setPerPage(next);
+              }}
+            />
+          }>
           {rows.map(row => {
             const serviceName =
               serviceNameById.get(row.serviceId) ?? row.service ?? row.goal ?? `Service #${row.serviceId}`;
@@ -151,7 +163,15 @@ export function LeadsScreen() {
               <tr key={row.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 align-top text-sm text-muted-foreground">{row.id}</td>
                 <td className="px-4 py-3 align-top text-sm font-medium text-foreground">{prefs.goal}</td>
-                <Cell value={prefs.goalDetails} className="min-w-[140px]" />
+                <td
+                  className="max-w-[180px] px-4 py-3 align-top text-sm text-foreground"
+                  title={
+                    prefs.goalDetails && prefs.goalDetails !== '-'
+                      ? prefs.goalDetails
+                      : undefined
+                  }>
+                  <span className="block truncate">{prefs.goalDetails}</span>
+                </td>
                 <Cell value={prefs.format} />
                 <Cell value={prefs.frequency} />
                 <Cell value={prefs.days} />
@@ -195,12 +215,6 @@ export function LeadsScreen() {
           })}
         </DataTable>
       )}
-
-      <PaginationBar
-        meta={meta}
-        disabled={loading}
-        onPageChange={next => void load(next)}
-      />
     </>
   );
 }
