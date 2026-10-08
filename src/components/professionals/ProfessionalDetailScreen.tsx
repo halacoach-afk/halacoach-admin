@@ -364,13 +364,15 @@ export function ProfessionalDetailScreen({
         <div className="flex flex-wrap gap-2">
           {canWrite ? (
             <>
-              <Button
-                variant={pro.suspended ? 'primary' : 'destructive'}
-                size="sm"
-                disabled={acting}
-                onClick={() => setPendingSuspend(!pro.suspended)}>
-                {pro.suspended ? 'Unsuspend' : 'Suspend'}
-              </Button>
+              {!pro.deletedAt ? (
+                <Button
+                  variant={pro.suspended ? 'primary' : 'destructive'}
+                  size="sm"
+                  disabled={acting}
+                  onClick={() => setPendingSuspend(!pro.suspended)}>
+                  {pro.suspended ? 'Unsuspend' : 'Suspend'}
+                </Button>
+              ) : null}
               <Button
                 variant="outline"
                 size="sm"
@@ -452,7 +454,9 @@ export function ProfessionalDetailScreen({
               icon={<Shield className="size-3.5" strokeWidth={1.8} />}
               label="Status"
               value={
-                pro.suspended ? (
+                pro.deletedAt ? (
+                  <Badge tone="danger">Deleted</Badge>
+                ) : pro.suspended ? (
                   <Badge tone="danger">Suspended</Badge>
                 ) : (
                   <Badge tone="primary">Active</Badge>

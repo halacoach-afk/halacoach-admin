@@ -247,7 +247,7 @@ export function ClientDetailScreen({
           Back to clients
         </Link>
         <div className="flex flex-wrap gap-2">
-          {canWrite ? (
+          {canWrite && !client.deletedAt ? (
             <Button
               variant={client.suspended ? 'primary' : 'destructive'}
               size="sm"
@@ -339,7 +339,9 @@ export function ClientDetailScreen({
               icon={<Shield className="size-3.5" strokeWidth={1.8} />}
               label="Status"
               value={
-                client.suspended ? (
+                client.deletedAt ? (
+                  <Badge tone="danger">Deleted</Badge>
+                ) : client.suspended ? (
                   <Badge tone="danger">Suspended</Badge>
                 ) : (
                   <Badge tone="primary">Active</Badge>
