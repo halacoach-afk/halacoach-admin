@@ -24,6 +24,7 @@ export function toProfessionalSummary(pro: Professional): ProfessionalSummary {
     emailVerified: Boolean(pro.emailVerified),
     phoneVerified: Boolean(pro.phoneVerified),
     specialty: pro.specialty,
+    services: pro.specialty ? [pro.specialty] : [],
     location: pro.location,
     years: String(pro.yearsExperience ?? pro.years ?? '').trim(),
     about: pro.about || pro.bio || '',

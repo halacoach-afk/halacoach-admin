@@ -463,6 +463,7 @@ export type ProfessionalSummary = {
   emailVerified: boolean;
   phoneVerified: boolean;
   specialty: string;
+  services?: string[];
   location: string;
   /** Experience band id from coach profile, e.g. `8-10`. */
   years: string;

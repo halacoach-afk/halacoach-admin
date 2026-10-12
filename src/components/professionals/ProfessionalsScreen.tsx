@@ -44,6 +44,24 @@ function verificationTone(status: ProfessionalSummary['verificationStatus']) {
   return 'muted' as const;
 }
 
+function servicesLabel(row: ProfessionalSummary) {
+  const listed = (row.services ?? []).map(s => s.trim()).filter(Boolean);
+  if (listed.length) return listed.join(', ');
+  const specialty = row.specialty?.trim();
+  if (specialty && specialty.toLowerCase() !== 'coaching') return specialty;
+  return null;
+}
+
+function formatJoined(iso: string | null | undefined) {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return null;
+  return {
+    date: date.toLocaleDateString(),
+    time: date.toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'}),
+  };
+}
+
 export function ProfessionalsScreen() {
   const [rows, setRows] = useState<ProfessionalSummary[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
@@ -153,6 +171,9 @@ export function ProfessionalsScreen() {
             'Name',
             'Email',
             'Number',
+            'Services',
+            'Location',
+            'Joined',
             'Verification',
             'Credits',
             'Profile',
@@ -172,6 +193,9 @@ export function ProfessionalsScreen() {
           }>
           {rows.map(row => {
             const pct = completionPercent(row.profileCompletion);
+            const services = servicesLabel(row);
+            const joined = formatJoined(row.createdAt);
+            const location = row.location?.trim();
             return (
               <tr key={row.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 font-medium tabular-nums text-foreground">
@@ -183,6 +207,30 @@ export function ProfessionalsScreen() {
                 </td>
                 <td className="px-4 py-3">
                   {contactCell(row.phone, Boolean(row.phoneVerified))}
+                </td>
+                <td className="px-4 py-3">
+                  {services ? (
+                    <span className="text-sm text-foreground">{services}</span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {location ? (
+                    <span className="text-sm text-foreground">{location}</span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {joined ? (
+                    <div>
+                      <div className="text-sm text-foreground">{joined.date}</div>
+                      <div className="text-xs text-muted-foreground">{joined.time}</div>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <Badge tone={verificationTone(row.verificationStatus)}>
