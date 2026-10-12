@@ -32,7 +32,7 @@ import {
 } from '@/lib/pagination';
 import {completionPercent, verificationLabels} from '@/lib/professional-utils';
 
-type Filter = 'all' | 'onboarded' | 'incomplete' | 'suspended' | 'deleted';
+type AccountFilter = 'all' | 'onboarded' | 'incomplete' | 'suspended' | 'deleted';
 
 type ColumnFilters = {
   id: string;
@@ -44,6 +44,7 @@ type ColumnFilters = {
   createdFrom: string;
   createdTo: string;
   verificationStatuses: string[];
+  accountStatuses: string[];
   creditsMin: string;
   creditsMax: string;
   profileMin: string;
@@ -59,6 +60,7 @@ type FilterColumnKey =
   | 'location'
   | 'joined'
   | 'verificationStatuses'
+  | 'accountStatuses'
   | 'credits'
   | 'profile';
 
@@ -71,6 +73,7 @@ const COLUMN_SORT_BY: Record<FilterColumnKey, ProfessionalSortBy> = {
   location: 'location',
   joined: 'joined',
   verificationStatuses: 'verification',
+  accountStatuses: 'status',
   credits: 'credits',
   profile: 'profile',
 };
@@ -88,6 +91,7 @@ const EMPTY_COLUMN_FILTERS: ColumnFilters = {
   createdFrom: '',
   createdTo: '',
   verificationStatuses: [],
+  accountStatuses: [],
   creditsMin: '',
   creditsMax: '',
   profileMin: '',
@@ -114,6 +118,28 @@ function verificationTone(status: ProfessionalSummary['verificationStatus']) {
   if (status === 'pending') return 'warning' as const;
   if (status === 'rejected') return 'danger' as const;
   return 'muted' as const;
+}
+
+type AccountStatus = 'deleted' | 'suspended' | 'incomplete' | 'onboarded';
+
+function accountStatus(row: ProfessionalSummary): AccountStatus {
+  if (row.deletedAt) return 'deleted';
+  if (row.suspended) return 'suspended';
+  if (!row.onboarded) return 'incomplete';
+  return 'onboarded';
+}
+
+const accountStatusLabels: Record<AccountStatus, string> = {
+  deleted: 'Deleted',
+  suspended: 'Suspended',
+  incomplete: 'Incomplete',
+  onboarded: 'Onboarded',
+};
+
+function accountStatusTone(status: AccountStatus) {
+  if (status === 'deleted' || status === 'suspended') return 'danger' as const;
+  if (status === 'incomplete') return 'warning' as const;
+  return 'primary' as const;
 }
 
 function servicesLabel(row: ProfessionalSummary) {
@@ -145,6 +171,7 @@ function hasActiveColumnFilters(filters: ColumnFilters) {
     filters.createdFrom.trim() !== '' ||
     filters.createdTo.trim() !== '' ||
     filters.verificationStatuses.length > 0 ||
+    filters.accountStatuses.length > 0 ||
     filters.creditsMin.trim() !== '' ||
     filters.creditsMax.trim() !== '' ||
     filters.profileMin.trim() !== '' ||
@@ -161,6 +188,7 @@ const COLUMN_CHIP_LABELS: Record<FilterColumnKey, string> = {
   location: 'Location',
   joined: 'Joined',
   verificationStatuses: 'Verification',
+  accountStatuses: 'Status',
   credits: 'Credits',
   profile: 'Profile',
 };
@@ -178,6 +206,7 @@ function clearedColumnSlice(key: FilterColumnKey): Partial<ColumnFilters> {
   if (key === 'profile') return {profileMin: '', profileMax: ''};
   if (key === 'serviceIds') return {serviceIds: []};
   if (key === 'verificationStatuses') return {verificationStatuses: []};
+  if (key === 'accountStatuses') return {accountStatuses: []};
   return {[key]: ''};
 }
 
@@ -226,6 +255,14 @@ function activeFilterChips(
         .join(', ')}`,
     });
   }
+  if (filters.accountStatuses.length) {
+    chips.push({
+      key: 'accountStatuses',
+      text: `${COLUMN_CHIP_LABELS.accountStatuses}: ${filters.accountStatuses
+        .map(s => accountStatusLabels[s as AccountStatus] ?? s)
+        .join(', ')}`,
+    });
+  }
   if (filters.creditsMin.trim() || filters.creditsMax.trim()) {
     const min = filters.creditsMin.trim() || '…';
     const max = filters.creditsMax.trim() || '…';
@@ -251,6 +288,8 @@ function isColumnActive(filters: ColumnFilters, key: FilterColumnKey): boolean {
       return filters.serviceIds.length > 0;
     case 'verificationStatuses':
       return filters.verificationStatuses.length > 0;
+    case 'accountStatuses':
+      return filters.accountStatuses.length > 0;
     default:
       return Boolean(filters[key].trim());
   }
@@ -270,7 +309,6 @@ export function ProfessionalsScreen() {
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   /** Committed filters sent to the API (multiple columns AND together). */
@@ -344,11 +382,18 @@ export function ProfessionalsScreen() {
 
   /** Multi-select toggles commit immediately so selecting again unselects. */
   const commitMultiSelect = (
-    key: 'serviceIds' | 'verificationStatuses',
+    key: 'serviceIds' | 'verificationStatuses' | 'accountStatuses',
     values: string[],
   ) => {
     setDraftFilters(prev => ({...prev, [key]: values}));
     setAppliedFilters(prev => ({...prev, [key]: values}));
+    setPage(1);
+  };
+
+  const setAccountFilterBar = (next: AccountFilter) => {
+    const values = next === 'all' ? [] : [next];
+    setDraftFilters(prev => ({...prev, accountStatuses: values}));
+    setAppliedFilters(prev => ({...prev, accountStatuses: values}));
     setPage(1);
   };
 
@@ -359,7 +404,7 @@ export function ProfessionalsScreen() {
     setPage(1);
   };
 
-  const load = async (nextPage = page, nextFilter = filter) => {
+  const load = async (nextPage = page) => {
     setLoading(true);
     setError(null);
     try {
@@ -367,7 +412,6 @@ export function ProfessionalsScreen() {
         page: nextPage,
         perPage,
         q: debouncedQ || undefined,
-        filter: nextFilter === 'all' ? undefined : nextFilter,
         id: appliedFilters.id.trim() || undefined,
         name: appliedFilters.name.trim() || undefined,
         email: appliedFilters.email.trim() || undefined,
@@ -380,6 +424,9 @@ export function ProfessionalsScreen() {
         createdTo: appliedFilters.createdTo.trim() || undefined,
         verificationStatuses: appliedFilters.verificationStatuses.length
           ? appliedFilters.verificationStatuses
+          : undefined,
+        accountStatuses: appliedFilters.accountStatuses.length
+          ? appliedFilters.accountStatuses
           : undefined,
         creditsMin: appliedFilters.creditsMin.trim() || undefined,
         creditsMax: appliedFilters.creditsMax.trim() || undefined,
@@ -403,9 +450,9 @@ export function ProfessionalsScreen() {
   };
 
   useEffect(() => {
-    void load(1, filter);
+    void load(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQ, filter, perPage, appliedFilters, sortBy, sortDir]);
+  }, [debouncedQ, perPage, appliedFilters, sortBy, sortDir]);
 
   const serviceOptions = useMemo(
     () => services.map(s => ({value: String(s.id), label: s.name})),
@@ -417,6 +464,13 @@ export function ProfessionalsScreen() {
     {value: 'pending', label: 'In review'},
     {value: 'verified', label: 'Verified'},
     {value: 'rejected', label: 'Rejected'},
+  ];
+
+  const accountStatusOptions = [
+    {value: 'onboarded', label: 'Onboarded'},
+    {value: 'incomplete', label: 'Incomplete'},
+    {value: 'suspended', label: 'Suspended'},
+    {value: 'deleted', label: 'Deleted'},
   ];
 
   const header = (key: FilterColumnKey, label: string, body: ReactNode) => {
@@ -531,6 +585,15 @@ export function ProfessionalsScreen() {
       />,
     ),
     header(
+      'accountStatuses',
+      'Status',
+      <ExcelFilterMultiSelect
+        values={draftFilters.accountStatuses}
+        onChange={v => commitMultiSelect('accountStatuses', v)}
+        options={accountStatusOptions}
+      />,
+    ),
+    header(
       'credits',
       'Credits',
       <>
@@ -609,9 +672,18 @@ export function ProfessionalsScreen() {
         ).map(([key, label]) => (
           <Button
             key={key}
-            variant={filter === key ? 'primary' : 'outline'}
+            variant={
+              key === 'all'
+                ? appliedFilters.accountStatuses.length === 0
+                  ? 'primary'
+                  : 'outline'
+                : appliedFilters.accountStatuses.length === 1 &&
+                    appliedFilters.accountStatuses[0] === key
+                  ? 'primary'
+                  : 'outline'
+            }
             size="sm"
-            onClick={() => setFilter(key)}>
+            onClick={() => setAccountFilterBar(key)}>
             {label} ({counts[key] ?? 0})
           </Button>
         ))}
@@ -658,13 +730,13 @@ export function ProfessionalsScreen() {
         }>
         {loading && rows.length === 0 ? (
           <tr>
-            <td colSpan={11} className="px-4 py-8 text-center text-sm text-muted-foreground">
+            <td colSpan={12} className="px-4 py-8 text-center text-sm text-muted-foreground">
               Searching…
             </td>
           </tr>
         ) : rows.length === 0 ? (
           <tr>
-            <td colSpan={11} className="px-4 py-6">
+            <td colSpan={12} className="px-4 py-6">
               <EmptyState
                 title="No professionals match"
                 body="Try another filter or clear the column filters."
@@ -677,6 +749,7 @@ export function ProfessionalsScreen() {
             const servicesText = servicesLabel(row);
             const joined = formatJoined(row.createdAt);
             const location = row.location?.trim();
+            const status = accountStatus(row);
             return (
               <tr key={row.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 font-medium tabular-nums text-foreground">
@@ -716,6 +789,11 @@ export function ProfessionalsScreen() {
                 <td className="px-4 py-3">
                   <Badge tone={verificationTone(row.verificationStatus)}>
                     {verificationLabels[row.verificationStatus]}
+                  </Badge>
+                </td>
+                <td className="px-4 py-3">
+                  <Badge tone={accountStatusTone(status)}>
+                    {accountStatusLabels[status]}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 font-medium tabular-nums text-foreground">

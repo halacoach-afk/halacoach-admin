@@ -223,6 +223,7 @@ export type ProfessionalSortBy =
   | 'location'
   | 'joined'
   | 'verification'
+  | 'status'
   | 'credits'
   | 'profile';
 
@@ -230,6 +231,7 @@ export type ListProfessionalsParams = {
   page?: number;
   perPage?: number;
   q?: string;
+  /** @deprecated Prefer accountStatuses */
   filter?: string;
   id?: string | number;
   name?: string;
@@ -242,6 +244,8 @@ export type ListProfessionalsParams = {
   createdTo?: string;
   /** Multi-select verification statuses (OR). */
   verificationStatuses?: string[];
+  /** Multi-select account statuses (OR): onboarded|incomplete|suspended|deleted */
+  accountStatuses?: string[];
   creditsMin?: string | number;
   creditsMax?: string | number;
   profileMin?: string | number;
