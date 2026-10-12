@@ -487,15 +487,47 @@ export function updateClient(id: string, input: UpdateClientInput) {
   });
 }
 
-export function listLeads(
-  params: {
-    page?: number;
-    perPage?: number;
-    status?: string;
-    clientId?: string | number;
-    assignedCoachId?: string | number;
-  } = {},
-) {
+export type LeadSortBy =
+  | 'id'
+  | 'goal'
+  | 'goalDetail'
+  | 'format'
+  | 'frequency'
+  | 'days'
+  | 'times'
+  | 'location'
+  | 'client'
+  | 'coach'
+  | 'source'
+  | 'status'
+  | 'posted';
+
+export type ListLeadsParams = {
+  page?: number;
+  perPage?: number;
+  /** Single status (legacy) or use statuses. */
+  status?: string | string[];
+  statuses?: string | string[];
+  id?: string | number;
+  serviceIds?: string | string[];
+  goalDetail?: string;
+  formats?: string | string[];
+  frequencies?: string | string[];
+  days?: string | string[];
+  times?: string | string[];
+  location?: string;
+  client?: string;
+  coach?: string;
+  sources?: string | string[];
+  createdFrom?: string;
+  createdTo?: string;
+  clientId?: string | number;
+  assignedCoachId?: string | number;
+  sortBy?: LeadSortBy;
+  sortDir?: 'asc' | 'desc';
+};
+
+export function listLeads(params: ListLeadsParams = {}) {
   return request<Paginated<LeadSummary>>(`/v1/leads${buildListQuery(params)}`);
 }
 

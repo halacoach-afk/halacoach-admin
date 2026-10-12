@@ -49,11 +49,27 @@ export function formatPostedAt(iso: string) {
   return new Date(iso).toLocaleDateString();
 }
 
+/** Date + time on two lines for the leads Posted column (e.g. 10/12/2026 / 2:26 PM). */
+export function formatPostedParts(
+  iso: string | null | undefined,
+): {date: string; time: string} | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return null;
+  return {
+    date: date.toLocaleDateString('en-US'),
+    time: date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }),
+  };
+}
+
 /** Display label for lead creation channel. Empty/null → dash. */
 export function formatLeadSource(source: string | null | undefined): string {
   switch ((source ?? '').trim().toLowerCase()) {
     case 'website':
-    case 'web':
       return 'Website';
     case 'android':
       return 'Android';
