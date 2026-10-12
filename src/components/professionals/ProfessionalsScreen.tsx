@@ -160,25 +160,6 @@ function formatJoined(iso: string | null | undefined) {
   };
 }
 
-function hasActiveColumnFilters(filters: ColumnFilters) {
-  return (
-    filters.id.trim() !== '' ||
-    filters.name.trim() !== '' ||
-    filters.email.trim() !== '' ||
-    filters.phone.trim() !== '' ||
-    filters.serviceIds.length > 0 ||
-    filters.location.trim() !== '' ||
-    filters.createdFrom.trim() !== '' ||
-    filters.createdTo.trim() !== '' ||
-    filters.verificationStatuses.length > 0 ||
-    filters.accountStatuses.length > 0 ||
-    filters.creditsMin.trim() !== '' ||
-    filters.creditsMax.trim() !== '' ||
-    filters.profileMin.trim() !== '' ||
-    filters.profileMax.trim() !== ''
-  );
-}
-
 const COLUMN_CHIP_LABELS: Record<FilterColumnKey, string> = {
   id: 'ID',
   name: 'Name',
@@ -644,7 +625,6 @@ export function ProfessionalsScreen() {
     return <ErrorState body={error} onRetry={() => void load()} />;
   }
 
-  const columnFiltersActive = hasActiveColumnFilters(appliedFilters);
   const filterChips = activeFilterChips(appliedFilters, serviceOptions);
 
   return (
@@ -661,37 +641,38 @@ export function ProfessionalsScreen() {
       {error ? <ErrorState body={error} onRetry={() => void load()} /> : null}
 
       <FilterBar>
-        {(
-          [
-            ['all', 'All'],
-            ['onboarded', 'Onboarded'],
-            ['incomplete', 'Incomplete'],
-            ['suspended', 'Suspended'],
-            ['deleted', 'Deleted'],
-          ] as const
-        ).map(([key, label]) => (
-          <Button
-            key={key}
-            variant={
-              key === 'all'
-                ? appliedFilters.accountStatuses.length === 0
-                  ? 'primary'
-                  : 'outline'
-                : appliedFilters.accountStatuses.length === 1 &&
-                    appliedFilters.accountStatuses[0] === key
-                  ? 'primary'
-                  : 'outline'
+        <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="whitespace-nowrap font-medium">Status</span>
+          <select
+            aria-label="Filter by account status"
+            className="h-9 min-w-[11rem] rounded-xl border border-border bg-card px-3 text-sm font-medium text-foreground outline-none focus:border-primary"
+            value={
+              appliedFilters.accountStatuses.length === 1
+                ? appliedFilters.accountStatuses[0]
+                : appliedFilters.accountStatuses.length > 1
+                  ? '__multiple__'
+                  : ''
             }
-            size="sm"
-            onClick={() => setAccountFilterBar(key)}>
-            {label} ({counts[key] ?? 0})
-          </Button>
-        ))}
-        {columnFiltersActive ? (
-          <Button variant="outline" size="sm" onClick={clearColumnFilters}>
-            Clear all column filters
-          </Button>
-        ) : null}
+            onChange={e => {
+              const value = e.target.value;
+              if (value === '' || value === '__multiple__') {
+                setAccountFilterBar('all');
+                return;
+              }
+              setAccountFilterBar(value as AccountFilter);
+            }}>
+            <option value="">All ({counts.all ?? 0})</option>
+            {appliedFilters.accountStatuses.length > 1 ? (
+              <option value="__multiple__">
+                Multiple ({appliedFilters.accountStatuses.length})
+              </option>
+            ) : null}
+            <option value="onboarded">Onboarded ({counts.onboarded ?? 0})</option>
+            <option value="incomplete">Incomplete ({counts.incomplete ?? 0})</option>
+            <option value="suspended">Suspended ({counts.suspended ?? 0})</option>
+            <option value="deleted">Deleted ({counts.deleted ?? 0})</option>
+          </select>
+        </label>
         <SearchField value={query} onChange={setQuery} />
       </FilterBar>
 
@@ -711,6 +692,12 @@ export function ProfessionalsScreen() {
               </span>
             </button>
           ))}
+          <button
+            type="button"
+            onClick={clearColumnFilters}
+            className="text-xs font-medium text-primary hover:underline">
+            Clear all filters
+          </button>
         </div>
       ) : null}
 
