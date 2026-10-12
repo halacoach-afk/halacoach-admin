@@ -571,7 +571,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                         }>
                         <option value="">None</option>
                         <option value="popular">Popular</option>
-                        <option value="value">Best value</option>
+                        <option value="value">Best Value</option>
                       </select>
                     ) : pack.badge ? (
                       <Badge tone={pack.badge === 'popular' ? 'coral' : 'sky'}>{pack.badge}</Badge>
@@ -695,7 +695,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                     }>
                     <option value="">None</option>
                     <option value="popular">Popular</option>
-                    <option value="value">Best value</option>
+                    <option value="value">Best Value</option>
                   </select>
                 </CreditPackageTableCell>
               </td>
