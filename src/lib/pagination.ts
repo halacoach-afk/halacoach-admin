@@ -11,7 +11,7 @@ export type Paginated<T> = {
   counts?: Record<string, number>;
 };
 
-export const DEFAULT_PER_PAGE = 20;
+export const DEFAULT_PER_PAGE = 10;
 
 export const PER_PAGE_OPTIONS = [10, 20, 50, 100] as const;
 

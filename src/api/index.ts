@@ -1,5 +1,5 @@
 import {request, requestBlob} from './client';
-import {buildListQuery} from '@/lib/pagination';
+import {buildListQuery, DEFAULT_PER_PAGE} from '@/lib/pagination';
 import type {
   AdminUser,
   AdminUserDetail,
@@ -284,7 +284,12 @@ export async function listVerificationQueue(
     return {
       documentTypes: [],
       items: data,
-      meta: {page: 1, perPage: data.length || 20, total: data.length, lastPage: 1},
+      meta: {
+        page: 1,
+        perPage: data.length || DEFAULT_PER_PAGE,
+        total: data.length,
+        lastPage: 1,
+      },
       counts: {all: data.length, pending: 0, rejected: 0, verified: 0},
     };
   }
@@ -294,7 +299,7 @@ export async function listVerificationQueue(
     items,
     meta: data.meta ?? {
       page: 1,
-      perPage: items.length || 20,
+      perPage: items.length || DEFAULT_PER_PAGE,
       total: items.length,
       lastPage: 1,
     },
