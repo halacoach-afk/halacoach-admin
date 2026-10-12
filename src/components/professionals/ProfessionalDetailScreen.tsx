@@ -401,7 +401,14 @@ export function ProfessionalDetailScreen({
             <PrefField
               icon={<UserRound className="size-3.5" strokeWidth={1.8} />}
               label="Name"
-              value={pro.name}
+              value={
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  <span>{pro.name}</span>
+                  {pro.isFoundingProfessional ? (
+                    <Badge tone="coral">Founding</Badge>
+                  ) : null}
+                </span>
+              }
             />
             <PrefField
               icon={<Mail className="size-3.5" strokeWidth={1.8} />}
@@ -460,6 +467,17 @@ export function ProfessionalDetailScreen({
                   <Badge tone="danger">Suspended</Badge>
                 ) : (
                   <Badge tone="primary">Active</Badge>
+                )
+              }
+            />
+            <PrefField
+              icon={<Shield className="size-3.5" strokeWidth={1.8} />}
+              label="Founding"
+              value={
+                pro.isFoundingProfessional ? (
+                  <Badge tone="coral">Founding professional</Badge>
+                ) : (
+                  <Badge tone="muted">No</Badge>
                 )
               }
             />

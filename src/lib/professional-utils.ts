@@ -34,6 +34,7 @@ export function toProfessionalSummary(pro: Professional): ProfessionalSummary {
     activated: pro.activated,
     onboarded: pro.onboarded,
     suspended: pro.suspended,
+    isFoundingProfessional: Boolean(pro.isFoundingProfessional),
     profileCompletion: completionPercent(pro.profileCompletion),
     createdAt: pro.createdAt,
     lastActiveAt: pro.lastActiveAt ?? pro.createdAt,

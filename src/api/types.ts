@@ -397,6 +397,8 @@ export type Professional = {
   suspended: boolean;
   deletedAt?: string | null;
   onboarded: boolean;
+  /** Bought Founding Premium Pro and/or founding trial credit pack. */
+  isFoundingProfessional?: boolean;
   createdAt: string;
   lastActiveAt?: string;
   serviceIds: number[];
@@ -475,6 +477,8 @@ export type ProfessionalSummary = {
   onboarded: boolean;
   suspended: boolean;
   deletedAt?: string | null;
+  /** Bought Founding Premium Pro and/or founding trial credit pack. */
+  isFoundingProfessional?: boolean;
   profileCompletion: number | ProfileCompletionPayload;
   createdAt: string;
   lastActiveAt: string;

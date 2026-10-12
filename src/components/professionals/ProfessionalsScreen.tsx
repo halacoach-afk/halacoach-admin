@@ -742,7 +742,14 @@ export function ProfessionalsScreen() {
                 <td className="px-4 py-3 font-medium tabular-nums text-foreground">
                   {row.id}
                 </td>
-                <td className="px-4 py-3 font-medium text-foreground">{row.name}</td>
+                <td className="px-4 py-3 font-medium text-foreground">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>{row.name}</span>
+                    {row.isFoundingProfessional ? (
+                      <Badge tone="coral">Founding</Badge>
+                    ) : null}
+                  </div>
+                </td>
                 <td className="px-4 py-3">
                   {contactCell(row.email, Boolean(row.emailVerified))}
                 </td>
