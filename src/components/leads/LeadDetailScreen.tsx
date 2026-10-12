@@ -40,7 +40,7 @@ import {
   type LeadPreferenceDisplay,
   leadPreferenceDisplay,
 } from '@/lib/lead-preference-labels';
-import {formatPostedAt} from '@/lib/lead-utils';
+import {formatLeadSource, formatPostedAt} from '@/lib/lead-utils';
 
 function PrefField({
   icon,
@@ -297,7 +297,14 @@ export function LeadDetailScreen({id}: {id: string}) {
           </div>
 
           <div className="border-t border-border px-5 py-3">
-            <p className="text-sm text-muted-foreground">{formatPostedAt(lead.postedAt)}</p>
+            <p className="text-sm text-muted-foreground">
+              {(() => {
+                const sourceLabel = formatLeadSource(lead.source);
+                return sourceLabel !== '-'
+                  ? `${sourceLabel} · ${formatPostedAt(lead.postedAt)}`
+                  : formatPostedAt(lead.postedAt);
+              })()}
+            </p>
           </div>
         </Card>
 

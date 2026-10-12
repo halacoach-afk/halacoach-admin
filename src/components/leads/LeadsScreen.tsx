@@ -18,7 +18,7 @@ import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {PaginationBar} from '@/components/ui/PaginationBar';
 import {leadPreferenceDisplay} from '@/lib/lead-preference-labels';
-import {formatPostedAt} from '@/lib/lead-utils';
+import {formatLeadSource, formatPostedAt} from '@/lib/lead-utils';
 import {
   DEFAULT_PER_PAGE,
   emptyPaginationMeta,
@@ -140,6 +140,7 @@ export function LeadsScreen() {
             'Location',
             'Client',
             'Coach',
+            'Source',
             'Posted',
             '',
           ]}
@@ -198,6 +199,9 @@ export function LeadsScreen() {
                   ) : (
                     <span className="text-muted-foreground">-</span>
                   )}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                  {formatLeadSource(row.source)}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
                   {formatPostedAt(row.postedAt)}

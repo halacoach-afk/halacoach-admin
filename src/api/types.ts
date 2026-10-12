@@ -716,6 +716,8 @@ export type MarketplaceLead = {
   assignedCoachName?: string | null;
   assignedCoachEmail?: string | null;
   assignedCoachPhone?: string | null;
+  /** website | android | ios */
+  source?: string | null;
   postedAt: string;
   closedAt: string | null;
   clientNote: string;
@@ -753,6 +755,8 @@ export type LeadSummary = {
   unlockCreditsTotal?: number;
   assignedCoachId?: string | null;
   assignedCoachName?: string | null;
+  /** website | android | ios */
+  source?: string | null;
   postedAt: string;
 };
 

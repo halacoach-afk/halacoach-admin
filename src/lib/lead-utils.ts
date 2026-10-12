@@ -48,3 +48,18 @@ export function formatPostedAt(iso: string) {
   }
   return new Date(iso).toLocaleDateString();
 }
+
+/** Display label for lead creation channel. Empty/null → dash. */
+export function formatLeadSource(source: string | null | undefined): string {
+  switch ((source ?? '').trim().toLowerCase()) {
+    case 'website':
+    case 'web':
+      return 'Website';
+    case 'android':
+      return 'Android';
+    case 'ios':
+      return 'iOS';
+    default:
+      return '-';
+  }
+}
