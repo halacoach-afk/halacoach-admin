@@ -257,6 +257,13 @@ export function listProfessionals(params: ListProfessionalsParams = {}) {
   return request<Paginated<ProfessionalSummary>>(`/v1/professionals${buildListQuery(params)}`);
 }
 
+/** Download filtered professionals as CSV (same filters/sort as the list). */
+export function exportProfessionalsCsv(
+  params: Omit<ListProfessionalsParams, 'page' | 'perPage'> = {},
+) {
+  return requestBlob(`/v1/professionals/export${buildListQuery(params)}`);
+}
+
 export function getProfessional(id: string) {
   return request<Professional>(`/v1/professionals/${id}`);
 }

@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import {useEffect, useMemo, useState, type ReactNode} from 'react';
-import {ChevronRight} from 'lucide-react';
+import {ChevronRight, Download} from 'lucide-react';
 import {
+  exportProfessionalsCsv,
   isApiError,
   listProfessionals,
   listServices,
   type CatalogService,
+  type ListProfessionalsParams,
   type ProfessionalSortBy,
   type ProfessionalSummary,
 } from '@/api';
@@ -302,6 +304,7 @@ export function ProfessionalsScreen() {
   const [sortBy, setSortBy] = useState<ProfessionalSortBy>(DEFAULT_SORT_BY);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(DEFAULT_SORT_DIR);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 400);
@@ -385,6 +388,32 @@ export function ProfessionalsScreen() {
     setPage(1);
   };
 
+  const listFilterParams = (): Omit<ListProfessionalsParams, 'page' | 'perPage'> => ({
+    q: debouncedQ || undefined,
+    id: appliedFilters.id.trim() || undefined,
+    name: appliedFilters.name.trim() || undefined,
+    email: appliedFilters.email.trim() || undefined,
+    phone: appliedFilters.phone.trim() || undefined,
+    serviceIds: appliedFilters.serviceIds.length
+      ? appliedFilters.serviceIds
+      : undefined,
+    location: appliedFilters.location.trim() || undefined,
+    createdFrom: appliedFilters.createdFrom.trim() || undefined,
+    createdTo: appliedFilters.createdTo.trim() || undefined,
+    verificationStatuses: appliedFilters.verificationStatuses.length
+      ? appliedFilters.verificationStatuses
+      : undefined,
+    accountStatuses: appliedFilters.accountStatuses.length
+      ? appliedFilters.accountStatuses
+      : undefined,
+    creditsMin: appliedFilters.creditsMin.trim() || undefined,
+    creditsMax: appliedFilters.creditsMax.trim() || undefined,
+    profileMin: appliedFilters.profileMin.trim() || undefined,
+    profileMax: appliedFilters.profileMax.trim() || undefined,
+    sortBy,
+    sortDir,
+  });
+
   const load = async (nextPage = page) => {
     setLoading(true);
     setError(null);
@@ -392,29 +421,7 @@ export function ProfessionalsScreen() {
       const res = await listProfessionals({
         page: nextPage,
         perPage,
-        q: debouncedQ || undefined,
-        id: appliedFilters.id.trim() || undefined,
-        name: appliedFilters.name.trim() || undefined,
-        email: appliedFilters.email.trim() || undefined,
-        phone: appliedFilters.phone.trim() || undefined,
-        serviceIds: appliedFilters.serviceIds.length
-          ? appliedFilters.serviceIds
-          : undefined,
-        location: appliedFilters.location.trim() || undefined,
-        createdFrom: appliedFilters.createdFrom.trim() || undefined,
-        createdTo: appliedFilters.createdTo.trim() || undefined,
-        verificationStatuses: appliedFilters.verificationStatuses.length
-          ? appliedFilters.verificationStatuses
-          : undefined,
-        accountStatuses: appliedFilters.accountStatuses.length
-          ? appliedFilters.accountStatuses
-          : undefined,
-        creditsMin: appliedFilters.creditsMin.trim() || undefined,
-        creditsMax: appliedFilters.creditsMax.trim() || undefined,
-        profileMin: appliedFilters.profileMin.trim() || undefined,
-        profileMax: appliedFilters.profileMax.trim() || undefined,
-        sortBy,
-        sortDir,
+        ...listFilterParams(),
       });
       setRows(res.data);
       setMeta(res.meta);
@@ -427,6 +434,27 @@ export function ProfessionalsScreen() {
     } finally {
       setLoading(false);
       setHasLoaded(true);
+    }
+  };
+
+  const exportCsv = async () => {
+    setExporting(true);
+    setError(null);
+    try {
+      const blob = await exportProfessionalsCsv(listFilterParams());
+      const stamp = new Date().toISOString().slice(0, 10);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `professionals-export-${stamp}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not export professionals.');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -632,9 +660,19 @@ export function ProfessionalsScreen() {
       <PageHeader
         title="Professionals"
         actions={
-          <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
-            Refresh
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={exporting || loading}
+              onClick={() => void exportCsv()}>
+              <Download className="size-3.5" strokeWidth={1.8} />
+              {exporting ? 'Exporting…' : 'Export CSV'}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+              Refresh
+            </Button>
+          </>
         }
       />
 
