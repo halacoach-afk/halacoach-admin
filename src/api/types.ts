@@ -412,10 +412,12 @@ export type Professional = {
   pricing: ProPricing;
   matchPrefs: MatchPrefs;
   bio: string;
-  /** Admin-only CRM notes. */
+  /** @deprecated Prefer `notes`. */
   adminNotes?: string;
-  /** Admin follow-up date (ISO). */
+  /** @deprecated Prefer per-note followUpAt. */
   adminFollowUpAt?: string | null;
+  /** Admin CRM notes (newest first). */
+  notes?: ProfessionalAdminNote[];
   credits: number;
   txns: ProfessionalTxn[];
   specialty: string;
@@ -504,9 +506,22 @@ export type UpdateProfessionalInput = {
   radiusKm?: number;
   activated?: boolean;
   suspended?: boolean;
-  adminNotes?: string;
+};
+
+export type ProfessionalAdminNote = {
+  id: string;
+  body: string;
+  followUpAt: string | null;
+  createdByAdminId: string | null;
+  createdByName?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpsertProfessionalNoteInput = {
+  body: string;
   /** YYYY-MM-DD or empty string to clear. */
-  adminFollowUpAt?: string;
+  followUpAt?: string;
 };
 
 export type ClientConsents = {

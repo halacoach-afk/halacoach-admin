@@ -14,6 +14,7 @@ import type {
   LeadSummary,
   Paginated,
   Professional,
+  ProfessionalAdminNote,
   ProfessionalSummary,
   RejectVerificationInput,
   SessionResponse,
@@ -21,6 +22,7 @@ import type {
   UpdateClientInput,
   UpdateLeadInput,
   UpdateProfessionalInput,
+  UpsertProfessionalNoteInput,
   UpdateServiceInput,
   VerificationQueueItem,
   VerificationQueueResponse,
@@ -83,8 +85,10 @@ export type {
   Paginated,
   PaginationMeta,
   Professional,
+  ProfessionalAdminNote,
   ProfessionalSummary,
   ProfessionalTxn,
+  UpsertProfessionalNoteInput,
   ProPricing,
   ProServiceRate,
   MatchPrefs,
@@ -297,6 +301,36 @@ export function updateProfessional(id: string, input: UpdateProfessionalInput) {
   return request<Professional>(`/v1/professionals/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
+  });
+}
+
+export function createProfessionalNote(
+  professionalId: string,
+  input: UpsertProfessionalNoteInput,
+) {
+  return request<ProfessionalAdminNote>(`/v1/professionals/${professionalId}/notes`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateProfessionalNote(
+  professionalId: string,
+  noteId: string,
+  input: UpsertProfessionalNoteInput,
+) {
+  return request<ProfessionalAdminNote>(
+    `/v1/professionals/${professionalId}/notes/${noteId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function deleteProfessionalNote(professionalId: string, noteId: string) {
+  return request<void>(`/v1/professionals/${professionalId}/notes/${noteId}`, {
+    method: 'DELETE',
   });
 }
 

@@ -20,16 +20,20 @@ import {
   Wallet,
 } from 'lucide-react';
 import {
+  createProfessionalNote,
+  deleteProfessionalNote,
   fetchVerificationFileBlob,
   getProfessional,
   isApiError,
   listLeads,
   listServices,
   updateProfessional,
+  updateProfessionalNote,
   type CatalogService,
   type LeadLifecycleStatus,
   type LeadSummary,
   type Professional,
+  type ProfessionalAdminNote,
   type ProfileCompletionPayload,
   type SessionUser,
   type VerificationFile,
@@ -262,10 +266,13 @@ export function ProfessionalDetailScreen({
   const [pendingSuspend, setPendingSuspend] = useState<boolean | null>(null);
   const [acting, setActing] = useState(false);
   const [viewer, setViewer] = useState<{fileId: string; name: string} | null>(null);
-  const [notesDraft, setNotesDraft] = useState('');
-  const [followUpDraft, setFollowUpDraft] = useState('');
-  const [savingNotes, setSavingNotes] = useState(false);
-  const [notesSaved, setNotesSaved] = useState(false);
+  const [newNoteBody, setNewNoteBody] = useState('');
+  const [newNoteFollowUp, setNewNoteFollowUp] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteBody, setEditNoteBody] = useState('');
+  const [editNoteFollowUp, setEditNoteFollowUp] = useState('');
+  const [noteActing, setNoteActing] = useState(false);
+  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
 
   const loadViewerFile = useCallback(async () => {
     if (!viewer) {
@@ -297,20 +304,14 @@ export function ProfessionalDetailScreen({
     void load();
   }, [id]);
 
-  useEffect(() => {
-    if (!pro) return;
-    setNotesDraft(pro.adminNotes ?? '');
-    setFollowUpDraft(toDateInputValue(pro.adminFollowUpAt));
-    setNotesSaved(false);
-  }, [pro]);
+  const notes = useMemo(
+    () => (pro?.notes ?? []) as ProfessionalAdminNote[],
+    [pro?.notes],
+  );
 
-  const notesDirty = useMemo(() => {
-    if (!pro) return false;
-    const savedNotes = (pro.adminNotes ?? '').trim();
-    const draftNotes = notesDraft.trim();
-    const savedFollowUp = toDateInputValue(pro.adminFollowUpAt);
-    return draftNotes !== savedNotes || followUpDraft !== savedFollowUp;
-  }, [pro, notesDraft, followUpDraft]);
+  const setNotesOnPro = (next: ProfessionalAdminNote[]) => {
+    setPro(prev => (prev ? {...prev, notes: next} : prev));
+  };
 
   const serviceNameById = useMemo(
     () => new Map(services.map(item => [item.id, item.name])),
@@ -357,24 +358,71 @@ export function ProfessionalDetailScreen({
     }
   };
 
-  const saveNotes = async () => {
-    if (!pro || !canWrite) {
-      return;
-    }
-    setSavingNotes(true);
+  const addNote = async () => {
+    if (!pro || !canWrite || !newNoteBody.trim()) return;
+    setNoteActing(true);
     setError(null);
-    setNotesSaved(false);
     try {
-      const updated = await updateProfessional(pro.id, {
-        adminNotes: notesDraft,
-        adminFollowUpAt: followUpDraft,
+      const created = await createProfessionalNote(pro.id, {
+        body: newNoteBody.trim(),
+        followUpAt: newNoteFollowUp,
       });
-      setPro(updated);
-      setNotesSaved(true);
+      setNotesOnPro([created, ...notes]);
+      setNewNoteBody('');
+      setNewNoteFollowUp('');
     } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not save notes.');
+      setError(isApiError(err) ? err.message : 'Could not add note.');
     } finally {
-      setSavingNotes(false);
+      setNoteActing(false);
+    }
+  };
+
+  const startEditNote = (note: ProfessionalAdminNote) => {
+    setEditingNoteId(note.id);
+    setEditNoteBody(note.body);
+    setEditNoteFollowUp(toDateInputValue(note.followUpAt));
+  };
+
+  const cancelEditNote = () => {
+    setEditingNoteId(null);
+    setEditNoteBody('');
+    setEditNoteFollowUp('');
+  };
+
+  const saveEditNote = async () => {
+    if (!pro || !canWrite || !editingNoteId || !editNoteBody.trim()) return;
+    setNoteActing(true);
+    setError(null);
+    try {
+      const updated = await updateProfessionalNote(pro.id, editingNoteId, {
+        body: editNoteBody.trim(),
+        followUpAt: editNoteFollowUp,
+      });
+      setNotesOnPro(notes.map(n => (n.id === updated.id ? updated : n)));
+      cancelEditNote();
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not update note.');
+    } finally {
+      setNoteActing(false);
+    }
+  };
+
+  const confirmDeleteNote = async () => {
+    if (!pro || !canWrite || !pendingDeleteNoteId) return;
+    setNoteActing(true);
+    setError(null);
+    try {
+      await deleteProfessionalNote(pro.id, pendingDeleteNoteId);
+      setNotesOnPro(notes.filter(n => n.id !== pendingDeleteNoteId));
+      if (editingNoteId === pendingDeleteNoteId) {
+        cancelEditNote();
+      }
+      setPendingDeleteNoteId(null);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not delete note.');
+      setPendingDeleteNoteId(null);
+    } finally {
+      setNoteActing(false);
     }
   };
 
@@ -666,64 +714,134 @@ export function ProfessionalDetailScreen({
 
       <div className="mt-6">
         <Section title="Notes">
-          {canWrite ? (
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-foreground" htmlFor="admin-notes">
-                Notes
-                <textarea
-                  id="admin-notes"
-                  rows={5}
-                  maxLength={5000}
-                  value={notesDraft}
-                  onChange={e => {
-                    setNotesDraft(e.target.value);
-                    setNotesSaved(false);
-                  }}
-                  placeholder="Call notes, next steps, context…"
-                  className="mt-1.5 w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-normal outline-none focus:border-primary"
-                />
-              </label>
-              <div className="max-w-xs">
-                <Input
-                  label="Follow-up date"
-                  type="date"
-                  value={followUpDraft}
-                  onChange={e => {
-                    setFollowUpDraft(e.target.value);
-                    setNotesSaved(false);
-                  }}
-                />
+          <div className="space-y-4">
+            {canWrite ? (
+              <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
+                <label
+                  className="block text-sm font-medium text-foreground"
+                  htmlFor="admin-note-new">
+                  Add note
+                  <textarea
+                    id="admin-note-new"
+                    rows={3}
+                    maxLength={5000}
+                    value={newNoteBody}
+                    onChange={e => setNewNoteBody(e.target.value)}
+                    placeholder="Call notes, next steps, context…"
+                    className="mt-1.5 w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-normal outline-none focus:border-primary"
+                  />
+                </label>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="max-w-xs flex-1">
+                    <Input
+                      label="Follow-up date"
+                      type="date"
+                      value={newNoteFollowUp}
+                      onChange={e => setNewNoteFollowUp(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={noteActing || !newNoteBody.trim()}
+                    onClick={() => void addNote()}>
+                    {noteActing && !editingNoteId ? 'Adding…' : 'Add note'}
+                  </Button>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  size="sm"
-                  disabled={savingNotes || !notesDirty}
-                  onClick={() => void saveNotes()}>
-                  {savingNotes ? 'Saving…' : 'Save notes'}
-                </Button>
-                {notesSaved && !notesDirty ? (
-                  <span className="text-sm text-muted-foreground">Saved</span>
-                ) : null}
-                {pro.adminFollowUpAt && !notesDirty ? (
-                  <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <NotebookPen className="size-3.5" strokeWidth={1.8} />
-                    Follow up {formatDate(pro.adminFollowUpAt)}
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="whitespace-pre-wrap text-sm text-foreground">
-                {(pro.adminNotes ?? '').trim() || '\u2014'}
-              </p>
-              <PrefField
-                icon={<CalendarDays className="size-3.5" strokeWidth={1.8} />}
-                label="Follow-up"
-                value={formatDate(pro.adminFollowUpAt)}
-              />
-            </div>
-          )}
+            ) : null}
+
+            {notes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No notes yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {notes.map(note => {
+                  const isEditing = editingNoteId === note.id;
+                  return (
+                    <li
+                      key={note.id}
+                      className="rounded-xl border border-border bg-background p-3 sm:p-4">
+                      {isEditing ? (
+                        <div className="space-y-3">
+                          <label
+                            className="block text-sm font-medium text-foreground"
+                            htmlFor={`admin-note-edit-${note.id}`}>
+                            Edit note
+                            <textarea
+                              id={`admin-note-edit-${note.id}`}
+                              rows={3}
+                              maxLength={5000}
+                              value={editNoteBody}
+                              onChange={e => setEditNoteBody(e.target.value)}
+                              className="mt-1.5 w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-normal outline-none focus:border-primary"
+                            />
+                          </label>
+                          <div className="flex flex-wrap items-end gap-3">
+                            <div className="max-w-xs flex-1">
+                              <Input
+                                label="Follow-up date"
+                                type="date"
+                                value={editNoteFollowUp}
+                                onChange={e => setEditNoteFollowUp(e.target.value)}
+                              />
+                            </div>
+                            <Button
+                              size="sm"
+                              disabled={noteActing || !editNoteBody.trim()}
+                              onClick={() => void saveEditNote()}>
+                              {noteActing ? 'Saving…' : 'Save'}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={noteActing}
+                              onClick={cancelEditNote}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="whitespace-pre-wrap text-sm text-foreground">
+                            {note.body}
+                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                            <span>{formatDateTime(note.createdAt)}</span>
+                            {note.createdByName ? (
+                              <span>by {note.createdByName}</span>
+                            ) : null}
+                            {note.followUpAt ? (
+                              <span className="inline-flex items-center gap-1">
+                                <NotebookPen className="size-3" strokeWidth={1.8} />
+                                Follow up {formatDate(note.followUpAt)}
+                              </span>
+                            ) : null}
+                          </div>
+                          {canWrite ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={noteActing}
+                                onClick={() => startEditNote(note)}>
+                                Edit
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                disabled={noteActing}
+                                onClick={() => setPendingDeleteNoteId(note.id)}>
+                                Delete
+                              </Button>
+                            </div>
+                          ) : null}
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </Section>
       </div>
 
@@ -943,6 +1061,18 @@ export function ProfessionalDetailScreen({
           if (!acting) setPendingSuspend(null);
         }}
         onConfirm={() => void toggleSuspended()}
+      />
+
+      <ConfirmDialog
+        open={pendingDeleteNoteId !== null}
+        title="Delete this note?"
+        body="This removes the note permanently. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onClose={() => {
+          if (!noteActing) setPendingDeleteNoteId(null);
+        }}
+        onConfirm={() => void confirmDeleteNote()}
       />
     </>
   );
