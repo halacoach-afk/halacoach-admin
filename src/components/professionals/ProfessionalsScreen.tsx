@@ -4,17 +4,21 @@ import Link from 'next/link';
 import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {ChevronRight, Download} from 'lucide-react';
 import {
+  bulkUpdateProfessionals,
   exportProfessionalsCsv,
   isApiError,
   listProfessionals,
   listServices,
   type CatalogService,
   type ListProfessionalsParams,
+  type ProfessionalBulkAction,
   type ProfessionalSortBy,
   type ProfessionalSummary,
+  type SessionUser,
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
+import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {DataTable, FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
@@ -32,7 +36,37 @@ import {
   emptyPaginationMeta,
   type PaginationMeta,
 } from '@/lib/pagination';
+import {can} from '@/lib/permissions';
 import {completionPercent, verificationLabels} from '@/lib/professional-utils';
+
+const MAX_BULK_IDS = 100;
+
+const BULK_ACTION_COPY: Record<
+  ProfessionalBulkAction,
+  {title: string; body: string; confirmLabel: string; destructive?: boolean}
+> = {
+  activate: {
+    title: 'Activate selected profiles?',
+    body: 'Selected coaches can go live in the marketplace once verification is approved.',
+    confirmLabel: 'Activate',
+  },
+  deactivate: {
+    title: 'Deactivate selected profiles?',
+    body: 'Selected profiles will be hidden from clients until activated again.',
+    confirmLabel: 'Deactivate',
+  },
+  suspend: {
+    title: 'Suspend selected coaches?',
+    body: 'They will be signed out and cannot log in until unsuspended. Marketplace access is blocked while suspended.',
+    confirmLabel: 'Suspend',
+    destructive: true,
+  },
+  unsuspend: {
+    title: 'Unsuspend selected coaches?',
+    body: 'They will be able to log in again. Marketplace visibility still depends on activation and verification.',
+    confirmLabel: 'Unsuspend',
+  },
+};
 
 type AccountFilter = 'all' | 'onboarded' | 'incomplete' | 'suspended' | 'deleted';
 
@@ -278,7 +312,8 @@ function isColumnActive(filters: ColumnFilters, key: FilterColumnKey): boolean {
   }
 }
 
-export function ProfessionalsScreen() {
+export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
+  const canWrite = can(actor, 'professionals:write');
   const [rows, setRows] = useState<ProfessionalSummary[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
   const [counts, setCounts] = useState<Record<string, number>>({
@@ -305,6 +340,9 @@ export function ProfessionalsScreen() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(DEFAULT_SORT_DIR);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [pendingBulk, setPendingBulk] = useState<ProfessionalBulkAction | null>(null);
+  const [bulkActing, setBulkActing] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 400);
@@ -463,6 +501,102 @@ export function ProfessionalsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQ, perPage, appliedFilters, sortBy, sortDir]);
 
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [debouncedQ, appliedFilters, sortBy, sortDir]);
+
+  const pageIds = useMemo(() => rows.map(row => String(row.id)), [rows]);
+  const selectedOnPage = useMemo(
+    () => pageIds.filter(id => selectedIds.has(id)),
+    [pageIds, selectedIds],
+  );
+  const allPageSelected =
+    pageIds.length > 0 && selectedOnPage.length === pageIds.length;
+  const somePageSelected =
+    selectedOnPage.length > 0 && selectedOnPage.length < pageIds.length;
+  const selectedCount = selectedIds.size;
+  const selectedList = useMemo(() => [...selectedIds], [selectedIds]);
+
+  const toggleSelectAllPage = () => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (allPageSelected) {
+        for (const id of pageIds) next.delete(id);
+      } else {
+        for (const id of pageIds) {
+          if (next.size >= MAX_BULK_IDS && !next.has(id)) continue;
+          next.add(id);
+        }
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else if (next.size < MAX_BULK_IDS) {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const runBulkAction = async () => {
+    if (!pendingBulk || selectedList.length === 0) return;
+    setBulkActing(true);
+    setError(null);
+    try {
+      const result = await bulkUpdateProfessionals(selectedList, pendingBulk);
+      if (result.failed.length > 0 && result.updated === 0) {
+        setError(
+          result.failed[0]?.message ??
+            `Could not ${pendingBulk} the selected professionals.`,
+        );
+      } else if (result.failed.length > 0) {
+        setError(
+          `Updated ${result.updated}; ${result.failed.length} failed (e.g. deleted accounts).`,
+        );
+      }
+      setSelectedIds(new Set());
+      setPendingBulk(null);
+      await load(page);
+    } catch (err) {
+      setError(
+        isApiError(err)
+          ? err.message
+          : 'Could not update the selected professionals.',
+      );
+      setPendingBulk(null);
+    } finally {
+      setBulkActing(false);
+    }
+  };
+
+  const exportSelectedCsv = async () => {
+    if (selectedList.length === 0) return;
+    setExporting(true);
+    setError(null);
+    try {
+      const blob = await exportProfessionalsCsv({ids: selectedList});
+      const stamp = new Date().toISOString().slice(0, 10);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `professionals-selected-${stamp}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not export selected professionals.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const serviceOptions = useMemo(
     () => services.map(s => ({value: String(s.id), label: s.name})),
     [services],
@@ -506,6 +640,25 @@ export function ProfessionalsScreen() {
   };
 
   const columns = [
+    <label
+      key="select"
+      className="inline-flex cursor-pointer items-center gap-2"
+      title={
+        selectedCount >= MAX_BULK_IDS && !allPageSelected
+          ? `Selection limited to ${MAX_BULK_IDS}`
+          : 'Select page'
+      }>
+      <input
+        type="checkbox"
+        className="size-4 rounded border-border"
+        checked={allPageSelected}
+        ref={el => {
+          if (el) el.indeterminate = somePageSelected;
+        }}
+        onChange={toggleSelectAllPage}
+        aria-label="Select all on this page"
+      />
+    </label>,
     header(
       'id',
       'ID',
@@ -739,6 +892,68 @@ export function ProfessionalsScreen() {
         </div>
       ) : null}
 
+      {selectedCount > 0 ? (
+        <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5">
+          <span className="text-sm font-medium text-foreground">
+            {selectedCount} selected
+            {selectedCount >= MAX_BULK_IDS ? (
+              <span className="ms-1 text-xs font-normal text-muted-foreground">
+                (max {MAX_BULK_IDS})
+              </span>
+            ) : null}
+          </span>
+          <div className="ms-auto flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={exporting || bulkActing}
+              onClick={() => void exportSelectedCsv()}>
+              <Download className="size-3.5" strokeWidth={1.8} />
+              {exporting ? 'Exporting…' : 'Export selected'}
+            </Button>
+            {canWrite ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={bulkActing}
+                  onClick={() => setPendingBulk('activate')}>
+                  Activate
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={bulkActing}
+                  onClick={() => setPendingBulk('deactivate')}>
+                  Deactivate
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={bulkActing}
+                  onClick={() => setPendingBulk('suspend')}>
+                  Suspend
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={bulkActing}
+                  onClick={() => setPendingBulk('unsuspend')}>
+                  Unsuspend
+                </Button>
+              </>
+            ) : null}
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={bulkActing}
+              onClick={() => setSelectedIds(new Set())}>
+              Clear
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <DataTable
         columns={columns}
         pagination={
@@ -755,13 +970,13 @@ export function ProfessionalsScreen() {
         }>
         {loading && rows.length === 0 ? (
           <tr>
-            <td colSpan={12} className="px-4 py-8 text-center text-sm text-muted-foreground">
+            <td colSpan={13} className="px-4 py-8 text-center text-sm text-muted-foreground">
               Searching…
             </td>
           </tr>
         ) : rows.length === 0 ? (
           <tr>
-            <td colSpan={12} className="px-4 py-6">
+            <td colSpan={13} className="px-4 py-6">
               <EmptyState
                 title="No professionals match"
                 body="Try another filter or clear the column filters."
@@ -775,8 +990,20 @@ export function ProfessionalsScreen() {
             const joined = formatJoined(row.createdAt);
             const location = row.location?.trim();
             const status = accountStatus(row);
+            const rowId = String(row.id);
+            const isSelected = selectedIds.has(rowId);
             return (
               <tr key={row.id} className="border-b border-border last:border-0">
+                <td className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    className="size-4 rounded border-border"
+                    checked={isSelected}
+                    disabled={!isSelected && selectedCount >= MAX_BULK_IDS}
+                    onChange={() => toggleSelectOne(rowId)}
+                    aria-label={`Select ${row.name}`}
+                  />
+                </td>
                 <td className="px-4 py-3 font-medium tabular-nums text-foreground">
                   {row.id}
                 </td>
@@ -855,6 +1082,24 @@ export function ProfessionalsScreen() {
           })
         )}
       </DataTable>
+
+      <ConfirmDialog
+        open={pendingBulk !== null}
+        title={
+          pendingBulk
+            ? `${BULK_ACTION_COPY[pendingBulk].title} (${selectedCount})`
+            : ''
+        }
+        body={pendingBulk ? BULK_ACTION_COPY[pendingBulk].body : ''}
+        confirmLabel={
+          pendingBulk ? BULK_ACTION_COPY[pendingBulk].confirmLabel : 'Confirm'
+        }
+        destructive={pendingBulk ? BULK_ACTION_COPY[pendingBulk].destructive : false}
+        onClose={() => {
+          if (!bulkActing) setPendingBulk(null);
+        }}
+        onConfirm={() => void runBulkAction()}
+      />
     </>
   );
 }

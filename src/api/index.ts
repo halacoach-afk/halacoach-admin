@@ -234,6 +234,8 @@ export type ListProfessionalsParams = {
   /** @deprecated Prefer accountStatuses */
   filter?: string;
   id?: string | number;
+  /** Explicit IDs for selected-row export (takes precedence over other filters). */
+  ids?: Array<string | number>;
   name?: string;
   email?: string;
   phone?: string;
@@ -262,6 +264,29 @@ export function exportProfessionalsCsv(
   params: Omit<ListProfessionalsParams, 'page' | 'perPage'> = {},
 ) {
   return requestBlob(`/v1/professionals/export${buildListQuery(params)}`);
+}
+
+export type ProfessionalBulkAction =
+  | 'activate'
+  | 'deactivate'
+  | 'suspend'
+  | 'unsuspend';
+
+export type ProfessionalBulkResult = {
+  action: ProfessionalBulkAction;
+  updated: number;
+  failed: Array<{id: string; message: string}>;
+  updatedIds: string[];
+};
+
+export function bulkUpdateProfessionals(
+  ids: Array<string | number>,
+  action: ProfessionalBulkAction,
+) {
+  return request<ProfessionalBulkResult>('/v1/professionals/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ids: ids.map(String), action}),
+  });
 }
 
 export function getProfessional(id: string) {

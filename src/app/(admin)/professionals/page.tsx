@@ -7,5 +7,5 @@ export default async function ProfessionalsPage() {
   if (!user) {
     redirect('/login');
   }
-  return <ProfessionalsScreen />;
+  return <ProfessionalsScreen actor={user} />;
 }
