@@ -337,10 +337,23 @@ export type VerificationFile = {
 
 export type ProfessionalTxn = {
   id: string;
-  type: 'purchase' | 'spend' | 'adjustment' | 'membership_grant';
+  type: 'purchase' | 'spend' | 'adjustment' | 'membership_grant' | 'expiry';
   credits: number;
   label: string;
   at: string;
+  /** Pack name or derived source label. */
+  source?: string | null;
+  packName?: string | null;
+  promoCode?: string | null;
+  /** Amount charged in AED (purchases / membership grants). */
+  totalAed?: number | null;
+  orderId?: string | null;
+  /** Best available payment / order / subscription reference. */
+  reference?: string | null;
+  paymentMethod?: string | null;
+  /** e.g. completed | test | failed */
+  paymentStatus?: string | null;
+  fakePayment?: boolean;
 };
 
 export type ProServiceRate = {

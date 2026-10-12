@@ -16,6 +16,7 @@ import type {
   Professional,
   ProfessionalAdminNote,
   ProfessionalSummary,
+  ProfessionalTxn,
   RejectVerificationInput,
   SessionResponse,
   UpdateAdminInput,
@@ -295,6 +296,46 @@ export function bulkUpdateProfessionals(
 
 export function getProfessional(id: string) {
   return request<Professional>(`/v1/professionals/${id}`);
+}
+
+export type WalletTxnSortBy =
+  | 'id'
+  | 'source'
+  | 'type'
+  | 'credits'
+  | 'paid'
+  | 'reference'
+  | 'payment'
+  | 'date';
+
+export type ListProfessionalWalletParams = {
+  page?: number;
+  perPage?: number;
+  /** Exact transaction id. */
+  id?: string | number;
+  /** Comma-separated or array: purchase|spend|adjustment|membership_grant|expiry */
+  type?: string | string[];
+  /** Comma-separated or array: completed|test|none */
+  payment?: string | string[];
+  createdFrom?: string;
+  createdTo?: string;
+  /** Source / pack / label search. */
+  q?: string;
+  reference?: string;
+  creditsMin?: string | number;
+  creditsMax?: string | number;
+  paidMin?: string | number;
+  paidMax?: string | number;
+  sortBy?: WalletTxnSortBy;
+  sortDir?: 'asc' | 'desc';};
+
+export function listProfessionalWalletTransactions(
+  id: string,
+  params: ListProfessionalWalletParams = {},
+) {
+  return request<Paginated<ProfessionalTxn>>(
+    `/v1/professionals/${id}/wallet-transactions${buildListQuery(params)}`,
+  );
 }
 
 export function updateProfessional(id: string, input: UpdateProfessionalInput) {

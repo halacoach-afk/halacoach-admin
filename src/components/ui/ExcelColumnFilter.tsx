@@ -170,12 +170,7 @@ export function ExcelColumnFilter({
                   </button>
                 </div>
               ) : null}
-              <div className="space-y-2">
-                <p className="text-[11px] text-muted-foreground">
-                  Combines with other column filters
-                </p>
-                {children}
-              </div>
+              <div className="space-y-2">{children}</div>
               <div className="mt-3 flex flex-col gap-1 border-t border-border pt-2">
                 {onApply ? (
                   <button
@@ -334,9 +329,7 @@ export function ExcelFilterMultiSelect({
         <p className="text-[11px] text-muted-foreground">
           {values.length} selected · match any
         </p>
-      ) : (
-        <p className="text-[11px] text-muted-foreground">Select one or more</p>
-      )}
+      ) : null}
     </div>
   );
 }
