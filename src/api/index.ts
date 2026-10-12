@@ -214,9 +214,42 @@ export function adjustCredits(input: AdjustCreditsInput) {
   });
 }
 
-export function listProfessionals(
-  params: {page?: number; perPage?: number; q?: string; filter?: string} = {},
-) {
+export type ProfessionalSortBy =
+  | 'id'
+  | 'name'
+  | 'email'
+  | 'phone'
+  | 'services'
+  | 'location'
+  | 'joined'
+  | 'verification'
+  | 'credits'
+  | 'profile';
+
+export type ListProfessionalsParams = {
+  page?: number;
+  perPage?: number;
+  q?: string;
+  filter?: string;
+  id?: string | number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  /** Multi-select catalog service ids (OR). */
+  serviceIds?: Array<string | number>;
+  location?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  /** Multi-select verification statuses (OR). */
+  verificationStatuses?: string[];
+  creditsMin?: string | number;
+  creditsMax?: string | number;
+  profileMin?: string | number;
+  profileMax?: string | number;
+  sortBy?: ProfessionalSortBy;
+  sortDir?: 'asc' | 'desc';};
+
+export function listProfessionals(params: ListProfessionalsParams = {}) {
   return request<Paginated<ProfessionalSummary>>(`/v1/professionals${buildListQuery(params)}`);
 }
 

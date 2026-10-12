@@ -1,14 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {ChevronRight} from 'lucide-react';
-import {isApiError, listProfessionals, type ProfessionalSummary} from '@/api';
+import {
+  isApiError,
+  listProfessionals,
+  listServices,
+  type CatalogService,
+  type ProfessionalSortBy,
+  type ProfessionalSummary,
+} from '@/api';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {DataTable, FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
+import {
+  ExcelColumnFilter,
+  ExcelFilterMultiSelect,
+  ExcelFilterTextField,
+} from '@/components/ui/ExcelColumnFilter';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
 import {PaginationBar} from '@/components/ui/PaginationBar';
@@ -21,6 +33,66 @@ import {
 import {completionPercent, verificationLabels} from '@/lib/professional-utils';
 
 type Filter = 'all' | 'onboarded' | 'incomplete' | 'suspended' | 'deleted';
+
+type ColumnFilters = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  serviceIds: string[];
+  location: string;
+  createdFrom: string;
+  createdTo: string;
+  verificationStatuses: string[];
+  creditsMin: string;
+  creditsMax: string;
+  profileMin: string;
+  profileMax: string;
+};
+
+type FilterColumnKey =
+  | 'id'
+  | 'name'
+  | 'email'
+  | 'phone'
+  | 'serviceIds'
+  | 'location'
+  | 'joined'
+  | 'verificationStatuses'
+  | 'credits'
+  | 'profile';
+
+const COLUMN_SORT_BY: Record<FilterColumnKey, ProfessionalSortBy> = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  phone: 'phone',
+  serviceIds: 'services',
+  location: 'location',
+  joined: 'joined',
+  verificationStatuses: 'verification',
+  credits: 'credits',
+  profile: 'profile',
+};
+
+const DEFAULT_SORT_BY: ProfessionalSortBy = 'joined';
+const DEFAULT_SORT_DIR: 'asc' | 'desc' = 'desc';
+
+const EMPTY_COLUMN_FILTERS: ColumnFilters = {
+  id: '',
+  name: '',
+  email: '',
+  phone: '',
+  serviceIds: [],
+  location: '',
+  createdFrom: '',
+  createdTo: '',
+  verificationStatuses: [],
+  creditsMin: '',
+  creditsMax: '',
+  profileMin: '',
+  profileMax: '',
+};
 
 function contactCell(value: string, verified: boolean) {
   const display = value.trim();
@@ -62,6 +134,128 @@ function formatJoined(iso: string | null | undefined) {
   };
 }
 
+function hasActiveColumnFilters(filters: ColumnFilters) {
+  return (
+    filters.id.trim() !== '' ||
+    filters.name.trim() !== '' ||
+    filters.email.trim() !== '' ||
+    filters.phone.trim() !== '' ||
+    filters.serviceIds.length > 0 ||
+    filters.location.trim() !== '' ||
+    filters.createdFrom.trim() !== '' ||
+    filters.createdTo.trim() !== '' ||
+    filters.verificationStatuses.length > 0 ||
+    filters.creditsMin.trim() !== '' ||
+    filters.creditsMax.trim() !== '' ||
+    filters.profileMin.trim() !== '' ||
+    filters.profileMax.trim() !== ''
+  );
+}
+
+const COLUMN_CHIP_LABELS: Record<FilterColumnKey, string> = {
+  id: 'ID',
+  name: 'Name',
+  email: 'Email',
+  phone: 'Number',
+  serviceIds: 'Services',
+  location: 'Location',
+  joined: 'Joined',
+  verificationStatuses: 'Verification',
+  credits: 'Credits',
+  profile: 'Profile',
+};
+
+const VERIFICATION_CHIP_LABELS: Record<string, string> = {
+  none: 'Not submitted',
+  pending: 'In review',
+  verified: 'Verified',
+  rejected: 'Rejected',
+};
+
+function clearedColumnSlice(key: FilterColumnKey): Partial<ColumnFilters> {
+  if (key === 'joined') return {createdFrom: '', createdTo: ''};
+  if (key === 'credits') return {creditsMin: '', creditsMax: ''};
+  if (key === 'profile') return {profileMin: '', profileMax: ''};
+  if (key === 'serviceIds') return {serviceIds: []};
+  if (key === 'verificationStatuses') return {verificationStatuses: []};
+  return {[key]: ''};
+}
+
+function activeFilterChips(
+  filters: ColumnFilters,
+  serviceOptions: Array<{value: string; label: string}>,
+): Array<{key: FilterColumnKey; text: string}> {
+  const chips: Array<{key: FilterColumnKey; text: string}> = [];
+  const serviceName = (id: string) =>
+    serviceOptions.find(s => s.value === id)?.label ?? id;
+
+  if (filters.id.trim()) {
+    chips.push({key: 'id', text: `${COLUMN_CHIP_LABELS.id}: ${filters.id.trim()}`});
+  }
+  if (filters.name.trim()) {
+    chips.push({key: 'name', text: `${COLUMN_CHIP_LABELS.name}: ${filters.name.trim()}`});
+  }
+  if (filters.email.trim()) {
+    chips.push({key: 'email', text: `${COLUMN_CHIP_LABELS.email}: ${filters.email.trim()}`});
+  }
+  if (filters.phone.trim()) {
+    chips.push({key: 'phone', text: `${COLUMN_CHIP_LABELS.phone}: ${filters.phone.trim()}`});
+  }
+  if (filters.serviceIds.length) {
+    chips.push({
+      key: 'serviceIds',
+      text: `${COLUMN_CHIP_LABELS.serviceIds}: ${filters.serviceIds.map(serviceName).join(', ')}`,
+    });
+  }
+  if (filters.location.trim()) {
+    chips.push({
+      key: 'location',
+      text: `${COLUMN_CHIP_LABELS.location}: ${filters.location.trim()}`,
+    });
+  }
+  if (filters.createdFrom.trim() || filters.createdTo.trim()) {
+    const from = filters.createdFrom.trim() || '…';
+    const to = filters.createdTo.trim() || '…';
+    chips.push({key: 'joined', text: `${COLUMN_CHIP_LABELS.joined}: ${from} → ${to}`});
+  }
+  if (filters.verificationStatuses.length) {
+    chips.push({
+      key: 'verificationStatuses',
+      text: `${COLUMN_CHIP_LABELS.verificationStatuses}: ${filters.verificationStatuses
+        .map(s => VERIFICATION_CHIP_LABELS[s] ?? s)
+        .join(', ')}`,
+    });
+  }
+  if (filters.creditsMin.trim() || filters.creditsMax.trim()) {
+    const min = filters.creditsMin.trim() || '…';
+    const max = filters.creditsMax.trim() || '…';
+    chips.push({key: 'credits', text: `${COLUMN_CHIP_LABELS.credits}: ${min}–${max}`});
+  }
+  if (filters.profileMin.trim() || filters.profileMax.trim()) {
+    const min = filters.profileMin.trim() || '…';
+    const max = filters.profileMax.trim() || '…';
+    chips.push({key: 'profile', text: `${COLUMN_CHIP_LABELS.profile}: ${min}–${max}%`});
+  }
+  return chips;
+}
+
+function isColumnActive(filters: ColumnFilters, key: FilterColumnKey): boolean {
+  switch (key) {
+    case 'joined':
+      return Boolean(filters.createdFrom.trim() || filters.createdTo.trim());
+    case 'credits':
+      return Boolean(filters.creditsMin.trim() || filters.creditsMax.trim());
+    case 'profile':
+      return Boolean(filters.profileMin.trim() || filters.profileMax.trim());
+    case 'serviceIds':
+      return filters.serviceIds.length > 0;
+    case 'verificationStatuses':
+      return filters.verificationStatuses.length > 0;
+    default:
+      return Boolean(filters[key].trim());
+  }
+}
+
 export function ProfessionalsScreen() {
   const [rows, setRows] = useState<ProfessionalSummary[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
@@ -79,12 +273,91 @@ export function ProfessionalsScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
+  /** Committed filters sent to the API (multiple columns AND together). */
+  const [appliedFilters, setAppliedFilters] =
+    useState<ColumnFilters>(EMPTY_COLUMN_FILTERS);
+  /** Draft edited inside the open column menu until Apply. */
+  const [draftFilters, setDraftFilters] = useState<ColumnFilters>(EMPTY_COLUMN_FILTERS);
+  const [services, setServices] = useState<CatalogService[]>([]);
+  const [openFilter, setOpenFilter] = useState<FilterColumnKey | null>(null);
+  const [sortBy, setSortBy] = useState<ProfessionalSortBy>(DEFAULT_SORT_BY);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>(DEFAULT_SORT_DIR);
   const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 400);
     return () => window.clearTimeout(timer);
   }, [query]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void listServices()
+      .then(list => {
+        if (!cancelled) {
+          setServices(list.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name)));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setServices([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const patchDraft = <K extends keyof ColumnFilters>(key: K, value: ColumnFilters[K]) => {
+    setDraftFilters(prev => ({...prev, [key]: value}));
+  };
+
+  const openColumnMenu = (key: FilterColumnKey) => {
+    setDraftFilters(appliedFilters);
+    setOpenFilter(key);
+  };
+
+  const closeColumnMenu = () => {
+    setOpenFilter(null);
+  };
+
+  const applyColumnDraft = () => {
+    setAppliedFilters(draftFilters);
+    setPage(1);
+  };
+
+  const clearColumnFilters = () => {
+    setAppliedFilters(EMPTY_COLUMN_FILTERS);
+    setDraftFilters(EMPTY_COLUMN_FILTERS);
+    setOpenFilter(null);
+  };
+
+  const applySort = (key: FilterColumnKey, dir: 'asc' | 'desc') => {
+    const nextBy = COLUMN_SORT_BY[key];
+    // Clicking the same sort again clears it (back to default newest-first).
+    if (sortBy === nextBy && sortDir === dir) {
+      setSortBy(DEFAULT_SORT_BY);
+      setSortDir(DEFAULT_SORT_DIR);
+    } else {
+      setSortBy(nextBy);
+      setSortDir(dir);
+    }
+    setPage(1);
+  };
+
+  /** Multi-select toggles commit immediately so selecting again unselects. */
+  const commitMultiSelect = (
+    key: 'serviceIds' | 'verificationStatuses',
+    values: string[],
+  ) => {
+    setDraftFilters(prev => ({...prev, [key]: values}));
+    setAppliedFilters(prev => ({...prev, [key]: values}));
+    setPage(1);
+  };
+
+  const clearOneColumn = (key: FilterColumnKey) => {
+    const slice = clearedColumnSlice(key);
+    setAppliedFilters(prev => ({...prev, ...slice}));
+    setDraftFilters(prev => ({...prev, ...slice}));
+    setPage(1);
+  };
 
   const load = async (nextPage = page, nextFilter = filter) => {
     setLoading(true);
@@ -95,6 +368,25 @@ export function ProfessionalsScreen() {
         perPage,
         q: debouncedQ || undefined,
         filter: nextFilter === 'all' ? undefined : nextFilter,
+        id: appliedFilters.id.trim() || undefined,
+        name: appliedFilters.name.trim() || undefined,
+        email: appliedFilters.email.trim() || undefined,
+        phone: appliedFilters.phone.trim() || undefined,
+        serviceIds: appliedFilters.serviceIds.length
+          ? appliedFilters.serviceIds
+          : undefined,
+        location: appliedFilters.location.trim() || undefined,
+        createdFrom: appliedFilters.createdFrom.trim() || undefined,
+        createdTo: appliedFilters.createdTo.trim() || undefined,
+        verificationStatuses: appliedFilters.verificationStatuses.length
+          ? appliedFilters.verificationStatuses
+          : undefined,
+        creditsMin: appliedFilters.creditsMin.trim() || undefined,
+        creditsMax: appliedFilters.creditsMax.trim() || undefined,
+        profileMin: appliedFilters.profileMin.trim() || undefined,
+        profileMax: appliedFilters.profileMax.trim() || undefined,
+        sortBy,
+        sortDir,
       });
       setRows(res.data);
       setMeta(res.meta);
@@ -113,7 +405,173 @@ export function ProfessionalsScreen() {
   useEffect(() => {
     void load(1, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedQ, filter, perPage]);
+  }, [debouncedQ, filter, perPage, appliedFilters, sortBy, sortDir]);
+
+  const serviceOptions = useMemo(
+    () => services.map(s => ({value: String(s.id), label: s.name})),
+    [services],
+  );
+
+  const verificationOptions = [
+    {value: 'none', label: 'Not submitted'},
+    {value: 'pending', label: 'In review'},
+    {value: 'verified', label: 'Verified'},
+    {value: 'rejected', label: 'Rejected'},
+  ];
+
+  const header = (key: FilterColumnKey, label: string, body: ReactNode) => {
+    const sortKey = COLUMN_SORT_BY[key];
+    return (
+      <ExcelColumnFilter
+        label={label}
+        active={isColumnActive(appliedFilters, key)}
+        sortDirection={sortBy === sortKey ? sortDir : null}
+        open={openFilter === key}
+        onOpenChange={next => {
+          if (next) openColumnMenu(key);
+          else closeColumnMenu();
+        }}
+        onClear={() => clearOneColumn(key)}
+        onApply={applyColumnDraft}
+        onSortAsc={() => applySort(key, 'asc')}
+        onSortDesc={() => applySort(key, 'desc')}
+        sortAscLabel="Ascending"
+        sortDescLabel="Descending">
+        {body}
+      </ExcelColumnFilter>
+    );
+  };
+
+  const columns = [
+    header(
+      'id',
+      'ID',
+      <ExcelFilterTextField
+        value={draftFilters.id}
+        onChange={v => patchDraft('id', v)}
+        placeholder="Equals…"
+        autoFocus
+      />,
+    ),
+    header(
+      'name',
+      'Name',
+      <ExcelFilterTextField
+        value={draftFilters.name}
+        onChange={v => patchDraft('name', v)}
+        placeholder="Contains…"
+        autoFocus
+      />,
+    ),
+    header(
+      'email',
+      'Email',
+      <ExcelFilterTextField
+        value={draftFilters.email}
+        onChange={v => patchDraft('email', v)}
+        placeholder="Contains…"
+        autoFocus
+      />,
+    ),
+    header(
+      'phone',
+      'Number',
+      <ExcelFilterTextField
+        value={draftFilters.phone}
+        onChange={v => patchDraft('phone', v)}
+        placeholder="Contains…"
+        autoFocus
+      />,
+    ),
+    header(
+      'serviceIds',
+      'Services',
+      <ExcelFilterMultiSelect
+        values={draftFilters.serviceIds}
+        onChange={v => commitMultiSelect('serviceIds', v)}
+        options={serviceOptions}
+        searchPlaceholder="Search services…"
+      />,
+    ),
+    header(
+      'location',
+      'Location',
+      <ExcelFilterTextField
+        value={draftFilters.location}
+        onChange={v => patchDraft('location', v)}
+        placeholder="Contains…"
+        autoFocus
+      />,
+    ),
+    header(
+      'joined',
+      'Joined',
+      <>
+        <ExcelFilterTextField
+          type="date"
+          label="From"
+          value={draftFilters.createdFrom}
+          onChange={v => patchDraft('createdFrom', v)}
+        />
+        <ExcelFilterTextField
+          type="date"
+          label="To"
+          value={draftFilters.createdTo}
+          onChange={v => patchDraft('createdTo', v)}
+        />
+      </>,
+    ),
+    header(
+      'verificationStatuses',
+      'Verification',
+      <ExcelFilterMultiSelect
+        values={draftFilters.verificationStatuses}
+        onChange={v => commitMultiSelect('verificationStatuses', v)}
+        options={verificationOptions}
+      />,
+    ),
+    header(
+      'credits',
+      'Credits',
+      <>
+        <ExcelFilterTextField
+          type="number"
+          label="Min"
+          value={draftFilters.creditsMin}
+          onChange={v => patchDraft('creditsMin', v)}
+          placeholder="0"
+        />
+        <ExcelFilterTextField
+          type="number"
+          label="Max"
+          value={draftFilters.creditsMax}
+          onChange={v => patchDraft('creditsMax', v)}
+          placeholder="∞"
+        />
+      </>,
+    ),
+    header(
+      'profile',
+      'Profile',
+      <>
+        <ExcelFilterTextField
+          type="number"
+          label="Min %"
+          value={draftFilters.profileMin}
+          onChange={v => patchDraft('profileMin', v)}
+          placeholder="0"
+        />
+        <ExcelFilterTextField
+          type="number"
+          label="Max %"
+          value={draftFilters.profileMax}
+          onChange={v => patchDraft('profileMax', v)}
+          placeholder="100"
+        />
+      </>,
+    ),
+    '',
+  ];
 
   if (!hasLoaded && loading) {
     return <LoadingState label="Loading professionals..." />;
@@ -122,6 +580,9 @@ export function ProfessionalsScreen() {
   if (!hasLoaded && error) {
     return <ErrorState body={error} onRetry={() => void load()} />;
   }
+
+  const columnFiltersActive = hasActiveColumnFilters(appliedFilters);
+  const filterChips = activeFilterChips(appliedFilters, serviceOptions);
 
   return (
     <>
@@ -154,46 +615,66 @@ export function ProfessionalsScreen() {
             {label} ({counts[key] ?? 0})
           </Button>
         ))}
+        {columnFiltersActive ? (
+          <Button variant="outline" size="sm" onClick={clearColumnFilters}>
+            Clear all column filters
+          </Button>
+        ) : null}
         <SearchField value={query} onChange={setQuery} />
       </FilterBar>
 
-      {loading && rows.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">Searching…</p>
-      ) : rows.length === 0 ? (
-        <EmptyState
-          title="No professionals match"
-          body="Try another filter or clear the search box."
-        />
-      ) : (
-        <DataTable
-          columns={[
-            'ID',
-            'Name',
-            'Email',
-            'Number',
-            'Services',
-            'Location',
-            'Joined',
-            'Verification',
-            'Credits',
-            'Profile',
-            '',
-          ]}
-          pagination={
-            <PaginationBar
-              variant="embedded"
-              meta={meta}
-              disabled={loading}
-              onPageChange={next => void load(next)}
-              onPerPageChange={next => {
-                setPage(1);
-                setPerPage(next);
-              }}
-            />
-          }>
-          {rows.map(row => {
+      {filterChips.length > 0 ? (
+        <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">Active filters:</span>
+          {filterChips.map(chip => (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => clearOneColumn(chip.key)}
+              className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-foreground hover:border-primary hover:text-primary"
+              title={`Remove ${COLUMN_CHIP_LABELS[chip.key]} filter`}>
+              <span className="truncate">{chip.text}</span>
+              <span aria-hidden className="text-muted-foreground">
+                ×
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      <DataTable
+        columns={columns}
+        pagination={
+          <PaginationBar
+            variant="embedded"
+            meta={meta}
+            disabled={loading}
+            onPageChange={next => void load(next)}
+            onPerPageChange={next => {
+              setPage(1);
+              setPerPage(next);
+            }}
+          />
+        }>
+        {loading && rows.length === 0 ? (
+          <tr>
+            <td colSpan={11} className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Searching…
+            </td>
+          </tr>
+        ) : rows.length === 0 ? (
+          <tr>
+            <td colSpan={11} className="px-4 py-6">
+              <EmptyState
+                title="No professionals match"
+                body="Try another filter or clear the column filters."
+              />
+            </td>
+          </tr>
+        ) : (
+          rows.map(row => {
             const pct = completionPercent(row.profileCompletion);
-            const services = servicesLabel(row);
+            const servicesText = servicesLabel(row);
             const joined = formatJoined(row.createdAt);
             const location = row.location?.trim();
             return (
@@ -209,8 +690,8 @@ export function ProfessionalsScreen() {
                   {contactCell(row.phone, Boolean(row.phoneVerified))}
                 </td>
                 <td className="px-4 py-3">
-                  {services ? (
-                    <span className="text-sm text-foreground">{services}</span>
+                  {servicesText ? (
+                    <span className="text-sm text-foreground">{servicesText}</span>
                   ) : (
                     <span className="text-sm text-muted-foreground">—</span>
                   )}
@@ -261,9 +742,9 @@ export function ProfessionalsScreen() {
                 </td>
               </tr>
             );
-          })}
-        </DataTable>
-      )}
+          })
+        )}
+      </DataTable>
     </>
   );
 }

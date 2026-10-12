@@ -23,11 +23,17 @@ export function buildListQuery(params: {
   page?: number;
   perPage?: number;
   q?: string;
-  [key: string]: string | number | undefined | null;
+  [key: string]: string | number | Array<string | number> | undefined | null;
 }): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === '') {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      const joined = value.map(String).map(v => v.trim()).filter(Boolean);
+      if (!joined.length) continue;
+      search.set(key, joined.join(','));
       continue;
     }
     search.set(key, String(value));
