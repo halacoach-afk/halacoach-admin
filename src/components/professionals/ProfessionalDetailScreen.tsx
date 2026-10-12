@@ -13,6 +13,7 @@ import {
   Hash,
   Mail,
   MapPin,
+  NotebookPen,
   Phone,
   Shield,
   UserRound,
@@ -40,6 +41,7 @@ import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {DataTable} from '@/components/ui/DataTable';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {FileViewerModal} from '@/components/ui/FileViewerModal';
+import {Input} from '@/components/ui/Input';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {NotificationPrefsPanel} from '@/components/support/NotificationPrefsPanel';
 import {creditTxnLabel} from '@/lib/credit-utils';
@@ -113,6 +115,14 @@ function formatDate(iso: string | null | undefined) {
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime())) return '\u2014';
   return date.toLocaleDateString();
+}
+
+/** YYYY-MM-DD for `<input type="date">` from an ISO datetime. */
+function toDateInputValue(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
 }
 
 function resolvedLeadStatus(row: LeadSummary): LeadLifecycleStatus {
@@ -252,6 +262,10 @@ export function ProfessionalDetailScreen({
   const [pendingSuspend, setPendingSuspend] = useState<boolean | null>(null);
   const [acting, setActing] = useState(false);
   const [viewer, setViewer] = useState<{fileId: string; name: string} | null>(null);
+  const [notesDraft, setNotesDraft] = useState('');
+  const [followUpDraft, setFollowUpDraft] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
 
   const loadViewerFile = useCallback(async () => {
     if (!viewer) {
@@ -282,6 +296,21 @@ export function ProfessionalDetailScreen({
   useEffect(() => {
     void load();
   }, [id]);
+
+  useEffect(() => {
+    if (!pro) return;
+    setNotesDraft(pro.adminNotes ?? '');
+    setFollowUpDraft(toDateInputValue(pro.adminFollowUpAt));
+    setNotesSaved(false);
+  }, [pro]);
+
+  const notesDirty = useMemo(() => {
+    if (!pro) return false;
+    const savedNotes = (pro.adminNotes ?? '').trim();
+    const draftNotes = notesDraft.trim();
+    const savedFollowUp = toDateInputValue(pro.adminFollowUpAt);
+    return draftNotes !== savedNotes || followUpDraft !== savedFollowUp;
+  }, [pro, notesDraft, followUpDraft]);
 
   const serviceNameById = useMemo(
     () => new Map(services.map(item => [item.id, item.name])),
@@ -325,6 +354,27 @@ export function ProfessionalDetailScreen({
     } finally {
       setPendingSuspend(null);
       setActing(false);
+    }
+  };
+
+  const saveNotes = async () => {
+    if (!pro || !canWrite) {
+      return;
+    }
+    setSavingNotes(true);
+    setError(null);
+    setNotesSaved(false);
+    try {
+      const updated = await updateProfessional(pro.id, {
+        adminNotes: notesDraft,
+        adminFollowUpAt: followUpDraft,
+      });
+      setPro(updated);
+      setNotesSaved(true);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not save notes.');
+    } finally {
+      setSavingNotes(false);
     }
   };
 
@@ -611,6 +661,69 @@ export function ProfessionalDetailScreen({
 
         <Section title="Notifications">
           <NotificationPrefsPanel prefs={pro.notificationPrefs} />
+        </Section>
+      </div>
+
+      <div className="mt-6">
+        <Section title="Notes">
+          {canWrite ? (
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-foreground" htmlFor="admin-notes">
+                Notes
+                <textarea
+                  id="admin-notes"
+                  rows={5}
+                  maxLength={5000}
+                  value={notesDraft}
+                  onChange={e => {
+                    setNotesDraft(e.target.value);
+                    setNotesSaved(false);
+                  }}
+                  placeholder="Call notes, next steps, context…"
+                  className="mt-1.5 w-full resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-normal outline-none focus:border-primary"
+                />
+              </label>
+              <div className="max-w-xs">
+                <Input
+                  label="Follow-up date"
+                  type="date"
+                  value={followUpDraft}
+                  onChange={e => {
+                    setFollowUpDraft(e.target.value);
+                    setNotesSaved(false);
+                  }}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  size="sm"
+                  disabled={savingNotes || !notesDirty}
+                  onClick={() => void saveNotes()}>
+                  {savingNotes ? 'Saving…' : 'Save notes'}
+                </Button>
+                {notesSaved && !notesDirty ? (
+                  <span className="text-sm text-muted-foreground">Saved</span>
+                ) : null}
+                {pro.adminFollowUpAt && !notesDirty ? (
+                  <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <NotebookPen className="size-3.5" strokeWidth={1.8} />
+                    Follow up {formatDate(pro.adminFollowUpAt)}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="whitespace-pre-wrap text-sm text-foreground">
+                {(pro.adminNotes ?? '').trim() || '\u2014'}
+              </p>
+              <PrefField
+                icon={<CalendarDays className="size-3.5" strokeWidth={1.8} />}
+                label="Follow-up"
+                value={formatDate(pro.adminFollowUpAt)}
+              />
+            </div>
+          )}
         </Section>
       </div>
 

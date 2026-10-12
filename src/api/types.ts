@@ -412,6 +412,10 @@ export type Professional = {
   pricing: ProPricing;
   matchPrefs: MatchPrefs;
   bio: string;
+  /** Admin-only CRM notes. */
+  adminNotes?: string;
+  /** Admin follow-up date (ISO). */
+  adminFollowUpAt?: string | null;
   credits: number;
   txns: ProfessionalTxn[];
   specialty: string;
@@ -500,6 +504,9 @@ export type UpdateProfessionalInput = {
   radiusKm?: number;
   activated?: boolean;
   suspended?: boolean;
+  adminNotes?: string;
+  /** YYYY-MM-DD or empty string to clear. */
+  adminFollowUpAt?: string;
 };
 
 export type ClientConsents = {
