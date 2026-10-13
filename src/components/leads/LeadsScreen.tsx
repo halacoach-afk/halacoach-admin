@@ -45,6 +45,7 @@ type FilterColumnKey =
   | 'client'
   | 'coach'
   | 'sources'
+  | 'unlocks'
   | 'statuses'
   | 'posted';
 
@@ -62,6 +63,8 @@ type ColumnFilters = {
   client: string;
   coach: string;
   sources: string[];
+  unlocksMin: string;
+  unlocksMax: string;
   statuses: string[];
   createdFrom: string;
   createdTo: string;
@@ -79,6 +82,7 @@ const COLUMN_SORT_BY: Record<FilterColumnKey, LeadSortBy> = {
   client: 'client',
   coach: 'coach',
   sources: 'source',
+  unlocks: 'unlocks',
   statuses: 'status',
   posted: 'posted',
 };
@@ -100,6 +104,8 @@ const EMPTY_COLUMN_FILTERS: ColumnFilters = {
   client: '',
   coach: '',
   sources: [],
+  unlocksMin: '',
+  unlocksMax: '',
   statuses: [],
   createdFrom: '',
   createdTo: '',
@@ -123,6 +129,7 @@ const COLUMN_CHIP_LABELS: Record<FilterColumnKey, string> = {
   client: 'Client',
   coach: 'Coach',
   sources: 'Source',
+  unlocks: 'Unlocks',
   statuses: 'Status',
   posted: 'Posted',
 };
@@ -216,6 +223,8 @@ function isColumnActive(filters: ColumnFilters, key: FilterColumnKey): boolean {
       return filters.times.length > 0;
     case 'sources':
       return filters.sources.length > 0;
+    case 'unlocks':
+      return Boolean(filters.unlocksMin.trim() || filters.unlocksMax.trim());
     case 'statuses':
       return filters.statuses.length > 0;
     case 'location':
@@ -242,6 +251,7 @@ function clearedColumnSlice(key: FilterColumnKey): Partial<ColumnFilters> {
   if (key === 'days') return {days: []};
   if (key === 'times') return {times: []};
   if (key === 'sources') return {sources: []};
+  if (key === 'unlocks') return {unlocksMin: '', unlocksMax: ''};
   if (key === 'statuses') return {statuses: []};
   if (key === 'id') return {id: ''};
   if (key === 'goalDetail') return {goalDetail: ''};
@@ -335,6 +345,14 @@ function activeFilterChips(
       text: `${COLUMN_CHIP_LABELS.sources}: ${labelOf(filters.sources, SOURCE_OPTIONS)}`,
     });
   }
+  if (filters.unlocksMin.trim() || filters.unlocksMax.trim()) {
+    const min = filters.unlocksMin.trim() || '…';
+    const max = filters.unlocksMax.trim() || '…';
+    chips.push({
+      key: 'unlocks',
+      text: `${COLUMN_CHIP_LABELS.unlocks}: ${min} – ${max}`,
+    });
+  }
   if (filters.statuses.length) {
     chips.push({
       key: 'statuses',
@@ -417,6 +435,8 @@ export function LeadsScreen() {
       client: appliedFilters.client.trim() || undefined,
       coach: appliedFilters.coach.trim() || undefined,
       sources: appliedFilters.sources.length ? appliedFilters.sources : undefined,
+      unlocksMin: appliedFilters.unlocksMin.trim() || undefined,
+      unlocksMax: appliedFilters.unlocksMax.trim() || undefined,
       statuses: appliedFilters.statuses.length ? appliedFilters.statuses : undefined,
       createdFrom: appliedFilters.createdFrom.trim() || undefined,
       createdTo: appliedFilters.createdTo.trim() || undefined,
@@ -686,6 +706,26 @@ export function LeadsScreen() {
       />,
     ),
     header(
+      'unlocks',
+      'Unlocks',
+      <>
+        <ExcelFilterTextField
+          type="number"
+          label="Min"
+          value={draftFilters.unlocksMin}
+          onChange={v => patchDraft('unlocksMin', v)}
+          placeholder="0"
+        />
+        <ExcelFilterTextField
+          type="number"
+          label="Max"
+          value={draftFilters.unlocksMax}
+          onChange={v => patchDraft('unlocksMax', v)}
+          placeholder="∞"
+        />
+      </>,
+    ),
+    header(
       'statuses',
       'Status',
       <ExcelFilterMultiSelect
@@ -880,6 +920,9 @@ export function LeadsScreen() {
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
                   {formatLeadSource(row.source)}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                  {row.unlockCount ?? 0}
                 </td>
                 <td className="px-4 py-3 align-top">
                   <Badge tone={leadStatusTone(status)}>{leadStatusLabel(status)}</Badge>

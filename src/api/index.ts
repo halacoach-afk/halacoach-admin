@@ -500,6 +500,7 @@ export type LeadSortBy =
   | 'client'
   | 'coach'
   | 'source'
+  | 'unlocks'
   | 'status'
   | 'posted';
 
@@ -522,6 +523,8 @@ export type ListLeadsParams = {
   client?: string;
   coach?: string;
   sources?: string | string[];
+  unlocksMin?: string | number;
+  unlocksMax?: string | number;
   createdFrom?: string;
   createdTo?: string;
   clientId?: string | number;
