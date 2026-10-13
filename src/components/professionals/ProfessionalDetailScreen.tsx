@@ -1640,11 +1640,7 @@ export function ProfessionalDetailScreen({
 
       {can(actor, 'activity:read') ? (
         <div className="mt-4">
-          <ActivityTimeline
-            scope={{kind: 'coach', id}}
-            title="Activity timeline"
-            compact
-          />
+          <ActivityTimeline scope={{kind: 'coach', id}} />
         </div>
       ) : null}
 

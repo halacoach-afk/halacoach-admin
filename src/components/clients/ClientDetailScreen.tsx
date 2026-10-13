@@ -528,11 +528,7 @@ export function ClientDetailScreen({
 
       {can(actor, 'activity:read') ? (
         <div className="mt-4">
-          <ActivityTimeline
-            scope={{kind: 'client', id}}
-            title="Activity timeline"
-            compact
-          />
+          <ActivityTimeline scope={{kind: 'client', id}} />
         </div>
       ) : null}
 

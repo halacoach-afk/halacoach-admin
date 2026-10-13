@@ -438,11 +438,7 @@ export function LeadDetailScreen({id}: {id: string}) {
           )}
         </section>
 
-        <ActivityTimeline
-          scope={{kind: 'lead', id}}
-          title="Activity timeline"
-          compact
-        />
+        <ActivityTimeline scope={{kind: 'lead', id}} />
       </div>
     </>
   );

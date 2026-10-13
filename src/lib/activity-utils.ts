@@ -240,7 +240,8 @@ export function activitySummary(row: ActivityLogEntry): string {
     parts.push(p.subject.trim());
   }
   if (typeof p.role === 'string' && p.role.trim()) {
-    parts.push(`Role: ${humanizeToken(p.role)}`);
+    const role = p.role === 'pro' ? 'Coach' : humanizeToken(p.role);
+    parts.push(`Role: ${role}`);
   }
   if (typeof p.channel === 'string' && p.channel.trim()) {
     parts.push(humanizeToken(p.channel));
@@ -256,6 +257,20 @@ export function activitySummary(row: ActivityLogEntry): string {
   }
   if (typeof p.type === 'string' && p.type.trim() && p.credits == null) {
     parts.push(humanizeToken(p.type));
+  }
+  if (typeof p.benefitType === 'string' && p.benefitType.trim()) {
+    parts.push(humanizeToken(p.benefitType));
+  }
+  if (typeof p.preview === 'string' && p.preview.trim()) {
+    parts.push(truncate(p.preview.trim(), 80));
+  }
+  const leadId = asNumber(p.leadId);
+  if (leadId != null) {
+    parts.push(`Lead #${leadId}`);
+  }
+  const requestId = asNumber(p.requestId);
+  if (requestId != null) {
+    parts.push(`Request #${requestId}`);
   }
 
   const price = asNumber(p.price);
@@ -290,7 +305,10 @@ export function activitySummary(row: ActivityLogEntry): string {
     parts.push(humanizeToken(p.verificationStatus));
   }
 
-  if (!parts.length) return '—';
+  if (!parts.length) {
+    // Prefer a readable event label over a blank Details cell.
+    return activityEventLabel(row.event);
+  }
   return uniqueParts(parts).join(' · ');
 }
 
