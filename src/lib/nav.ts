@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Coins,
   Headset,
+  History,
   LayoutDashboard,
   LifeBuoy,
   MapPin,
@@ -61,6 +62,13 @@ export const navItems: NavItem[] = [
     description: 'Client requests in the marketplace, unlocks, and credit cost.',
     icon: MapPin,
     permission: 'leads:read',
+  },
+  {
+    href: '/activity',
+    label: 'Activity',
+    description: 'Platform-wide durable event history and audit trail.',
+    icon: History,
+    permission: 'activity:read',
   },
   {
     href: '/online-clients',

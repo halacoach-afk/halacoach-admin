@@ -30,6 +30,7 @@ import {
   type LeadDetail,
   type LeadLifecycleStatus,
 } from '@/api';
+import {ActivityTimeline} from '@/components/activity/ActivityTimeline';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
@@ -436,6 +437,12 @@ export function LeadDetailScreen({id}: {id: string}) {
             </DataTable>
           )}
         </section>
+
+        <ActivityTimeline
+          scope={{kind: 'lead', id}}
+          title="Activity timeline"
+          compact
+        />
       </div>
     </>
   );

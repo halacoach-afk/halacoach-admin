@@ -24,6 +24,7 @@ export const ALL_PERMISSIONS: Permission[] = [
   'messages:read',
   'admins:read',
   'admins:write',
+  'activity:read',
 ];
 
 const DEFAULT_BY_ROLE: Record<string, Permission[]> = {
@@ -79,6 +80,7 @@ export function permissionForPath(pathname: string): Permission {
     settings: 'settings:read',
     messages: 'messages:read',
     admins: 'admins:read',
+    activity: 'activity:read',
   };
   return map[segment ?? ''] ?? 'dashboard:read';
 }

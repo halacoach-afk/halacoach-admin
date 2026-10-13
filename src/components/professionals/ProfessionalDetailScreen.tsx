@@ -69,6 +69,7 @@ import {
   emptyPaginationMeta,
   type PaginationMeta,
 } from '@/lib/pagination';
+import {ActivityTimeline} from '@/components/activity/ActivityTimeline';
 import {can} from '@/lib/permissions';
 import {
   coachLeadPrefRows,
@@ -1636,6 +1637,16 @@ export function ProfessionalDetailScreen({
         onClose={() => setViewer(null)}
         load={loadViewerFile}
       />
+
+      {can(actor, 'activity:read') ? (
+        <div className="mt-4">
+          <ActivityTimeline
+            scope={{kind: 'coach', id}}
+            title="Activity timeline"
+            compact
+          />
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={pendingActivate !== null}

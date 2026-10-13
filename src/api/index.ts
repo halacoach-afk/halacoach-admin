@@ -1,6 +1,7 @@
 import {request, requestBlob} from './client';
 import {buildListQuery, DEFAULT_PER_PAGE} from '@/lib/pagination';
 import type {
+  ActivityLogEntry,
   AdminUser,
   AdminUserDetail,
   CatalogService,
@@ -12,6 +13,7 @@ import type {
   InviteAdminInput,
   LeadDetail,
   LeadSummary,
+  ListActivityLogsParams,
   Paginated,
   Professional,
   ProfessionalAdminNote,
@@ -42,6 +44,8 @@ import type {
 } from './types';
 
 export type {
+  ActivityLogEntry,
+  ActivityLogEntityRef,
   AdminPermission,
   AdminPermissionCatalogItem,
   AdminRole,
@@ -51,6 +55,7 @@ export type {
   AdminUserDetail,
 
   AdjustCreditsInput,
+  ListActivityLogsParams,
   CatalogService,
   Client,
   ClientConsents,
@@ -627,4 +632,37 @@ export function listOnlinePlans(params: {page?: number; perPage?: number} = {}) 
 
 export function getOnlinePlan(id: number) {
   return request<OnlinePlanDetail>(`/v1/online-plans/${id}`);
+}
+
+export function listActivityLogs(params: ListActivityLogsParams = {}) {
+  return request<Paginated<ActivityLogEntry>>(
+    `/v1/activity-logs${buildListQuery(params)}`,
+  );
+}
+
+export function listClientActivityLogs(
+  id: string | number,
+  params: ListActivityLogsParams = {},
+) {
+  return request<Paginated<ActivityLogEntry>>(
+    `/v1/clients/${id}/activity-logs${buildListQuery(params)}`,
+  );
+}
+
+export function listProfessionalActivityLogs(
+  id: string | number,
+  params: ListActivityLogsParams = {},
+) {
+  return request<Paginated<ActivityLogEntry>>(
+    `/v1/professionals/${id}/activity-logs${buildListQuery(params)}`,
+  );
+}
+
+export function listLeadActivityLogs(
+  id: string | number,
+  params: ListActivityLogsParams = {},
+) {
+  return request<Paginated<ActivityLogEntry>>(
+    `/v1/leads/${id}/activity-logs${buildListQuery(params)}`,
+  );
 }

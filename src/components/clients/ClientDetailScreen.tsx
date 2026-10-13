@@ -30,6 +30,7 @@ import {
   type ProfileCompletionPayload,
   type SessionUser,
 } from '@/api';
+import {ActivityTimeline} from '@/components/activity/ActivityTimeline';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
@@ -524,6 +525,16 @@ export function ClientDetailScreen({
           </DataTable>
         )}
       </div>
+
+      {can(actor, 'activity:read') ? (
+        <div className="mt-4">
+          <ActivityTimeline
+            scope={{kind: 'client', id}}
+            title="Activity timeline"
+            compact
+          />
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={pendingSuspend !== null}

@@ -19,7 +19,8 @@ export type AdminPermission =
   | 'settings:write'
   | 'messages:read'
   | 'admins:read'
-  | 'admins:write';
+  | 'admins:write'
+  | 'activity:read';
 
 export type AdminRole = string;
 
@@ -928,4 +929,32 @@ export type DashboardOverview = {
 export type NavBadges = {
   pendingVerifications: number;
   openSupportTickets: number;
+};
+
+export type ActivityLogEntityRef = {
+  type: string;
+  id: string;
+};
+
+export type ActivityLogEntry = {
+  id: string;
+  event: string;
+  actorType: 'user' | 'admin' | 'system' | string;
+  actorId: string | null;
+  actorName: string | null;
+  payload: Record<string, unknown>;
+  entities: ActivityLogEntityRef[];
+  occurredAt: string | null;
+};
+
+export type ListActivityLogsParams = {
+  page?: number;
+  perPage?: number;
+  event?: string;
+  actorType?: string;
+  actorId?: string | number;
+  entityType?: string;
+  entityId?: string | number;
+  from?: string;
+  to?: string;
 };
