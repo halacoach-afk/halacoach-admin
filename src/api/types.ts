@@ -761,6 +761,17 @@ export type LeadSummary = {
   postedAt: string;
 };
 
+export type LeadNotifiedProfessional = {
+  id: string;
+  professionalId: string;
+  professionalName: string;
+  professionalEmail?: string | null;
+  matchPercent: number | null;
+  /** Credits to unlock at this match % (same formula as marketplace). */
+  unlockCost?: number | null;
+  notifiedAt: string;
+};
+
 export type LeadDetail = Omit<MarketplaceLead, 'unlocks'> & {
   clientName: string;
   clientEmail: string;
@@ -770,6 +781,8 @@ export type LeadDetail = Omit<MarketplaceLead, 'unlocks'> & {
       professionalName: string;
     }
   >;
+  /** Coaches who received a match-notify for this lead. */
+  notifiedProfessionals?: LeadNotifiedProfessional[];
 };
 
 export type UpdateLeadInput = {

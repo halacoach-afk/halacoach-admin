@@ -75,6 +75,7 @@ export type {
   InviteAdminInput,
   LeadDetail,
   LeadLifecycleStatus,
+  LeadNotifiedProfessional,
   LeadStatus,
   LeadSummary,
   LeadUnlock,

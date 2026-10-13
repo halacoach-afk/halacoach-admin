@@ -33,6 +33,8 @@ import {
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
+import {DataTable} from '@/components/ui/DataTable';
+import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
@@ -40,7 +42,7 @@ import {
   type LeadPreferenceDisplay,
   leadPreferenceDisplay,
 } from '@/lib/lead-preference-labels';
-import {formatLeadSource, formatPostedAt} from '@/lib/lead-utils';
+import {formatLeadSource, formatPostedAt, formatPostedParts} from '@/lib/lead-utils';
 
 function PrefField({
   icon,
@@ -330,6 +332,57 @@ export function LeadDetailScreen({id}: {id: string}) {
             />
           ) : null}
         </div>
+
+        <section className="min-w-0">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Notified professionals
+          </h2>
+          {(lead.notifiedProfessionals ?? []).length === 0 ? (
+            <EmptyState
+              title="No notifications yet"
+              body="No coaches have been notified for this lead."
+            />
+          ) : (
+            <DataTable columns={['Name', 'Match', 'Cost', 'Notified']}>
+              {[...(lead.notifiedProfessionals ?? [])]
+                .sort((a, b) => (b.matchPercent ?? -1) - (a.matchPercent ?? -1))
+                .map(row => {
+                const notified = formatPostedParts(row.notifiedAt);
+                return (
+                  <tr
+                    key={row.id}
+                    className="border-b border-border last:border-0">
+                    <td className="px-4 py-3 align-top text-sm">
+                      <Link
+                        href={`/professionals/${row.professionalId}`}
+                        className="font-medium text-primary hover:underline">
+                        {row.professionalName}
+                      </Link>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                      {row.matchPercent != null ? `${row.matchPercent}%` : '-'}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                      {row.unlockCost != null ? row.unlockCost : '-'}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                      {notified ? (
+                        <div className="leading-snug">
+                          <div>{notified.date}</div>
+                          <div className="text-xs text-muted-foreground/80">
+                            {notified.time}
+                          </div>
+                        </div>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </DataTable>
+          )}
+        </section>
       </div>
     </>
   );
