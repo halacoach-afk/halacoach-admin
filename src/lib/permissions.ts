@@ -80,7 +80,6 @@ export function permissionForPath(pathname: string): Permission {
     settings: 'settings:read',
     messages: 'messages:read',
     admins: 'admins:read',
-    activity: 'activity:read',
   };
   return map[segment ?? ''] ?? 'dashboard:read';
 }

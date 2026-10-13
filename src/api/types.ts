@@ -940,6 +940,7 @@ export type ActivityLogEntry = {
   id: string;
   event: string;
   actorType: 'user' | 'admin' | 'system' | string;
+  actorKind?: 'system' | 'admin' | 'coach' | 'client' | 'user' | string | null;
   actorId: string | null;
   actorName: string | null;
   payload: Record<string, unknown>;
@@ -950,9 +951,13 @@ export type ActivityLogEntry = {
 export type ListActivityLogsParams = {
   page?: number;
   perPage?: number;
+  id?: string | number;
   event?: string;
+  events?: string[];
   actorType?: string;
+  actorKind?: string;
   actorId?: string | number;
+  actorName?: string;
   entityType?: string;
   entityId?: string | number;
   from?: string;

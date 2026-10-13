@@ -113,11 +113,11 @@ Sign-out is client-only (clears session cookie). No logout endpoint required for
 
 ### Activity logs
 
-Permission: `activity:read`.
+Permission: `activity:read`. Used by the dashboard Recent activity section and entity detail timelines (no separate Activity nav page).
 
 #### `GET /admin/v1/activity-logs`
 
-Paginated global feed. Query: `page`, `perPage`, `event`, `actorType`, `actorId`, `entityType`, `entityId`, `from`, `to` (ISO).
+Paginated global feed. Query: `page`, `perPage`, `event`, `events` (comma-separated), `actorType`, `actorKind` (`system`|`admin`|`coach`|`client`), `actorId`, `entityType`, `entityId`, `from`, `to` (ISO). Rows include `actorKind` and human-oriented `actorName`.
 
 #### `GET /admin/v1/clients/:id/activity-logs`
 
