@@ -54,12 +54,14 @@ function PrefField({
   value: ReactNode;
 }) {
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 overflow-hidden">
       <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        <span className="text-primary">{icon}</span>
+        <span className="shrink-0 text-primary">{icon}</span>
         {label}
       </p>
-      <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
+      <div className="mt-1 break-words text-sm font-medium text-foreground [overflow-wrap:anywhere]">
+        {value}
+      </div>
     </div>
   );
 }
@@ -176,7 +178,7 @@ function PersonCard({
         </div>
       </div>
       <div className="border-t border-border px-5 py-4">
-        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+        <div className="grid gap-x-6 gap-y-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <PrefField
             icon={<Mail className="size-3.5" strokeWidth={1.8} />}
             label="Email"
