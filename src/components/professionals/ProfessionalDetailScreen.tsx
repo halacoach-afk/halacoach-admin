@@ -156,7 +156,7 @@ const WALLET_PAYMENT_OPTIONS = [
 const WALLET_CHIP_LABELS: Record<WalletFilterKey, string> = {
   id: 'ID',
   date: 'When',
-  source: 'Source',
+  source: 'Details',
   types: 'Type',
   credits: 'Credits',
   paid: 'Paid',
@@ -659,16 +659,6 @@ export function ProfessionalDetailScreen({
       />,
     ),
     walletHeader(
-      'source',
-      'Source',
-      <ExcelFilterTextField
-        label="Search"
-        value={walletDraftFilters.source}
-        onChange={v => patchWalletDraft('source', v)}
-        autoFocus
-      />,
-    ),
-    walletHeader(
       'types',
       'Type',
       <ExcelFilterMultiSelect
@@ -716,6 +706,16 @@ export function ProfessionalDetailScreen({
           placeholder="∞"
         />
       </>,
+    ),
+    walletHeader(
+      'source',
+      'Details',
+      <ExcelFilterTextField
+        label="Search"
+        value={walletDraftFilters.source}
+        onChange={v => patchWalletDraft('source', v)}
+        autoFocus
+      />,
     ),
     walletHeader(
       'reference',
@@ -1520,14 +1520,6 @@ export function ProfessionalDetailScreen({
                       <td className="px-4 py-3 align-top font-medium tabular-nums text-foreground">
                         {txn.id}
                       </td>
-                      <td className="px-4 py-3 align-top text-sm font-medium text-foreground">
-                        <div>{source}</div>
-                        {txn.promoCode ? (
-                          <div className="mt-0.5 text-xs text-muted-foreground">
-                            Promo {txn.promoCode}
-                          </div>
-                        ) : null}
-                      </td>
                       <td className="px-4 py-3 align-top text-sm text-muted-foreground">
                         {creditTxnTypeLabel(txn.type)}
                       </td>
@@ -1543,6 +1535,14 @@ export function ProfessionalDetailScreen({
                         {txn.totalAed != null && txn.totalAed > 0
                           ? formatAed(txn.totalAed)
                           : '\u2014'}
+                      </td>
+                      <td className="px-4 py-3 align-top text-sm font-medium text-foreground">
+                        <div>{source}</div>
+                        {txn.promoCode ? (
+                          <div className="mt-0.5 text-xs text-muted-foreground">
+                            Promo {txn.promoCode}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3 align-top text-sm text-muted-foreground">
                         <span className="break-all">
