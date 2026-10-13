@@ -496,6 +496,7 @@ export type LeadSortBy =
   | 'days'
   | 'times'
   | 'location'
+  | 'radius'
   | 'client'
   | 'coach'
   | 'source'
@@ -516,6 +517,8 @@ export type ListLeadsParams = {
   days?: string | string[];
   times?: string | string[];
   location?: string;
+  radiusMin?: string | number;
+  radiusMax?: string | number;
   client?: string;
   coach?: string;
   sources?: string | string[];

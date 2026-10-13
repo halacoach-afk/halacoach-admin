@@ -749,6 +749,7 @@ export type LeadSummary = {
   style?: string | null;
   languages?: string[];
   ages?: string[];
+  radiusKm?: number | null;
   status: LeadStatus;
   leadStatus?: LeadLifecycleStatus;
   unlockCount: number;

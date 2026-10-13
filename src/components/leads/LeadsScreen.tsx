@@ -57,6 +57,8 @@ type ColumnFilters = {
   days: string[];
   times: string[];
   location: string;
+  radiusMin: string;
+  radiusMax: string;
   client: string;
   coach: string;
   sources: string[];
@@ -93,6 +95,8 @@ const EMPTY_COLUMN_FILTERS: ColumnFilters = {
   days: [],
   times: [],
   location: '',
+  radiusMin: '',
+  radiusMax: '',
   client: '',
   coach: '',
   sources: [],
@@ -214,9 +218,14 @@ function isColumnActive(filters: ColumnFilters, key: FilterColumnKey): boolean {
       return filters.sources.length > 0;
     case 'statuses':
       return filters.statuses.length > 0;
+    case 'location':
+      return Boolean(
+        filters.location.trim() ||
+          filters.radiusMin.trim() ||
+          filters.radiusMax.trim(),
+      );
     case 'id':
     case 'goalDetail':
-    case 'location':
     case 'client':
     case 'coach':
       return Boolean(filters[key].trim());
@@ -236,7 +245,7 @@ function clearedColumnSlice(key: FilterColumnKey): Partial<ColumnFilters> {
   if (key === 'statuses') return {statuses: []};
   if (key === 'id') return {id: ''};
   if (key === 'goalDetail') return {goalDetail: ''};
-  if (key === 'location') return {location: ''};
+  if (key === 'location') return {location: '', radiusMin: '', radiusMax: ''};
   if (key === 'client') return {client: ''};
   if (key === 'coach') return {coach: ''};
   return {};
@@ -291,10 +300,21 @@ function activeFilterChips(
       text: `${COLUMN_CHIP_LABELS.times}: ${labelOf(filters.times, TIME_OPTIONS)}`,
     });
   }
-  if (filters.location.trim()) {
+  if (
+    filters.location.trim() ||
+    filters.radiusMin.trim() ||
+    filters.radiusMax.trim()
+  ) {
+    const parts: string[] = [];
+    if (filters.location.trim()) parts.push(filters.location.trim());
+    if (filters.radiusMin.trim() || filters.radiusMax.trim()) {
+      const min = filters.radiusMin.trim() || '…';
+      const max = filters.radiusMax.trim() || '…';
+      parts.push(`Radius ${min}–${max} km`);
+    }
     chips.push({
       key: 'location',
-      text: `${COLUMN_CHIP_LABELS.location}: ${filters.location.trim()}`,
+      text: `${COLUMN_CHIP_LABELS.location}: ${parts.join(' · ')}`,
     });
   }
   if (filters.client.trim()) {
@@ -392,6 +412,8 @@ export function LeadsScreen() {
       days: appliedFilters.days.length ? appliedFilters.days : undefined,
       times: appliedFilters.times.length ? appliedFilters.times : undefined,
       location: appliedFilters.location.trim() || undefined,
+      radiusMin: appliedFilters.radiusMin.trim() || undefined,
+      radiusMax: appliedFilters.radiusMax.trim() || undefined,
       client: appliedFilters.client.trim() || undefined,
       coach: appliedFilters.coach.trim() || undefined,
       sources: appliedFilters.sources.length ? appliedFilters.sources : undefined,
@@ -611,12 +633,28 @@ export function LeadsScreen() {
     header(
       'location',
       'Location',
-      <ExcelFilterTextField
-        label="Search"
-        value={draftFilters.location}
-        onChange={v => patchDraft('location', v)}
-        autoFocus
-      />,
+      <>
+        <ExcelFilterTextField
+          label="Search"
+          value={draftFilters.location}
+          onChange={v => patchDraft('location', v)}
+          autoFocus
+        />
+        <ExcelFilterTextField
+          type="number"
+          label="Radius min (km)"
+          value={draftFilters.radiusMin}
+          onChange={v => patchDraft('radiusMin', v)}
+          placeholder="0"
+        />
+        <ExcelFilterTextField
+          type="number"
+          label="Radius max (km)"
+          value={draftFilters.radiusMax}
+          onChange={v => patchDraft('radiusMax', v)}
+          placeholder="∞"
+        />
+      </>,
     ),
     header(
       'client',
@@ -804,7 +842,20 @@ export function LeadsScreen() {
                 <Cell value={prefs.frequency} />
                 <Cell value={prefs.days} />
                 <Cell value={prefs.times} />
-                <Cell value={prefs.location} />
+                <td className="px-4 py-3 align-top text-sm text-foreground">
+                  {prefs.location !== '-' ? (
+                    <div className="leading-snug">
+                      <div>{prefs.location}</div>
+                      {prefs.radius !== '-' ? (
+                        <div className="text-xs text-muted-foreground">
+                          Radius {prefs.radius}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 align-top text-sm">
                   {row.clientId ? (
                     <Link
