@@ -23,9 +23,7 @@ export function ActivityTimeline({
   return (
     <section className="min-w-0">
       {title ? (
-        <div className="mb-3">
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        </div>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">{title}</h2>
       ) : null}
       <ActivityLogsTable scope={scope} compactFilters={compactFilters} />
     </section>

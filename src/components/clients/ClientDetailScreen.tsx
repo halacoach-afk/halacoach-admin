@@ -48,7 +48,7 @@ import {completionPercent} from '@/lib/professional-utils';
 function Section({title, children}: {title: string; children: ReactNode}) {
   return (
     <Card className="min-w-0 p-4 sm:p-5">
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h2 className="mb-4 text-lg font-semibold text-foreground">
         {title}
       </h2>
       {children}
@@ -457,7 +457,7 @@ export function ClientDetailScreen({
       </div>
 
       <div className="mt-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           Leads
         </h2>
         {clientLeads.length === 0 ? (

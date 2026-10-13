@@ -1025,7 +1025,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         </p>
       ) : null}
 
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Credit packages</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Credit packages</h2>
       {renderPackageCatalog(
         'one_time',
         oneTimePackages,
@@ -1035,7 +1035,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         '199',
       )}
 
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Membership plans</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Membership plans</h2>
       {renderPackageCatalog(
         'membership',
         membershipPackages,
@@ -1046,7 +1046,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
       )}
       {creditPackageError ? <p className="mb-6 text-sm text-destructive">{creditPackageError}</p> : null}
 
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Promo codes</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Promo codes</h2>
       <div className="mb-8">
         <DataTable
           columnHeaderClassNames={

@@ -337,7 +337,7 @@ export function LeadDetailScreen({id}: {id: string}) {
         </div>
 
         <section className="min-w-0">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             Unlocked professionals
           </h2>
           {lead.unlocks.length === 0 ? (
@@ -388,7 +388,7 @@ export function LeadDetailScreen({id}: {id: string}) {
         </section>
 
         <section className="min-w-0">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
             Notified professionals
           </h2>
           {(lead.notifiedProfessionals ?? []).length === 0 ? (

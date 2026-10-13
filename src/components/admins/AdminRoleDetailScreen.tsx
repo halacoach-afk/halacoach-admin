@@ -239,7 +239,7 @@ export function AdminRoleDetailScreen({actor, id}: {actor: SessionUser; id: stri
         <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-destructive">{saveError}</p>
       ) : null}
 
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Details</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Details</h2>
       <div className="mb-8">
         <DataTable
           columnHeaderClassNames={
@@ -309,7 +309,7 @@ export function AdminRoleDetailScreen({actor, id}: {actor: SessionUser; id: stri
         </DataTable>
       </div>
 
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Permissions</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Permissions</h2>
       <div className="mb-8">
         <DataTable columns={['Module', ...ACCESS_COLUMNS.map(column => column.label)]}>
           {moduleRows.map(row => (

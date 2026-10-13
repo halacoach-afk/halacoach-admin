@@ -191,7 +191,7 @@ export function AdminsScreen({actor}: {actor: SessionUser}) {
         </p>
       ) : null}
 
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Users</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Users</h2>
       <div className="mb-8">
         {admins.length === 0 && !canWrite ? (
           <EmptyState title="No users" body="Add the first operator below." />
@@ -314,7 +314,7 @@ export function AdminsScreen({actor}: {actor: SessionUser}) {
         )}
       </div>
 
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Roles & Permissions</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Roles & Permissions</h2>
       <div className="mb-8">
         {roles.length === 0 && !canWrite ? (
           <EmptyState title="No roles" body="Create the first role below." />

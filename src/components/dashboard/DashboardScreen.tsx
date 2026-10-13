@@ -156,9 +156,7 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
       </div>
 
       <section className="min-w-0">
-        <div className="mb-3">
-          <h2 className="text-lg font-semibold text-foreground">Recent activity</h2>
-        </div>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Recent activity</h2>
 
         {!canReadActivity ? (
           <Card>
