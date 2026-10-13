@@ -335,6 +335,57 @@ export function LeadDetailScreen({id}: {id: string}) {
 
         <section className="min-w-0">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Unlocked professionals
+          </h2>
+          {lead.unlocks.length === 0 ? (
+            <EmptyState
+              title="No unlocks yet"
+              body="No coaches have unlocked this lead."
+            />
+          ) : (
+            <DataTable columns={['Name', 'Match', 'Credits', 'When']}>
+              {[...lead.unlocks]
+                .sort((a, b) => (b.matchPercent ?? -1) - (a.matchPercent ?? -1))
+                .map(row => {
+                  const when = formatPostedParts(row.unlockedAt);
+                  return (
+                    <tr
+                      key={row.id}
+                      className="border-b border-border last:border-0">
+                      <td className="px-4 py-3 align-top text-sm">
+                        <Link
+                          href={`/professionals/${row.professionalId}`}
+                          className="font-medium text-primary hover:underline">
+                          {row.professionalName}
+                        </Link>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                        {row.matchPercent != null ? `${row.matchPercent}%` : '-'}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                        {row.credits}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                        {when ? (
+                          <div className="leading-snug">
+                            <div>{when.date}</div>
+                            <div className="text-xs text-muted-foreground/80">
+                              {when.time}
+                            </div>
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+            </DataTable>
+          )}
+        </section>
+
+        <section className="min-w-0">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Notified professionals
           </h2>
           {(lead.notifiedProfessionals ?? []).length === 0 ? (

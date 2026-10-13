@@ -682,6 +682,7 @@ export type LeadUnlock = {
   id: string;
   professionalId: string;
   credits: number;
+  matchPercent?: number | null;
   unlockedAt: string;
 };
 
