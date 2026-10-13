@@ -111,6 +111,41 @@ Sign-out is client-only (clears session cookie). No logout endpoint required for
 
 `recentActivity.kind`: `client_signup` \| `pro_signup` \| `verification_pending` \| `lead_unlock` \| `credit_purchase` \| `support_ticket`
 
+### Activity logs
+
+Permission: `activity:read`. Used by the dashboard Recent activity section and entity detail timelines (no separate Activity nav page).
+
+#### `GET /admin/v1/activity-logs`
+
+Paginated global feed. Query: `page`, `perPage`, `event`, `events` (comma-separated), `actorType`, `actorKind` (`system`|`admin`|`coach`|`client`), `actorId`, `entityType`, `entityId`, `from`, `to` (ISO). Rows include `actorKind` and human-oriented `actorName`.
+
+#### `GET /admin/v1/clients/:id/activity-logs`
+
+Client timeline (`entity_type=client`).
+
+#### `GET /admin/v1/professionals/:id/activity-logs`
+
+Coach timeline (`entity_type=coach`).
+
+#### `GET /admin/v1/leads/:id/activity-logs`
+
+Lead timeline (`entity_type=lead`).
+
+**Row shape**
+
+```json
+{
+  "id": "1",
+  "event": "lead.unlocked",
+  "actorType": "user",
+  "actorId": "12",
+  "actorName": "Test Coach",
+  "payload": { "creditsSpent": 50 },
+  "entities": [{ "type": "lead", "id": "3" }, { "type": "coach", "id": "12" }],
+  "occurredAt": "2026-10-13T07:00:00.000Z"
+}
+```
+
 ### `GET /admin/nav-badges`
 
 Lightweight action-required counts for the admin sidebar (no activity feed).

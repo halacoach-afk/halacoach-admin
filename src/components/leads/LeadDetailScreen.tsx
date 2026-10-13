@@ -30,9 +30,12 @@ import {
   type LeadDetail,
   type LeadLifecycleStatus,
 } from '@/api';
+import {ActivityTimeline} from '@/components/activity/ActivityTimeline';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
+import {DataTable} from '@/components/ui/DataTable';
+import {EmptyState} from '@/components/ui/EmptyState';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
@@ -40,7 +43,7 @@ import {
   type LeadPreferenceDisplay,
   leadPreferenceDisplay,
 } from '@/lib/lead-preference-labels';
-import {formatPostedAt} from '@/lib/lead-utils';
+import {formatLeadSource, formatPostedAt, formatPostedParts} from '@/lib/lead-utils';
 
 function PrefField({
   icon,
@@ -52,12 +55,14 @@ function PrefField({
   value: ReactNode;
 }) {
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 overflow-hidden">
       <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        <span className="text-primary">{icon}</span>
+        <span className="shrink-0 text-primary">{icon}</span>
         {label}
       </p>
-      <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
+      <div className="mt-1 break-words text-sm font-medium text-foreground [overflow-wrap:anywhere]">
+        {value}
+      </div>
     </div>
   );
 }
@@ -174,7 +179,7 @@ function PersonCard({
         </div>
       </div>
       <div className="border-t border-border px-5 py-4">
-        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+        <div className="grid gap-x-6 gap-y-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <PrefField
             icon={<Mail className="size-3.5" strokeWidth={1.8} />}
             label="Email"
@@ -297,7 +302,14 @@ export function LeadDetailScreen({id}: {id: string}) {
           </div>
 
           <div className="border-t border-border px-5 py-3">
-            <p className="text-sm text-muted-foreground">{formatPostedAt(lead.postedAt)}</p>
+            <p className="text-sm text-muted-foreground">
+              {(() => {
+                const sourceLabel = formatLeadSource(lead.source);
+                return sourceLabel !== '-'
+                  ? `${sourceLabel} · ${formatPostedAt(lead.postedAt)}`
+                  : formatPostedAt(lead.postedAt);
+              })()}
+            </p>
           </div>
         </Card>
 
@@ -323,6 +335,110 @@ export function LeadDetailScreen({id}: {id: string}) {
             />
           ) : null}
         </div>
+
+        <section className="min-w-0">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
+            Unlocked professionals
+          </h2>
+          {lead.unlocks.length === 0 ? (
+            <EmptyState
+              title="No unlocks yet"
+              body="No coaches have unlocked this lead."
+            />
+          ) : (
+            <DataTable columns={['Name', 'Match', 'Credits', 'When']}>
+              {[...lead.unlocks]
+                .sort((a, b) => (b.matchPercent ?? -1) - (a.matchPercent ?? -1))
+                .map(row => {
+                  const when = formatPostedParts(row.unlockedAt);
+                  return (
+                    <tr
+                      key={row.id}
+                      className="border-b border-border last:border-0">
+                      <td className="px-4 py-3 align-top text-sm">
+                        <Link
+                          href={`/professionals/${row.professionalId}`}
+                          className="font-medium text-primary hover:underline">
+                          {row.professionalName}
+                        </Link>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                        {row.matchPercent != null ? `${row.matchPercent}%` : '-'}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                        {row.credits}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                        {when ? (
+                          <div className="leading-snug">
+                            <div>{when.date}</div>
+                            <div className="text-xs text-muted-foreground/80">
+                              {when.time}
+                            </div>
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+            </DataTable>
+          )}
+        </section>
+
+        <section className="min-w-0">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">
+            Notified professionals
+          </h2>
+          {(lead.notifiedProfessionals ?? []).length === 0 ? (
+            <EmptyState
+              title="No notifications yet"
+              body="No coaches have been notified for this lead."
+            />
+          ) : (
+            <DataTable columns={['Name', 'Match', 'Cost', 'Notified']}>
+              {[...(lead.notifiedProfessionals ?? [])]
+                .sort((a, b) => (b.matchPercent ?? -1) - (a.matchPercent ?? -1))
+                .map(row => {
+                const notified = formatPostedParts(row.notifiedAt);
+                return (
+                  <tr
+                    key={row.id}
+                    className="border-b border-border last:border-0">
+                    <td className="px-4 py-3 align-top text-sm">
+                      <Link
+                        href={`/professionals/${row.professionalId}`}
+                        className="font-medium text-primary hover:underline">
+                        {row.professionalName}
+                      </Link>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                      {row.matchPercent != null ? `${row.matchPercent}%` : '-'}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                      {row.unlockCost != null ? row.unlockCost : '-'}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                      {notified ? (
+                        <div className="leading-snug">
+                          <div>{notified.date}</div>
+                          <div className="text-xs text-muted-foreground/80">
+                            {notified.time}
+                          </div>
+                        </div>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </DataTable>
+          )}
+        </section>
+
+        <ActivityTimeline scope={{kind: 'lead', id}} />
       </div>
     </>
   );

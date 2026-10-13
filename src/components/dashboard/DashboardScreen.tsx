@@ -10,17 +10,12 @@ import {
   type DashboardOverview,
   type SessionUser,
 } from '@/api';
-import {Badge} from '@/components/ui/Badge';
+import {ActivityLogsTable} from '@/components/activity/ActivityLogsTable';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
 import {ErrorState} from '@/components/ui/ErrorState';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
-import {
-  dashboardActivityLabels,
-  formatActivitySubtitle,
-  formatDashboardTime,
-} from '@/lib/dashboard-utils';
 import {can, type Permission} from '@/lib/permissions';
 
 type StatCard = {
@@ -79,20 +74,12 @@ function buildStatCards(overview: DashboardOverview): StatCard[] {
   ];
 }
 
-const activityPermission: Record<DashboardOverview['recentActivity'][number]['kind'], Permission> = {
-  client_signup: 'clients:read',
-  pro_signup: 'professionals:read',
-  verification_pending: 'verification:read',
-  lead_unlock: 'leads:read',
-  credit_purchase: 'credits:read',
-  support_ticket: 'support:read',
-};
-
 export function DashboardScreen({actor}: {actor: SessionUser}) {
   const pathname = usePathname();
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const canReadActivity = can(actor, 'activity:read');
 
   const load = async () => {
     setLoading(true);
@@ -115,15 +102,8 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
 
   const statCards = useMemo(
     () => (overview ? buildStatCards(overview).filter(card => can(actor, card.permission)) : []),
-    [overview, actor.role],
+    [overview, actor],
   );
-
-  const activity = useMemo(() => {
-    if (!overview) {
-      return [];
-    }
-    return overview.recentActivity.filter(item => can(actor, activityPermission[item.kind]));
-  }, [overview, actor.role]);
 
   if (loading && !overview) {
     return <LoadingState label="Loading dashboard..." />;
@@ -161,7 +141,9 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm text-muted-foreground">{card.label}</p>
-                  <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">{card.value}</p>
+                  <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+                    {card.value}
+                  </p>
                   {card.hint ? (
                     <p className="mt-1 text-xs text-muted-foreground">{card.hint}</p>
                   ) : null}
@@ -173,42 +155,19 @@ export function DashboardScreen({actor}: {actor: SessionUser}) {
         ))}
       </div>
 
-      <Card>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Recent activity</h2>
-            <p className="text-sm text-muted-foreground">
-              Latest signups, verifications, unlocks, purchases, and support messages.
-            </p>
-          </div>
-        </div>
+      <section className="min-w-0">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Recent activity</h2>
 
-        {activity.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No recent activity visible for your role.</p>
+        {!canReadActivity ? (
+          <Card>
+            <p className="text-sm text-muted-foreground">
+              Activity history requires the activity:read permission.
+            </p>
+          </Card>
         ) : (
-          <ul className="divide-y divide-border">
-            {activity.map(item => (
-              <li key={item.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge tone="sky">{dashboardActivityLabels[item.kind]}</Badge>
-                    <p className="font-medium text-foreground">{item.title}</p>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {formatActivitySubtitle(item)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="text-muted-foreground">{formatDashboardTime(item.at)}</span>
-                  <Link href={item.href} className="font-semibold text-primary hover:underline">
-                    Open
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <ActivityLogsTable scope={{kind: 'global'}} />
         )}
-      </Card>
+      </section>
     </>
   );
 }

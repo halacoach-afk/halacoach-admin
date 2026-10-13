@@ -19,7 +19,8 @@ export type AdminPermission =
   | 'settings:write'
   | 'messages:read'
   | 'admins:read'
-  | 'admins:write';
+  | 'admins:write'
+  | 'activity:read';
 
 export type AdminRole = string;
 
@@ -337,10 +338,23 @@ export type VerificationFile = {
 
 export type ProfessionalTxn = {
   id: string;
-  type: 'purchase' | 'spend' | 'adjustment' | 'membership_grant';
+  type: 'purchase' | 'spend' | 'adjustment' | 'membership_grant' | 'expiry';
   credits: number;
   label: string;
   at: string;
+  /** Pack name or derived source label. */
+  source?: string | null;
+  packName?: string | null;
+  promoCode?: string | null;
+  /** Amount charged in AED (purchases / membership grants). */
+  totalAed?: number | null;
+  orderId?: string | null;
+  /** Best available payment / order / subscription reference. */
+  reference?: string | null;
+  paymentMethod?: string | null;
+  /** e.g. completed | test | failed */
+  paymentStatus?: string | null;
+  fakePayment?: boolean;
 };
 
 export type ProServiceRate = {
@@ -397,6 +411,8 @@ export type Professional = {
   suspended: boolean;
   deletedAt?: string | null;
   onboarded: boolean;
+  /** Bought Founding Premium Pro and/or founding trial credit pack. */
+  isFoundingProfessional?: boolean;
   createdAt: string;
   lastActiveAt?: string;
   serviceIds: number[];
@@ -410,6 +426,12 @@ export type Professional = {
   pricing: ProPricing;
   matchPrefs: MatchPrefs;
   bio: string;
+  /** @deprecated Prefer `notes`. */
+  adminNotes?: string;
+  /** @deprecated Prefer per-note followUpAt. */
+  adminFollowUpAt?: string | null;
+  /** Admin CRM notes (newest first). */
+  notes?: ProfessionalAdminNote[];
   credits: number;
   txns: ProfessionalTxn[];
   specialty: string;
@@ -463,6 +485,7 @@ export type ProfessionalSummary = {
   emailVerified: boolean;
   phoneVerified: boolean;
   specialty: string;
+  services?: string[];
   location: string;
   /** Experience band id from coach profile, e.g. `8-10`. */
   years: string;
@@ -474,6 +497,8 @@ export type ProfessionalSummary = {
   onboarded: boolean;
   suspended: boolean;
   deletedAt?: string | null;
+  /** Bought Founding Premium Pro and/or founding trial credit pack. */
+  isFoundingProfessional?: boolean;
   profileCompletion: number | ProfileCompletionPayload;
   createdAt: string;
   lastActiveAt: string;
@@ -495,6 +520,22 @@ export type UpdateProfessionalInput = {
   radiusKm?: number;
   activated?: boolean;
   suspended?: boolean;
+};
+
+export type ProfessionalAdminNote = {
+  id: string;
+  body: string;
+  followUpAt: string | null;
+  createdByAdminId: string | null;
+  createdByName?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpsertProfessionalNoteInput = {
+  body: string;
+  /** YYYY-MM-DD or empty string to clear. */
+  followUpAt?: string;
 };
 
 export type ClientConsents = {
@@ -642,6 +683,7 @@ export type LeadUnlock = {
   id: string;
   professionalId: string;
   credits: number;
+  matchPercent?: number | null;
   unlockedAt: string;
 };
 
@@ -676,6 +718,8 @@ export type MarketplaceLead = {
   assignedCoachName?: string | null;
   assignedCoachEmail?: string | null;
   assignedCoachPhone?: string | null;
+  /** website | android | ios */
+  source?: string | null;
   postedAt: string;
   closedAt: string | null;
   clientNote: string;
@@ -707,13 +751,27 @@ export type LeadSummary = {
   style?: string | null;
   languages?: string[];
   ages?: string[];
+  radiusKm?: number | null;
   status: LeadStatus;
   leadStatus?: LeadLifecycleStatus;
   unlockCount: number;
   unlockCreditsTotal?: number;
   assignedCoachId?: string | null;
   assignedCoachName?: string | null;
+  /** website | android | ios */
+  source?: string | null;
   postedAt: string;
+};
+
+export type LeadNotifiedProfessional = {
+  id: string;
+  professionalId: string;
+  professionalName: string;
+  professionalEmail?: string | null;
+  matchPercent: number | null;
+  /** Credits to unlock at this match % (same formula as marketplace). */
+  unlockCost?: number | null;
+  notifiedAt: string;
 };
 
 export type LeadDetail = Omit<MarketplaceLead, 'unlocks'> & {
@@ -725,6 +783,8 @@ export type LeadDetail = Omit<MarketplaceLead, 'unlocks'> & {
       professionalName: string;
     }
   >;
+  /** Coaches who received a match-notify for this lead. */
+  notifiedProfessionals?: LeadNotifiedProfessional[];
 };
 
 export type UpdateLeadInput = {
@@ -869,4 +929,37 @@ export type DashboardOverview = {
 export type NavBadges = {
   pendingVerifications: number;
   openSupportTickets: number;
+};
+
+export type ActivityLogEntityRef = {
+  type: string;
+  id: string;
+};
+
+export type ActivityLogEntry = {
+  id: string;
+  event: string;
+  actorType: 'user' | 'admin' | 'system' | string;
+  actorKind?: 'system' | 'admin' | 'coach' | 'client' | 'user' | string | null;
+  actorId: string | null;
+  actorName: string | null;
+  payload: Record<string, unknown>;
+  entities: ActivityLogEntityRef[];
+  occurredAt: string | null;
+};
+
+export type ListActivityLogsParams = {
+  page?: number;
+  perPage?: number;
+  id?: string | number;
+  event?: string;
+  events?: string[];
+  actorType?: string;
+  actorKind?: string;
+  actorId?: string | number;
+  actorName?: string;
+  entityType?: string;
+  entityId?: string | number;
+  from?: string;
+  to?: string;
 };

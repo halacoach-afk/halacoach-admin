@@ -11,7 +11,7 @@ export function DataTable({
   columnWidths,
   columnHeaderClassNames,
 }: {
-  columns: string[];
+  columns: ReactNode[];
   children: ReactNode;
   footer?: ReactNode;
   /** Renders below the scrollable table as a sticky-feeling footer (e.g. PaginationBar). */
@@ -39,7 +39,7 @@ export function DataTable({
           {columnWidths?.length ? (
             <colgroup>
               {columnWidths.map((width, index) => (
-                <col key={columns[index] ?? index} style={{width}} />
+                <col key={index} style={{width}} />
               ))}
             </colgroup>
           ) : null}
@@ -47,8 +47,11 @@ export function DataTable({
             <tr>
               {columns.map((col, index) => (
                 <th
-                  key={col}
-                  className={cn('px-4 py-3 font-semibold', columnHeaderClassNames?.[index])}>
+                  key={index}
+                  className={cn(
+                    'relative px-4 py-3 font-semibold',
+                    columnHeaderClassNames?.[index],
+                  )}>
                   {col}
                 </th>
               ))}

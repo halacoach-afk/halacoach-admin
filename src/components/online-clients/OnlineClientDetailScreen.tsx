@@ -209,7 +209,7 @@ function PersonCard({
 
 function SectionTitle({children}: {children: ReactNode}) {
   return (
-    <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+    <h2 className="mb-4 text-lg font-semibold text-foreground">
       {children}
     </h2>
   );

@@ -30,6 +30,7 @@ import {
   type ProfileCompletionPayload,
   type SessionUser,
 } from '@/api';
+import {ActivityTimeline} from '@/components/activity/ActivityTimeline';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
@@ -47,7 +48,7 @@ import {completionPercent} from '@/lib/professional-utils';
 function Section({title, children}: {title: string; children: ReactNode}) {
   return (
     <Card className="min-w-0 p-4 sm:p-5">
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h2 className="mb-4 text-lg font-semibold text-foreground">
         {title}
       </h2>
       {children}
@@ -456,7 +457,7 @@ export function ClientDetailScreen({
       </div>
 
       <div className="mt-6">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           Leads
         </h2>
         {clientLeads.length === 0 ? (
@@ -524,6 +525,12 @@ export function ClientDetailScreen({
           </DataTable>
         )}
       </div>
+
+      {can(actor, 'activity:read') ? (
+        <div className="mt-4">
+          <ActivityTimeline scope={{kind: 'client', id}} />
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={pendingSuspend !== null}

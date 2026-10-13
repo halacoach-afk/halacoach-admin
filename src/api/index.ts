@@ -1,6 +1,7 @@
 import {request, requestBlob} from './client';
-import {buildListQuery} from '@/lib/pagination';
+import {buildListQuery, DEFAULT_PER_PAGE} from '@/lib/pagination';
 import type {
+  ActivityLogEntry,
   AdminUser,
   AdminUserDetail,
   CatalogService,
@@ -12,15 +13,19 @@ import type {
   InviteAdminInput,
   LeadDetail,
   LeadSummary,
+  ListActivityLogsParams,
   Paginated,
   Professional,
+  ProfessionalAdminNote,
   ProfessionalSummary,
+  ProfessionalTxn,
   RejectVerificationInput,
   SessionResponse,
   UpdateAdminInput,
   UpdateClientInput,
   UpdateLeadInput,
   UpdateProfessionalInput,
+  UpsertProfessionalNoteInput,
   UpdateServiceInput,
   VerificationQueueItem,
   VerificationQueueResponse,
@@ -39,6 +44,8 @@ import type {
 } from './types';
 
 export type {
+  ActivityLogEntry,
+  ActivityLogEntityRef,
   AdminPermission,
   AdminPermissionCatalogItem,
   AdminRole,
@@ -48,6 +55,7 @@ export type {
   AdminUserDetail,
 
   AdjustCreditsInput,
+  ListActivityLogsParams,
   CatalogService,
   Client,
   ClientConsents,
@@ -72,6 +80,7 @@ export type {
   InviteAdminInput,
   LeadDetail,
   LeadLifecycleStatus,
+  LeadNotifiedProfessional,
   LeadStatus,
   LeadSummary,
   LeadUnlock,
@@ -83,8 +92,10 @@ export type {
   Paginated,
   PaginationMeta,
   Professional,
+  ProfessionalAdminNote,
   ProfessionalSummary,
   ProfessionalTxn,
+  UpsertProfessionalNoteInput,
   ProPricing,
   ProServiceRate,
   MatchPrefs,
@@ -214,20 +225,159 @@ export function adjustCredits(input: AdjustCreditsInput) {
   });
 }
 
-export function listProfessionals(
-  params: {page?: number; perPage?: number; q?: string; filter?: string} = {},
-) {
+export type ProfessionalSortBy =
+  | 'id'
+  | 'name'
+  | 'email'
+  | 'phone'
+  | 'services'
+  | 'location'
+  | 'joined'
+  | 'verification'
+  | 'status'
+  | 'credits'
+  | 'profile';
+
+export type ListProfessionalsParams = {
+  page?: number;
+  perPage?: number;
+  q?: string;
+  /** @deprecated Prefer accountStatuses */
+  filter?: string;
+  id?: string | number;
+  /** Explicit IDs for selected-row export (takes precedence over other filters). */
+  ids?: Array<string | number>;
+  name?: string;
+  email?: string;
+  phone?: string;
+  /** Multi-select catalog service ids (OR). */
+  serviceIds?: Array<string | number>;
+  location?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  /** Multi-select verification statuses (OR). */
+  verificationStatuses?: string[];
+  /** Multi-select account statuses (OR): onboarded|incomplete|suspended|deleted */
+  accountStatuses?: string[];
+  creditsMin?: string | number;
+  creditsMax?: string | number;
+  profileMin?: string | number;
+  profileMax?: string | number;
+  sortBy?: ProfessionalSortBy;
+  sortDir?: 'asc' | 'desc';};
+
+export function listProfessionals(params: ListProfessionalsParams = {}) {
   return request<Paginated<ProfessionalSummary>>(`/v1/professionals${buildListQuery(params)}`);
+}
+
+/** Download filtered professionals as CSV (same filters/sort as the list). */
+export function exportProfessionalsCsv(
+  params: Omit<ListProfessionalsParams, 'page' | 'perPage'> = {},
+) {
+  return requestBlob(`/v1/professionals/export${buildListQuery(params)}`);
+}
+
+export type ProfessionalBulkAction =
+  | 'activate'
+  | 'deactivate'
+  | 'suspend'
+  | 'unsuspend';
+
+export type ProfessionalBulkResult = {
+  action: ProfessionalBulkAction;
+  updated: number;
+  failed: Array<{id: string; message: string}>;
+  updatedIds: string[];
+};
+
+export function bulkUpdateProfessionals(
+  ids: Array<string | number>,
+  action: ProfessionalBulkAction,
+) {
+  return request<ProfessionalBulkResult>('/v1/professionals/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ids: ids.map(String), action}),
+  });
 }
 
 export function getProfessional(id: string) {
   return request<Professional>(`/v1/professionals/${id}`);
 }
 
+export type WalletTxnSortBy =
+  | 'id'
+  | 'source'
+  | 'type'
+  | 'credits'
+  | 'paid'
+  | 'reference'
+  | 'payment'
+  | 'date';
+
+export type ListProfessionalWalletParams = {
+  page?: number;
+  perPage?: number;
+  /** Exact transaction id. */
+  id?: string | number;
+  /** Comma-separated or array: purchase|spend|adjustment|membership_grant|expiry */
+  type?: string | string[];
+  /** Comma-separated or array: completed|test|none */
+  payment?: string | string[];
+  createdFrom?: string;
+  createdTo?: string;
+  /** Source / pack / label search. */
+  q?: string;
+  reference?: string;
+  creditsMin?: string | number;
+  creditsMax?: string | number;
+  paidMin?: string | number;
+  paidMax?: string | number;
+  sortBy?: WalletTxnSortBy;
+  sortDir?: 'asc' | 'desc';};
+
+export function listProfessionalWalletTransactions(
+  id: string,
+  params: ListProfessionalWalletParams = {},
+) {
+  return request<Paginated<ProfessionalTxn>>(
+    `/v1/professionals/${id}/wallet-transactions${buildListQuery(params)}`,
+  );
+}
+
 export function updateProfessional(id: string, input: UpdateProfessionalInput) {
   return request<Professional>(`/v1/professionals/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
+  });
+}
+
+export function createProfessionalNote(
+  professionalId: string,
+  input: UpsertProfessionalNoteInput,
+) {
+  return request<ProfessionalAdminNote>(`/v1/professionals/${professionalId}/notes`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateProfessionalNote(
+  professionalId: string,
+  noteId: string,
+  input: UpsertProfessionalNoteInput,
+) {
+  return request<ProfessionalAdminNote>(
+    `/v1/professionals/${professionalId}/notes/${noteId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function deleteProfessionalNote(professionalId: string, noteId: string) {
+  return request<void>(`/v1/professionals/${professionalId}/notes/${noteId}`, {
+    method: 'DELETE',
   });
 }
 
@@ -251,7 +401,12 @@ export async function listVerificationQueue(
     return {
       documentTypes: [],
       items: data,
-      meta: {page: 1, perPage: data.length || 20, total: data.length, lastPage: 1},
+      meta: {
+        page: 1,
+        perPage: data.length || DEFAULT_PER_PAGE,
+        total: data.length,
+        lastPage: 1,
+      },
       counts: {all: data.length, pending: 0, rejected: 0, verified: 0},
     };
   }
@@ -261,7 +416,7 @@ export async function listVerificationQueue(
     items,
     meta: data.meta ?? {
       page: 1,
-      perPage: items.length || 20,
+      perPage: items.length || DEFAULT_PER_PAGE,
       total: items.length,
       lastPage: 1,
     },
@@ -338,15 +493,53 @@ export function updateClient(id: string, input: UpdateClientInput) {
   });
 }
 
-export function listLeads(
-  params: {
-    page?: number;
-    perPage?: number;
-    status?: string;
-    clientId?: string | number;
-    assignedCoachId?: string | number;
-  } = {},
-) {
+export type LeadSortBy =
+  | 'id'
+  | 'goal'
+  | 'goalDetail'
+  | 'format'
+  | 'frequency'
+  | 'days'
+  | 'times'
+  | 'location'
+  | 'radius'
+  | 'client'
+  | 'coach'
+  | 'source'
+  | 'unlocks'
+  | 'status'
+  | 'posted';
+
+export type ListLeadsParams = {
+  page?: number;
+  perPage?: number;
+  /** Single status (legacy) or use statuses. */
+  status?: string | string[];
+  statuses?: string | string[];
+  id?: string | number;
+  serviceIds?: string | string[];
+  goalDetail?: string;
+  formats?: string | string[];
+  frequencies?: string | string[];
+  days?: string | string[];
+  times?: string | string[];
+  location?: string;
+  radiusMin?: string | number;
+  radiusMax?: string | number;
+  client?: string;
+  coach?: string;
+  sources?: string | string[];
+  unlocksMin?: string | number;
+  unlocksMax?: string | number;
+  createdFrom?: string;
+  createdTo?: string;
+  clientId?: string | number;
+  assignedCoachId?: string | number;
+  sortBy?: LeadSortBy;
+  sortDir?: 'asc' | 'desc';
+};
+
+export function listLeads(params: ListLeadsParams = {}) {
   return request<Paginated<LeadSummary>>(`/v1/leads${buildListQuery(params)}`);
 }
 
@@ -439,4 +632,37 @@ export function listOnlinePlans(params: {page?: number; perPage?: number} = {}) 
 
 export function getOnlinePlan(id: number) {
   return request<OnlinePlanDetail>(`/v1/online-plans/${id}`);
+}
+
+export function listActivityLogs(params: ListActivityLogsParams = {}) {
+  return request<Paginated<ActivityLogEntry>>(
+    `/v1/activity-logs${buildListQuery(params)}`,
+  );
+}
+
+export function listClientActivityLogs(
+  id: string | number,
+  params: ListActivityLogsParams = {},
+) {
+  return request<Paginated<ActivityLogEntry>>(
+    `/v1/clients/${id}/activity-logs${buildListQuery(params)}`,
+  );
+}
+
+export function listProfessionalActivityLogs(
+  id: string | number,
+  params: ListActivityLogsParams = {},
+) {
+  return request<Paginated<ActivityLogEntry>>(
+    `/v1/professionals/${id}/activity-logs${buildListQuery(params)}`,
+  );
+}
+
+export function listLeadActivityLogs(
+  id: string | number,
+  params: ListActivityLogsParams = {},
+) {
+  return request<Paginated<ActivityLogEntry>>(
+    `/v1/leads/${id}/activity-logs${buildListQuery(params)}`,
+  );
 }

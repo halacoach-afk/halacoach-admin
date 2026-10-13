@@ -263,7 +263,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
         </p>
       ) : null}
 
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Support contact</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Support contact</h2>
       <div className="mb-8">
         <DataTable
           columnHeaderClassNames={
@@ -353,7 +353,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
         </DataTable>
       </div>
 
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Features</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Features</h2>
       <div className="mb-8">
         <DataTable
           columnHeaderClassNames={[undefined, undefined, 'text-right']}
@@ -388,7 +388,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
         </DataTable>
       </div>
 
-      <h2 className="mb-3 text-lg font-semibold text-foreground">Billing</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Billing</h2>
       <div className="mb-8">
         <DataTable
           columnHeaderClassNames={canWrite ? [undefined, 'text-right'] : undefined}

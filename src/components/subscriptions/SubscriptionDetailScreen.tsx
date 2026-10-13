@@ -15,7 +15,7 @@ import {formatAed} from '@/lib/credit-utils';
 function Section({title, children}: {title: string; children: ReactNode}) {
   return (
     <Card>
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h2 className="mb-4 text-lg font-semibold text-foreground">
         {title}
       </h2>
       {children}
@@ -144,7 +144,7 @@ export function SubscriptionDetailScreen({
       </div>
 
       <div className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
           Subscription transactions
         </h2>
         {(sub.transactions ?? []).length === 0 ? (

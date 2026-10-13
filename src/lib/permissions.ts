@@ -24,6 +24,7 @@ export const ALL_PERMISSIONS: Permission[] = [
   'messages:read',
   'admins:read',
   'admins:write',
+  'activity:read',
 ];
 
 const DEFAULT_BY_ROLE: Record<string, Permission[]> = {
