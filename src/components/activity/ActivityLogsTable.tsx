@@ -319,19 +319,18 @@ export function ActivityLogsTable({scope, compactFilters = false}: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applied, draft, openColumn, compactFilters]);
 
-  if (!hasLoaded && loading) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">Loading activity…</p>;
-  }
-
-  if (error && !hasLoaded) {
-    return <ErrorState body={error} onRetry={() => void load(1)} />;
-  }
+  const colSpan = columns.length;
+  const showSpinner = loading && rows.length === 0;
+  const showEmpty = !loading && rows.length === 0;
 
   return (
     <>
       {error ? (
         <div className="mb-3">
-          <ErrorState body={error} onRetry={() => void load(page)} />
+          <ErrorState
+            body={error}
+            onRetry={() => void load(hasLoaded ? page : 1)}
+          />
         </div>
       ) : null}
       <DataTable
@@ -350,10 +349,19 @@ export function ActivityLogsTable({scope, compactFilters = false}: Props) {
             />
           ) : undefined
         }>
-        {rows.length === 0 ? (
+        {showSpinner ? (
+          <tr>
+            <td colSpan={colSpan} className="px-4 py-10 text-center">
+              <div className="inline-flex items-center gap-3 text-sm text-muted-foreground">
+                <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
+                Loading activity…
+              </div>
+            </td>
+          </tr>
+        ) : showEmpty ? (
           <tr>
             <td
-              colSpan={columns.length}
+              colSpan={colSpan}
               className="whitespace-normal px-4 py-10 text-center text-sm text-muted-foreground">
               No activity found. Try widening column filters or wait for new events.
             </td>
