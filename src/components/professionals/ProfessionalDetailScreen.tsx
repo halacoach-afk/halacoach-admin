@@ -353,7 +353,7 @@ function resolvedLeadStatus(row: LeadSummary): LeadLifecycleStatus {
 function leadStatusTone(status: LeadLifecycleStatus) {
   if (status === 'in_progress') return 'primary' as const;
   if (status === 'completed') return 'muted' as const;
-  if (status === 'cancelled') return 'danger' as const;
+  if (status === 'cancelled' || status === 'deleted') return 'danger' as const;
   return 'sky' as const;
 }
 
@@ -361,6 +361,7 @@ function leadStatusLabel(status: LeadLifecycleStatus) {
   if (status === 'in_progress') return 'In progress';
   if (status === 'completed') return 'Completed';
   if (status === 'cancelled') return 'Cancelled';
+  if (status === 'deleted') return 'Deleted';
   return 'Open';
 }
 

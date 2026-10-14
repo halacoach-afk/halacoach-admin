@@ -16,6 +16,7 @@ export const ACTIVITY_EVENT_LABELS: Record<string, string> = {
   'user.preferences_updated': 'Preferences updated',
   'lead.created': 'Lead created',
   'lead.updated': 'Lead updated',
+  'lead.deleted': 'Lead deleted',
   'lead.assigned': 'Lead assigned',
   'lead.unlocked': 'Lead unlocked',
   'lead.completion_requested': 'Completion requested',

@@ -111,6 +111,7 @@ function lifecycleLabel(status: LeadLifecycleStatus | undefined, fallback: 'open
   if (status === 'in_progress') return 'In progress';
   if (status === 'completed') return 'Completed';
   if (status === 'cancelled') return 'Cancelled';
+  if (status === 'deleted') return 'Deleted';
   if (status === 'open' || fallback === 'open') return 'Open';
   return 'Closed';
 }
@@ -121,7 +122,7 @@ function lifecycleTone(
 ): 'primary' | 'muted' | 'warning' | 'danger' {
   if (status === 'in_progress') return 'warning';
   if (status === 'completed') return 'primary';
-  if (status === 'cancelled' || fallback === 'closed') return 'danger';
+  if (status === 'cancelled' || status === 'deleted' || fallback === 'closed') return 'danger';
   return 'primary';
 }
 

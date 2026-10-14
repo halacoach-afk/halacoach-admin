@@ -675,7 +675,12 @@ export type RejectVerificationInput = {
   }>;
 };
 
-export type LeadLifecycleStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
+export type LeadLifecycleStatus =
+  | 'open'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled'
+  | 'deleted';
 
 export type LeadStatus = 'open' | 'closed';
 
