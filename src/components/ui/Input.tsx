@@ -17,7 +17,7 @@ export function Input({label, error, className, id, type, ...props}: InputProps)
   return (
     <label className="block text-sm font-medium text-foreground" htmlFor={inputId}>
       {label}
-      <span className="relative mt-1.5 block">
+      <span className="relative mt-2 block">
         <input
           id={inputId}
           type={isPassword ? (visible ? 'text' : 'password') : type}

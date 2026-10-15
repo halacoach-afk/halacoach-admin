@@ -355,6 +355,8 @@ export type ProfessionalTxn = {
   /** e.g. completed | test | failed */
   paymentStatus?: string | null;
   fakePayment?: boolean;
+  /** Admin adjustment direction when type is `adjustment`. */
+  direction?: 'in' | 'out' | null;
 };
 
 export type ProServiceRate = {

@@ -20,6 +20,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import {
+  adjustCredits,
   createProfessionalNote,
   deleteProfessionalNote,
   fetchVerificationFileBlob,
@@ -145,6 +146,8 @@ const WALLET_TYPE_OPTIONS = [
   {value: 'purchase', label: 'Purchase'},
   {value: 'membership_grant', label: 'Membership'},
   {value: 'spend', label: 'Spend'},
+  {value: 'adjustment', label: 'Adjustment'},
+  {value: 'expiry', label: 'Expiry'},
 ];
 
 const WALLET_PAYMENT_OPTIONS = [
@@ -472,6 +475,7 @@ export function ProfessionalDetailScreen({
   id: string;
 }) {
   const canWrite = can(actor, 'professionals:write');
+  const canAdjustCredits = can(actor, 'credits:adjust');
   const [pro, setPro] = useState<Professional | null>(null);
   const [services, setServices] = useState<CatalogService[]>([]);
   const [leads, setLeads] = useState<LeadSummary[]>([]);
@@ -508,6 +512,12 @@ export function ProfessionalDetailScreen({
   const [walletSortDir, setWalletSortDir] = useState<'asc' | 'desc'>(
     DEFAULT_WALLET_SORT_DIR,
   );
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustMode, setAdjustMode] = useState<'add' | 'deduct'>('add');
+  const [adjustAmount, setAdjustAmount] = useState('');
+  const [adjustLabel, setAdjustLabel] = useState('');
+  const [adjustError, setAdjustError] = useState<string | null>(null);
+  const [adjusting, setAdjusting] = useState(false);
 
   const loadViewerFile = useCallback(async () => {
     if (!viewer) {
@@ -795,6 +805,23 @@ export function ProfessionalDetailScreen({
     void loadWallet(walletPage, walletPerPage);
   }, [walletPage, walletPerPage, loadWallet]);
 
+  useEffect(() => {
+    if (!adjustOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !adjusting) {
+        setAdjustOpen(false);
+        setAdjustError(null);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [adjustOpen, adjusting]);
+
   const notes = useMemo(
     () => (pro?.notes ?? []) as ProfessionalAdminNote[],
     [pro?.notes],
@@ -814,6 +841,58 @@ export function ProfessionalDetailScreen({
     const coachKey = String(pro.id);
     return leads.filter(lead => String(lead.assignedCoachId) === coachKey);
   }, [pro, leads]);
+
+  const openAdjustCredits = () => {
+    setAdjustMode('add');
+    setAdjustAmount('');
+    setAdjustLabel('');
+    setAdjustError(null);
+    setAdjustOpen(true);
+  };
+
+  const closeAdjustCredits = () => {
+    if (adjusting) return;
+    setAdjustOpen(false);
+    setAdjustError(null);
+  };
+
+  const submitAdjustCredits = async () => {
+    if (!pro) return;
+    const amount = Math.round(Number(adjustAmount));
+    if (!Number.isFinite(amount) || amount < 1) {
+      setAdjustError('Enter a whole number of at least 1 credit.');
+      return;
+    }
+    if (adjustMode === 'deduct' && amount > pro.credits) {
+      setAdjustError(
+        `Cannot deduct more than the current balance (${pro.credits}).`,
+      );
+      return;
+    }
+    const signed = adjustMode === 'add' ? amount : -amount;
+    const label = adjustLabel.trim() || undefined;
+    setAdjusting(true);
+    setAdjustError(null);
+    try {
+      const updated = await adjustCredits({
+        professionalId: String(pro.id),
+        credits: signed,
+        label,
+      });
+      setPro(updated);
+      setAdjustOpen(false);
+      setAdjustAmount('');
+      setAdjustLabel('');
+      setWalletPage(1);
+      void loadWallet(1, walletPerPage);
+    } catch (err) {
+      setAdjustError(
+        isApiError(err) ? err.message : 'Could not adjust credits.',
+      );
+    } finally {
+      setAdjusting(false);
+    }
+  };
 
   const toggleActivated = async () => {
     if (!pro || pendingActivate === null) {
@@ -1418,9 +1497,29 @@ export function ProfessionalDetailScreen({
       </div>
 
       <div className="mt-6">
-        <h2 className="mb-4 text-lg font-semibold text-foreground">
-          Wallet, credits and subscription history
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">
+              Wallet, credits and subscription history
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Balance:{' '}
+              <span className="font-semibold tabular-nums text-foreground">
+                {pro.credits}
+              </span>{' '}
+              credits
+            </p>
+          </div>
+          {canAdjustCredits ? (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={acting || adjusting}
+              onClick={openAdjustCredits}>
+              Adjust credits
+            </Button>
+          ) : null}
+        </div>
         {walletChips.length > 0 ? (
           <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground">
@@ -1471,10 +1570,14 @@ export function ProfessionalDetailScreen({
             return 'muted' as const;
           };
           const creditsDisplay = (txn: ProfessionalTxn) => {
-            if (txn.type === 'spend' || txn.type === 'expiry') {
+            const outflow =
+              txn.type === 'spend' ||
+              txn.type === 'expiry' ||
+              (txn.type === 'adjustment' && txn.direction === 'out');
+            if (outflow) {
               return `-${Math.abs(txn.credits)}`;
             }
-            return `+${txn.credits}`;
+            return `+${Math.abs(txn.credits)}`;
           };
           return (
             <DataTable
@@ -1687,6 +1790,106 @@ export function ProfessionalDetailScreen({
         }}
         onConfirm={() => void confirmDeleteNote()}
       />
+
+      {adjustOpen && pro ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-overlay p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="adjust-credits-title"
+            className="w-full max-w-md rounded-2xl bg-card p-6 shadow-lg">
+            <h2
+              id="adjust-credits-title"
+              className="text-lg font-semibold text-foreground">
+              Adjust credits
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Current balance:{' '}
+              <span className="font-semibold tabular-nums text-foreground">
+                {pro.credits}
+              </span>
+            </p>
+
+            <div className="mt-5 grid gap-5">
+              <div className="block text-sm font-medium text-foreground">
+                Action
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={adjustMode === 'add' ? 'primary' : 'outline'}
+                    disabled={adjusting}
+                    onClick={() => {
+                      setAdjustMode('add');
+                      setAdjustError(null);
+                    }}>
+                    Add credits
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={adjustMode === 'deduct' ? 'primary' : 'outline'}
+                    disabled={adjusting}
+                    onClick={() => {
+                      setAdjustMode('deduct');
+                      setAdjustError(null);
+                    }}>
+                    Deduct credits
+                  </Button>
+                </div>
+              </div>
+
+              <Input
+                label="Amount"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={1}
+                value={adjustAmount}
+                disabled={adjusting}
+                onChange={e => {
+                  setAdjustAmount(e.target.value);
+                  setAdjustError(null);
+                }}
+              />
+
+              <Input
+                label="Label (optional)"
+                type="text"
+                value={adjustLabel}
+                disabled={adjusting}
+                placeholder="Credits adjustment"
+                onChange={e => setAdjustLabel(e.target.value)}
+              />
+
+              {adjustError ? (
+                <p className="text-sm font-medium text-destructive" role="alert">
+                  {adjustError}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              <Button
+                variant="outline"
+                disabled={adjusting}
+                onClick={closeAdjustCredits}>
+                Cancel
+              </Button>
+              <Button
+                variant={adjustMode === 'deduct' ? 'destructive' : 'primary'}
+                disabled={adjusting}
+                onClick={() => void submitAdjustCredits()}>
+                {adjusting
+                  ? 'Saving…'
+                  : adjustMode === 'add'
+                    ? 'Add credits'
+                    : 'Deduct credits'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
