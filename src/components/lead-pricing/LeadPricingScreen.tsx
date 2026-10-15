@@ -151,14 +151,14 @@ export function LeadPricingScreen({actor}: {actor: SessionUser}) {
   });
 
   const [savedMatch, setSavedMatch] = useState({
-    fullMatchCredits: '50',
-    minCredits: '',
-    maxCredits: '',
+    fullMatchCredits: '85',
+    minCredits: '45',
+    maxCredits: '85',
   });
   const [matchDraft, setMatchDraft] = useState({
-    fullMatchCredits: '50',
-    minCredits: '',
-    maxCredits: '',
+    fullMatchCredits: '85',
+    minCredits: '45',
+    maxCredits: '85',
   });
   const [savedFactor, setSavedFactor] = useState<FactorDraft>({
     services: [],
