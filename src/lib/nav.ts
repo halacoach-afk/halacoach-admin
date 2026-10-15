@@ -78,7 +78,7 @@ export const navItems: NavItem[] = [
   },
   {
     href: '/credits',
-    label: 'Credits',
+    label: 'Credit Plans',
     description: 'Packs, promo codes, VAT, and catalog configuration.',
     icon: Coins,
     permission: 'credits:read',
