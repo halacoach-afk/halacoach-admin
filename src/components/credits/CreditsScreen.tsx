@@ -1000,7 +1000,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   return (
     <>
       <PageHeader
-        title="Credits"
+        title="Credit Plans"
         actions={
           <Button
             variant="outline"

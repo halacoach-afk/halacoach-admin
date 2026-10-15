@@ -618,6 +618,68 @@ export function updateFeaturesSettings(input: Partial<FeaturesSettings>) {
   });
 }
 
+export type LeadPricingMode = 'match_scaled' | 'factor_based';
+
+export type LeadCreditLimits = {
+  minCredits: number | null;
+  maxCredits: number | null;
+};
+
+export type LeadPricingConfig = {
+  mode: LeadPricingMode;
+  matchScaled: {fullMatchCredits: number} & LeadCreditLimits;
+  factorBased: {
+    services: Record<string, number>;
+    formats: Record<string, number>;
+    startTraining: Record<string, number>;
+    frequency: Record<string, number>;
+  } & LeadCreditLimits;
+};
+
+export type LeadPricingPayload = {
+  config: LeadPricingConfig;
+  services: Array<{
+    id: string;
+    name: string;
+    nameAr: string | null;
+    active: boolean;
+    credits: number;
+  }>;
+  meta: {
+    formatLeaves: Array<{id: string; credits: number}>;
+    startTrainingOptions: Array<{id: string; credits: number}>;
+    frequencyOptions: Array<{id: string; credits: number}>;
+  };
+};
+
+export type LeadPricingPatch = {
+  mode?: LeadPricingMode;
+  matchScaled?: {
+    fullMatchCredits?: number;
+    minCredits?: number | null;
+    maxCredits?: number | null;
+  };
+  factorBased?: {
+    services?: Record<string, number>;
+    formats?: Record<string, number>;
+    startTraining?: Record<string, number>;
+    frequency?: Record<string, number>;
+    minCredits?: number | null;
+    maxCredits?: number | null;
+  };
+};
+
+export function getLeadPricing() {
+  return request<LeadPricingPayload>('/v1/lead-pricing');
+}
+
+export function updateLeadPricing(input: LeadPricingPatch) {
+  return request<LeadPricingPayload>('/v1/lead-pricing', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
 export function listConversations(params: {page?: number; perPage?: number} = {}) {
   return request<Paginated<ConversationSummary>>(`/v1/messages${buildListQuery(params)}`);
 }
