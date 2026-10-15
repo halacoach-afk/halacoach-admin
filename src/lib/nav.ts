@@ -10,6 +10,7 @@ import {
   Receipt,
   Settings,
   Shield,
+  Tag,
   UserCog,
   Users,
 } from 'lucide-react';
@@ -81,6 +82,13 @@ export const navItems: NavItem[] = [
     label: 'Credit Plans',
     description: 'Packs, promo codes, VAT, and catalog configuration.',
     icon: Coins,
+    permission: 'credits:read',
+  },
+  {
+    href: '/lead-pricing',
+    label: 'Lead Pricings',
+    description: 'Unlock cost modes: percentage-based or criteria-based pricing.',
+    icon: Tag,
     permission: 'credits:read',
   },
   {
