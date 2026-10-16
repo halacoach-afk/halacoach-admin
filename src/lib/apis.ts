@@ -4,6 +4,7 @@ import type {
   AdminRolesResponse,
   AdminRoleRecord,
   CatalogService,
+  CreditBenefit,
   CreditPlan,
   CreditSubscriptionAdmin,
   CreditSubscriptionDetail,
@@ -94,6 +95,42 @@ export function updateCreditPlan(id: number, input: UpdateCreditPlanInput) {
 /** @deprecated Prefer updateCreditPlan */
 export function updateCreditPackage(id: number, input: UpdateCreditPlanInput) {
   return updateCreditPlan(id, input);
+}
+
+// ── Credit benefits ───────────────────────────────────────────────────────────
+
+export function listCreditBenefits() {
+  return request<CreditBenefit[]>('/v1/credit-benefits');
+}
+
+export function createCreditBenefit(input: {
+  title: string;
+  type: 'unlock_credit_discount';
+  value: number;
+}) {
+  return request<CreditBenefit>('/v1/credit-benefits', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateCreditBenefit(
+  id: number,
+  input: {
+    title?: string;
+    value?: number | null;
+  },
+) {
+  return request<CreditBenefit>(`/v1/credit-benefits/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteCreditBenefit(id: number) {
+  return request<{ok: boolean}>(`/v1/credit-benefits/${id}`, {
+    method: 'DELETE',
+  });
 }
 
 // ── Promo Codes ───────────────────────────────────────────────────────────────

@@ -112,6 +112,22 @@ export type CreditPackageBadge = CreditPlanBadge;
 /** @deprecated Prefer CreditPlanType */
 export type CreditPackageType = CreditPlanType;
 
+export type CreditBenefitKind = 'founding_badge' | 'unlock_credit_discount';
+
+export type CreditBenefit = {
+  id: number;
+  title: string;
+  type: CreditBenefitKind;
+  value: number | null;
+};
+
+export type CreditPlanBenefitAssignment = {
+  id: number;
+  title: string;
+  type: CreditBenefitKind;
+  value: number | null;
+};
+
 export type CreditPlan = {
   id: number;
   name: string;
@@ -123,6 +139,7 @@ export type CreditPlan = {
   active: boolean;
   purchaseLimit?: number | null;
   maxPurchases?: number | null;
+  benefits?: CreditPlanBenefitAssignment[];
 };
 /** @deprecated Prefer CreditPlan */
 export type CreditPackage = CreditPlan;
@@ -135,6 +152,7 @@ export type CreateCreditPlanInput = {
   badge?: CreditPlanBadge | null;
   purchaseLimit?: number | null;
   maxPurchases?: number | null;
+  benefitIds?: number[];
 };
 /** @deprecated Prefer CreateCreditPlanInput */
 export type CreateCreditPackageInput = CreateCreditPlanInput;
@@ -148,6 +166,7 @@ export type UpdateCreditPlanInput = {
   active?: boolean;
   purchaseLimit?: number | null;
   maxPurchases?: number | null;
+  benefitIds?: number[];
 };
 /** @deprecated Prefer UpdateCreditPlanInput */
 export type UpdateCreditPackageInput = UpdateCreditPlanInput;
