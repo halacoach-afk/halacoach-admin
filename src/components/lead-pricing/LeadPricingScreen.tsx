@@ -217,7 +217,7 @@ export function LeadPricingScreen({actor}: {actor: SessionUser}) {
   }, []);
 
   const updateFactorRow = (
-    key: keyof FactorDraft,
+    key: 'services' | 'formats' | 'startTraining' | 'frequency',
     id: string,
     credits: string,
   ) => {
