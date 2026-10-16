@@ -1152,7 +1152,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         '109',
       )}
 
-      <h2 className="mb-4 text-lg font-semibold text-foreground">Credit Packages</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Credit Plans</h2>
       {renderPackageCatalog(
         'one_time',
         oneTimePackages,
