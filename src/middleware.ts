@@ -4,7 +4,7 @@ import {config as appConfig} from '@/lib/config';
 import {decodeSession} from '@/lib/session';
 
 export function middleware(request: NextRequest) {
-  const raw = request.cookies.get(appConfig.sessionCookie)?.value;
+  const raw = request.cookies.get(appConfig.sessionCookie)?.value; 
   const user = decodeSession(raw);
   const pathname = request.nextUrl.pathname;
   const isPublicAuth =
