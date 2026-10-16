@@ -63,6 +63,7 @@ export type {
   ChatMessage,
   ConversationDetail,
   ConversationSummary,
+  CreateCreditPlanInput,
   CreateCreditPackageInput,
   CreatePromoInput,
   CreateServiceInput,
@@ -72,6 +73,8 @@ export type {
   DashboardOverview,
   NavBadges,
   CreditLedgerEntry,
+  CreditPlan,
+  CreditPlanBadge,
   CreditPackage,
   CreditPackageBadge,
   CreditsOverview,
@@ -111,6 +114,7 @@ export type {
   SupportUserType,
   UpdateAdminInput,
   UpdateClientInput,
+  UpdateCreditPlanInput,
   UpdateCreditPackageInput,
   UpdateLeadInput,
   UpdateProfessionalInput,
@@ -204,9 +208,9 @@ export function deleteAdmin(id: number) {
 export async function getCreditsOverview(
   params: {page?: number; perPage?: number} = {},
 ): Promise<CreditsOverview> {
-  const {listCreditPackages, listPromoCodes} = await import('@/lib/apis');
+  const {listCreditPlans, listPromoCodes} = await import('@/lib/apis');
   const [packs, promos, rest] = await Promise.all([
-    listCreditPackages(),
+    listCreditPlans(),
     listPromoCodes(),
     request<Omit<CreditsOverview, 'packs' | 'promos'>>(
       `/v1/credits-meta${buildListQuery(params)}`,

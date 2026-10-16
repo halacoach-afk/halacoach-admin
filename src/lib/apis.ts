@@ -4,16 +4,17 @@ import type {
   AdminRolesResponse,
   AdminRoleRecord,
   CatalogService,
-  CreditPackage,
+  CreditBenefit,
+  CreditPlan,
   CreditSubscriptionAdmin,
   CreditSubscriptionDetail,
-  CreateCreditPackageInput,
+  CreateCreditPlanInput,
   CreatePromoInput,
   CreateServiceInput,
   Paginated,
   PromoCode,
   ReorderServicesInput,
-  UpdateCreditPackageInput,
+  UpdateCreditPlanInput,
   UpdatePromoInput,
   UpdateServiceInput,
 } from '@/api/types';
@@ -49,10 +50,15 @@ export function deleteAdminRole(id: number) {
   return request<void>(`/v1/admin-roles/${id}`, {method: 'DELETE'});
 }
 
-// ── Credit Packages ───────────────────────────────────────────────────────────
+// ── Credit Plans ──────────────────────────────────────────────────────────────
 
+export function listCreditPlans() {
+  return request<CreditPlan[]>('/v1/credit-plans');
+}
+
+/** @deprecated Prefer listCreditPlans */
 export function listCreditPackages() {
-  return request<CreditPackage[]>('/v1/credit-packages');
+  return listCreditPlans();
 }
 
 export function listCreditSubscriptions(
@@ -67,17 +73,63 @@ export function getCreditSubscription(id: string) {
   return request<CreditSubscriptionDetail>(`/v1/credit-subscriptions/${id}`);
 }
 
-export function createCreditPackage(input: CreateCreditPackageInput) {
-  return request<CreditPackage>('/v1/credit-packages', {
+export function createCreditPlan(input: CreateCreditPlanInput) {
+  return request<CreditPlan>('/v1/credit-plans', {
     method: 'POST',
     body: JSON.stringify(input),
   });
 }
 
-export function updateCreditPackage(id: number, input: UpdateCreditPackageInput) {
-  return request<CreditPackage>(`/v1/credit-packages/${id}`, {
+/** @deprecated Prefer createCreditPlan */
+export function createCreditPackage(input: CreateCreditPlanInput) {
+  return createCreditPlan(input);
+}
+
+export function updateCreditPlan(id: number, input: UpdateCreditPlanInput) {
+  return request<CreditPlan>(`/v1/credit-plans/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
+  });
+}
+
+/** @deprecated Prefer updateCreditPlan */
+export function updateCreditPackage(id: number, input: UpdateCreditPlanInput) {
+  return updateCreditPlan(id, input);
+}
+
+// ── Credit benefits ───────────────────────────────────────────────────────────
+
+export function listCreditBenefits() {
+  return request<CreditBenefit[]>('/v1/credit-benefits');
+}
+
+export function createCreditBenefit(input: {
+  title: string;
+  type: 'unlock_credit_discount';
+  value: number;
+}) {
+  return request<CreditBenefit>('/v1/credit-benefits', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateCreditBenefit(
+  id: number,
+  input: {
+    title?: string;
+    value?: number | null;
+  },
+) {
+  return request<CreditBenefit>(`/v1/credit-benefits/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteCreditBenefit(id: number) {
+  return request<{ok: boolean}>(`/v1/credit-benefits/${id}`, {
+    method: 'DELETE',
   });
 }
 

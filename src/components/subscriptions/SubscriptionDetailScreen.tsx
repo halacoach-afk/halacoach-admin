@@ -116,10 +116,10 @@ export function SubscriptionDetailScreen({
 
         <Section title="Plan">
           <dl className="grid gap-3 sm:grid-cols-2">
-            <Field label="Package" value={sub.package?.name ?? '-'} />
-            <Field label="Credits / period" value={sub.package ? sub.package.credits : '-'} />
-            <Field label="Price" value={sub.package ? formatAed(sub.package.price) : '-'} />
-            <Field label="Package id" value={sub.packageId} />
+            <Field label="Plan" value={sub.plan?.name ?? '-'} />
+            <Field label="Credits / period" value={sub.plan ? sub.plan.credits : '-'} />
+            <Field label="Price" value={sub.plan ? formatAed(sub.plan.price) : '-'} />
+            <Field label="Plan id" value={sub.planId} />
           </dl>
         </Section>
 

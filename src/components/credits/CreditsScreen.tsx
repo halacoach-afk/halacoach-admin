@@ -9,6 +9,7 @@ import {
 import {
   createCreditPackage,
   createPromoCode,
+  listCreditBenefits,
   listCreditPackages,
   listPromoCodes,
   updateCreditPackage,
@@ -16,6 +17,7 @@ import {
 } from '@/lib/apis';
 import {request} from '@/lib/request';
 import type {
+  CreditBenefit,
   CreditPackage,
   CreditPackageBadge,
   CreditPackageType,
@@ -29,6 +31,7 @@ import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {DataTable} from '@/components/ui/DataTable';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PageHeader} from '@/components/ui/PageHeader';
+import {CreditBenefitsPanel} from '@/components/credits/CreditBenefitsPanel';
 import {formatAed, formatPromoBenefit, VAT_RATE} from '@/lib/credit-utils';
 import {cn} from '@/lib/cn';
 import {can} from '@/lib/permissions';
@@ -41,6 +44,7 @@ type CreditPackageDraft = {
   badge: CreditPackageBadge | '';
   purchaseLimit: number | null;
   maxPurchases: string;
+  benefitIds: number[];
 };
 
 type PromoDraft = {
@@ -63,7 +67,38 @@ const emptyCreditPackageForm: CreditPackageDraft = {
   badge: '',
   purchaseLimit: null,
   maxPurchases: '',
+  benefitIds: [],
 };
+
+function benefitsForPlanType(catalog: CreditBenefit[], planType: CreditPackageType) {
+  if (planType === 'one_time') {
+    return catalog.filter(b => b.type === 'founding_badge');
+  }
+  return catalog;
+}
+
+function benefitLabel(benefit: {type: string; value?: number | null}) {
+  if (benefit.type === 'founding_badge') return 'Founding Badge';
+  if (benefit.value == null) return '—';
+  return `${benefit.value}% unlock discount`;
+}
+
+function AssignedBenefitsList({pack}: {pack: CreditPackage}) {
+  const rows = pack.benefits ?? [];
+  if (!rows.length) return <span>—</span>;
+  return (
+    <ul className="m-0 flex list-none flex-col gap-1 p-0">
+      {rows.map(benefit => (
+        <li key={benefit.id} className="flex gap-1.5">
+          <span aria-hidden className="shrink-0 text-muted-foreground">
+            –
+          </span>
+          <span>{benefitLabel(benefit)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 const emptyPromoForm: PromoDraft = {code: '', benefitType: '', benefitValue: ''};
 
 function promoDraftFromPromo(promo: PromoCode): PromoDraft {
@@ -338,6 +373,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   const [savingPromo, setSavingPromo] = useState<number | null>(null);
   const [creatingPromo, setCreatingPromo] = useState(false);
   const [editingPromoId, setEditingPromoId] = useState<number | null>(null);
+  const [benefitCatalog, setBenefitCatalog] = useState<CreditBenefit[]>([]);
   const [pendingDelete, setPendingDelete] = useState<
     {kind: 'package'; id: number} | {kind: 'promo'; id: number} | null
   >(null);
@@ -360,12 +396,21 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
               badge: pkg.badge ?? '',
               purchaseLimit: normalizeDraftPurchaseLimit(pkg.purchaseLimit),
               maxPurchases: normalizeDraftMaxPurchases(pkg.maxPurchases),
+              benefitIds: (pkg.benefits ?? []).map(b => b.id),
             },
           ]),
         ),
       );
     } catch (err) {
       setPackages(s => ({...s, isLoading: false, error: isApiError(err) ? err.message : 'Could not load packages.'}));
+    }
+  };
+
+  const loadBenefitCatalog = async () => {
+    try {
+      setBenefitCatalog(await listCreditBenefits());
+    } catch {
+      // optional for assignment UI
     }
   };
 
@@ -399,6 +444,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     void loadPackages();
     void loadPromos();
     void loadMeta();
+    void loadBenefitCatalog();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial catalog + VAT load
   }, []);
 
@@ -423,7 +469,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   ) => {
     const showPurchaseLimit = true;
     const showMaxPurchases = true;
-    const baseWrite = canWrite ? (showVat ? 6 : 5) : showVat ? 5 : 4;
+    const assignableBenefits = benefitsForPlanType(benefitCatalog, type);
+    const baseWrite = canWrite ? (showVat ? 7 : 6) : showVat ? 6 : 5;
     const effectiveColSpan =
       baseWrite + (showPurchaseLimit ? 1 : 0) + (showMaxPurchases ? 1 : 0);
     const priceLabel = showVat ? 'Price (excl. VAT)' : 'Price';
@@ -431,6 +478,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
       'Name',
       'Credits',
       priceLabel,
+      'Benefits',
       'Badge',
       ...(showPurchaseLimit ? ['Purchase limit'] : []),
       ...(showMaxPurchases ? ['Max purchases'] : []),
@@ -481,6 +529,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
               badge: pack.badge ?? '',
               purchaseLimit: normalizeDraftPurchaseLimit(pack.purchaseLimit),
               maxPurchases: normalizeDraftMaxPurchases(pack.maxPurchases),
+              benefitIds: (pack.benefits ?? []).map(b => b.id),
             };
             const isEditing = canWrite && editingCreditPackageId === pack.id;
             const displayPrice = Number(isEditing ? draft.price : pack.price);
@@ -551,6 +600,41 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                       />
                     ) : (
                       <span>{formatAed(pack.price)}</span>
+                    )}
+                  </CreditPackageTableCell>
+                </td>
+                <td className="px-4 py-2">
+                  <CreditPackageTableCell className="h-auto min-h-9 flex-col items-start gap-1 py-1">
+                    {isEditing ? (
+                      assignableBenefits.length === 0 ? (
+                        <span className="text-muted-foreground">No benefits</span>
+                      ) : (
+                        assignableBenefits.map(benefit => {
+                          const checked = (draft.benefitIds ?? []).includes(benefit.id);
+                          return (
+                            <label
+                              key={benefit.id}
+                              className="flex items-center gap-1.5 text-foreground">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={e => {
+                                  const next = e.target.checked
+                                    ? [...(draft.benefitIds ?? []), benefit.id]
+                                    : (draft.benefitIds ?? []).filter(id => id !== benefit.id);
+                                  setCreditPackageDrafts(state => ({
+                                    ...state,
+                                    [pack.id]: {...draft, benefitIds: next},
+                                  }));
+                                }}
+                              />
+                              <span>{benefitLabel(benefit)}</span>
+                            </label>
+                          );
+                        })
+                      )
+                    ) : (
+                      <AssignedBenefitsList pack={pack} />
                     )}
                   </CreditPackageTableCell>
                 </td>
@@ -683,6 +767,34 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                 </CreditPackageTableCell>
               </td>
               <td className="px-4 py-2">
+                <CreditPackageTableCell className="h-auto min-h-9 flex-col items-start gap-1 py-1">
+                  {assignableBenefits.length === 0 ? (
+                    <span className="text-muted-foreground">No benefits</span>
+                  ) : (
+                    assignableBenefits.map(benefit => {
+                      const checked = (form.benefitIds ?? []).includes(benefit.id);
+                      return (
+                        <label
+                          key={benefit.id}
+                          className="flex items-center gap-1.5 text-foreground">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={e => {
+                              const next = e.target.checked
+                                ? [...(form.benefitIds ?? []), benefit.id]
+                                : (form.benefitIds ?? []).filter(id => id !== benefit.id);
+                              setForm(current => ({...current, benefitIds: next}));
+                            }}
+                          />
+                          <span>{benefitLabel(benefit)}</span>
+                        </label>
+                      );
+                    })
+                  )}
+                </CreditPackageTableCell>
+              </td>
+              <td className="px-4 py-2">
                 <CreditPackageTableCell>
                   <select
                     className={tableSelectClass}
@@ -788,6 +900,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         badge: draft.badge || null,
         purchaseLimit: normalizeDraftPurchaseLimit(draft.purchaseLimit),
         maxPurchases: parseMaxPurchasesInput(draft.maxPurchases ?? ''),
+        benefitIds: draft.benefitIds ?? [],
       });
       setEditingCreditPackageId(current => (current === packId ? null : current));
       await loadPackages();
@@ -826,6 +939,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         badge: form.badge || null,
         purchaseLimit: normalizeDraftPurchaseLimit(form.purchaseLimit),
         maxPurchases: parseMaxPurchasesInput(form.maxPurchases),
+        benefitIds: form.benefitIds ?? [],
       });
       setForm({...emptyCreditPackageForm, type});
       await loadPackages();
@@ -850,6 +964,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
             badge: previous.badge ?? '',
             purchaseLimit: normalizeDraftPurchaseLimit(previous.purchaseLimit),
             maxPurchases: normalizeDraftMaxPurchases(previous.maxPurchases),
+            benefitIds: (previous.benefits ?? []).map(b => b.id),
           },
         }));
       }
@@ -865,6 +980,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         badge: pack.badge ?? '',
         purchaseLimit: normalizeDraftPurchaseLimit(pack.purchaseLimit),
         maxPurchases: normalizeDraftMaxPurchases(pack.maxPurchases),
+        benefitIds: (pack.benefits ?? []).map(b => b.id),
       },
     }));
     setError(null);
@@ -881,6 +997,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         badge: pack.badge ?? '',
         purchaseLimit: normalizeDraftPurchaseLimit(pack.purchaseLimit),
         maxPurchases: normalizeDraftMaxPurchases(pack.maxPurchases),
+        benefitIds: (pack.benefits ?? []).map(b => b.id),
       },
     }));
     setEditingCreditPackageId(current => (current === pack.id ? null : current));
@@ -1025,17 +1142,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         </p>
       ) : null}
 
-      <h2 className="mb-4 text-lg font-semibold text-foreground">Credit packages</h2>
-      {renderPackageCatalog(
-        'one_time',
-        oneTimePackages,
-        oneTimePackageForm,
-        setOneTimePackageForm,
-        'Starter',
-        '199',
-      )}
-
-      <h2 className="mb-4 text-lg font-semibold text-foreground">Membership plans</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Membership Plans</h2>
       {renderPackageCatalog(
         'membership',
         membershipPackages,
@@ -1044,9 +1151,26 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
         'Founding Premium Pro',
         '109',
       )}
+
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Credit Plans</h2>
+      {renderPackageCatalog(
+        'one_time',
+        oneTimePackages,
+        oneTimePackageForm,
+        setOneTimePackageForm,
+        'Starter',
+        '199',
+      )}
       {creditPackageError ? <p className="mb-6 text-sm text-destructive">{creditPackageError}</p> : null}
 
-      <h2 className="mb-4 text-lg font-semibold text-foreground">Promo codes</h2>
+      <CreditBenefitsPanel
+        user={actor}
+        onChange={() => {
+          void loadBenefitCatalog();
+        }}
+      />
+
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Promo Codes</h2>
       <div className="mb-8">
         <DataTable
           columnHeaderClassNames={

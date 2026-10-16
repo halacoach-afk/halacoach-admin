@@ -229,10 +229,10 @@ export function SubscriptionsScreen({
                 </p>
               </td>
               <td className="px-4 py-3">
-                <p className="text-sm text-foreground">{sub.package?.name ?? '-'}</p>
+                <p className="text-sm text-foreground">{sub.plan?.name ?? '-'}</p>
                 <p className="text-xs text-muted-foreground">
-                  {sub.package
-                    ? `${sub.package.credits}/period - ${formatAed(sub.package.price)}`
+                  {sub.plan
+                    ? `${sub.plan.credits}/period - ${formatAed(sub.plan.price)}`
                     : ''}
                 </p>
               </td>

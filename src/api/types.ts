@@ -105,42 +105,71 @@ export type UpdateAdminInput = {
   permissions?: AdminPermission[] | null;
 };
 
-export type CreditPackageBadge = 'popular' | 'value';
-export type CreditPackageType = 'one_time' | 'membership';
+export type CreditPlanBadge = 'popular' | 'value';
+export type CreditPlanType = 'one_time' | 'membership';
+/** @deprecated Prefer CreditPlanBadge */
+export type CreditPackageBadge = CreditPlanBadge;
+/** @deprecated Prefer CreditPlanType */
+export type CreditPackageType = CreditPlanType;
 
-export type CreditPackage = {
+export type CreditBenefitKind = 'founding_badge' | 'unlock_credit_discount';
+
+export type CreditBenefit = {
+  id: number;
+  title: string;
+  type: CreditBenefitKind;
+  value: number | null;
+};
+
+export type CreditPlanBenefitAssignment = {
+  id: number;
+  title: string;
+  type: CreditBenefitKind;
+  value: number | null;
+};
+
+export type CreditPlan = {
   id: number;
   name: string;
-  type?: CreditPackageType;
+  type?: CreditPlanType;
   credits: number;
   price: number;
-  badge?: CreditPackageBadge;
+  badge?: CreditPlanBadge;
   sortOrder: number;
   active: boolean;
   purchaseLimit?: number | null;
   maxPurchases?: number | null;
+  benefits?: CreditPlanBenefitAssignment[];
 };
+/** @deprecated Prefer CreditPlan */
+export type CreditPackage = CreditPlan;
 
-export type CreateCreditPackageInput = {
+export type CreateCreditPlanInput = {
   name: string;
-  type?: CreditPackageType;
+  type?: CreditPlanType;
   credits: number;
   price: number;
-  badge?: CreditPackageBadge | null;
+  badge?: CreditPlanBadge | null;
   purchaseLimit?: number | null;
   maxPurchases?: number | null;
+  benefitIds?: number[];
 };
+/** @deprecated Prefer CreateCreditPlanInput */
+export type CreateCreditPackageInput = CreateCreditPlanInput;
 
-export type UpdateCreditPackageInput = {
+export type UpdateCreditPlanInput = {
   name?: string;
-  type?: CreditPackageType;
+  type?: CreditPlanType;
   credits?: number;
   price?: number;
-  badge?: CreditPackageBadge | null;
+  badge?: CreditPlanBadge | null;
   active?: boolean;
   purchaseLimit?: number | null;
   maxPurchases?: number | null;
+  benefitIds?: number[];
 };
+/** @deprecated Prefer UpdateCreditPlanInput */
+export type UpdateCreditPackageInput = UpdateCreditPlanInput;
 
 export type CreditSubscriptionAdmin = {
   id: string;
@@ -149,7 +178,7 @@ export type CreditSubscriptionAdmin = {
   professionalName: string;
   professionalEmail: string | null;
   professionalPhone: string | null;
-  packageId: string;
+  planId: string;
   status: string;
   startedAt: string | null;
   currentPeriodStart: string | null;
@@ -158,13 +187,13 @@ export type CreditSubscriptionAdmin = {
   nextGrantAt: string | null;
   provider: string | null;
   providerSubscriptionId: string | null;
-  package: {
+  plan: {
     id: string;
     name: string;
     type?: string;
     credits: number;
     price: number;
-    badge?: CreditPackageBadge | null;
+    badge?: CreditPlanBadge | null;
   } | null;
 };
 
@@ -250,7 +279,7 @@ export type Paginated<T> = {
 
 export type CreditsOverview = {
   vatRate: number;
-  packs: CreditPackage[];
+  packs: CreditPlan[];
   promos: PromoCode[];
   transactions: CreditLedgerEntry[];
   meta?: PaginationMeta;
