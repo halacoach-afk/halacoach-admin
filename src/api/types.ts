@@ -112,7 +112,10 @@ export type CreditPackageBadge = CreditPlanBadge;
 /** @deprecated Prefer CreditPlanType */
 export type CreditPackageType = CreditPlanType;
 
-export type CreditBenefitKind = 'founding_badge' | 'unlock_credit_discount';
+export type CreditBenefitKind =
+  | 'founding_badge'
+  | 'unlock_credit_discount'
+  | 'free_unlocks';
 
 export type CreditBenefit = {
   id: number;

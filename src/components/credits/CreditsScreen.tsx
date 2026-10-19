@@ -72,13 +72,19 @@ const emptyCreditPackageForm: CreditPackageDraft = {
 
 function benefitsForPlanType(catalog: CreditBenefit[], planType: CreditPackageType) {
   if (planType === 'one_time') {
-    return catalog.filter(b => b.type === 'founding_badge');
+    return catalog.filter(
+      b => b.type === 'founding_badge' || b.type === 'free_unlocks',
+    );
   }
   return catalog;
 }
 
 function benefitLabel(benefit: {type: string; value?: number | null}) {
   if (benefit.type === 'founding_badge') return 'Founding Badge';
+  if (benefit.type === 'free_unlocks') {
+    const n = benefit.value ?? 0;
+    return `${n} complimentary unlock${n === 1 ? '' : 's'}`;
+  }
   if (benefit.value == null) return '—';
   return `${benefit.value}% unlock discount`;
 }

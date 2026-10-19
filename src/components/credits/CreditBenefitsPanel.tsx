@@ -27,10 +27,14 @@ type BenefitDraft = {
 
 const BENEFIT_TYPE_OPTIONS: {value: CreditBenefitKind; label: string}[] = [
   {value: 'unlock_credit_discount', label: 'Unlock discount'},
+  {value: 'free_unlocks', label: 'Free unlocks'},
   {value: 'founding_badge', label: 'Founding Badge'},
 ];
 
-const CREATABLE_BENEFIT_TYPES: CreditBenefitKind[] = ['unlock_credit_discount'];
+const CREATABLE_BENEFIT_TYPES: CreditBenefitKind[] = [
+  'unlock_credit_discount',
+  'free_unlocks',
+];
 
 const emptyForm: BenefitDraft = {title: '', type: '', value: ''};
 
@@ -41,6 +45,10 @@ const tableSelectClass =
 
 function formatBenefitValue(benefit: CreditBenefit) {
   if (benefit.type === 'founding_badge') return 'Founding Badge';
+  if (benefit.type === 'free_unlocks') {
+    const n = benefit.value ?? 0;
+    return `${n} complimentary unlock${n === 1 ? '' : 's'}`;
+  }
   if (benefit.value == null) return '—';
   return `${benefit.value}% unlock discount`;
 }
@@ -49,8 +57,8 @@ function typeLabel(type: CreditBenefit['type']) {
   return BENEFIT_TYPE_OPTIONS.find(item => item.value === type)?.label ?? type;
 }
 
-function needsPercentValue(type: CreditBenefitKind | '') {
-  return type === 'unlock_credit_discount';
+function needsNumericValue(type: CreditBenefitKind | '') {
+  return type === 'unlock_credit_discount' || type === 'free_unlocks';
 }
 
 export function CreditBenefitsPanel({user, onChange}: Props) {
@@ -101,30 +109,35 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
       setError('Please select a benefit type.');
       return;
     }
-    if (needsPercentValue(form.type)) {
-      const value = Number(form.value);
+    if (!needsNumericValue(form.type)) {
+      setError('This benefit type cannot be created here.');
+      return;
+    }
+    const value = Number(form.value);
+    if (form.type === 'unlock_credit_discount') {
       if (!Number.isFinite(value) || value < 1 || value > 100) {
         setError('Discount percent must be from 1 to 100.');
         return;
       }
-      setCreating(true);
-      setError(null);
-      try {
-        await createCreditBenefit({
-          title,
-          type: 'unlock_credit_discount',
-          value,
-        });
-        setForm(emptyForm);
-        await load(true);
-      } catch (err) {
-        setError(isApiError(err) ? err.message : 'Could not create benefit.');
-      } finally {
-        setCreating(false);
-      }
+    } else if (!Number.isFinite(value) || value < 1 || value > 1000) {
+      setError('Free unlocks must be from 1 to 1000.');
       return;
     }
-    setError('This benefit type cannot be created here.');
+    setCreating(true);
+    setError(null);
+    try {
+      await createCreditBenefit({
+        title,
+        type: form.type,
+        value,
+      });
+      setForm(emptyForm);
+      await load(true);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not create benefit.');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const saveRow = async (benefit: CreditBenefit) => {
@@ -140,6 +153,13 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
     try {
       if (benefit.type === 'founding_badge') {
         await updateCreditBenefit(benefit.id, {title});
+      } else if (benefit.type === 'free_unlocks') {
+        const value = Number(draft.value);
+        if (!Number.isFinite(value) || value < 1 || value > 1000) {
+          setError('Free unlocks must be from 1 to 1000.');
+          return;
+        }
+        await updateCreditBenefit(benefit.id, {title, value});
       } else {
         const value = Number(draft.value);
         if (!Number.isFinite(value) || value < 1 || value > 100) {
@@ -255,14 +275,14 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
                 )}
               </td>
               <td className="px-4 py-2">
-                {isEditing && needsPercentValue(draft.type) ? (
+                {isEditing && needsNumericValue(draft.type) ? (
                   <input
                     className={tableInputClass}
                     type="number"
                     min={1}
-                    max={100}
+                    max={draft.type === 'free_unlocks' ? 1000 : 100}
                     value={draft.value}
-                    placeholder="%"
+                    placeholder={draft.type === 'free_unlocks' ? 'N' : '%'}
                     onChange={e =>
                       setDrafts(state => ({
                         ...state,
@@ -354,14 +374,14 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
               </select>
             </td>
             <td className="px-4 py-2">
-              {needsPercentValue(form.type) ? (
+              {needsNumericValue(form.type) ? (
                 <input
                   className={tableInputClass}
                   type="number"
                   min={1}
-                  max={100}
+                  max={form.type === 'free_unlocks' ? 1000 : 100}
                   value={form.value}
-                  placeholder="%"
+                  placeholder={form.type === 'free_unlocks' ? 'N' : '%'}
                   onChange={e => setForm(f => ({...f, value: e.target.value}))}
                 />
               ) : (
@@ -375,7 +395,7 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
                   creating ||
                   !form.title.trim() ||
                   !form.type ||
-                  (needsPercentValue(form.type) && !form.value)
+                  (needsNumericValue(form.type) && !form.value)
                 }
                 onClick={() => void submitCreate()}>
                 {creating ? '…' : 'Add'}
