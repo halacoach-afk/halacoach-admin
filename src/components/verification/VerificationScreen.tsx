@@ -134,7 +134,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   const [documentTypes, setDocumentTypes] = useState<VerificationDocTypeMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>('pending');
   const [query, setQuery] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -268,22 +268,19 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
       {error ? <ErrorState body={error} onRetry={() => void load()} /> : null}
 
       <FilterBar>
-        {(
-          [
-            ['all', 'All'],
-            ['pending', 'Pending'],
-            ['rejected', 'Rejected'],
-            ['verified', 'Verified'],
-          ] as const
-        ).map(([key, label]) => (
-          <Button
-            key={key}
-            variant={filter === key ? 'primary' : 'outline'}
-            size="sm"
-            onClick={() => setFilter(key)}>
-            {label} ({counts[key] ?? 0})
-          </Button>
-        ))}
+        <label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="whitespace-nowrap font-medium">Status</span>
+          <select
+            aria-label="Filter by verification status"
+            className="h-9 min-w-[11rem] rounded-xl border border-border bg-card px-3 text-sm font-medium text-foreground outline-none focus:border-primary"
+            value={filter}
+            onChange={e => setFilter(e.target.value as Filter)}>
+            <option value="all">All ({counts.all ?? 0})</option>
+            <option value="pending">Pending ({counts.pending ?? 0})</option>
+            <option value="rejected">Rejected ({counts.rejected ?? 0})</option>
+            <option value="verified">Verified ({counts.verified ?? 0})</option>
+          </select>
+        </label>
         <SearchField value={query} onChange={setQuery} />
       </FilterBar>
 
