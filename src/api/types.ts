@@ -552,7 +552,6 @@ export type UpdateProfessionalInput = {
   serviceIds?: number[];
   locations?: Professional['locations'];
   radiusKm?: number;
-  activated?: boolean;
   suspended?: boolean;
 };
 

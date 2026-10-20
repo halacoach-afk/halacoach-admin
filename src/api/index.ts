@@ -281,11 +281,7 @@ export function exportProfessionalsCsv(
   return requestBlob(`/v1/professionals/export${buildListQuery(params)}`);
 }
 
-export type ProfessionalBulkAction =
-  | 'activate'
-  | 'deactivate'
-  | 'suspend'
-  | 'unsuspend';
+export type ProfessionalBulkAction = 'suspend' | 'unsuspend';
 
 export type ProfessionalBulkResult = {
   action: ProfessionalBulkAction;
