@@ -54,6 +54,64 @@ function formatSubmittedParts(at: string): {date: string; time: string} | null {
   };
 }
 
+/** End of local calendar day for ISO date `YYYY-MM-DD` (or full ISO). */
+function expiresAtEndOfDay(expiresAt: string): Date | null {
+  const raw = expiresAt.trim();
+  if (!raw) return null;
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T23:59:59.999` : raw;
+  const end = new Date(dateOnly);
+  return Number.isFinite(end.getTime()) ? end : null;
+}
+
+function fileIsExpired(file: VerificationFile, asOf = new Date()): boolean {
+  if (file.status !== 'approved' || !file.expiresAt) return false;
+  const end = expiresAtEndOfDay(file.expiresAt);
+  if (!end) return false;
+  const startOfToday = new Date(asOf);
+  startOfToday.setHours(0, 0, 0, 0);
+  return end < startOfToday;
+}
+
+function fileIsExpiringSoon(file: VerificationFile): boolean {
+  if (file.status !== 'approved') return false;
+  if (file.expiringSoon === true) return true;
+  return false;
+}
+
+function fileIsPendingReview(file: VerificationFile): boolean {
+  const status = file.status ?? 'submitted';
+  return status === 'submitted' || status === 'under_review';
+}
+
+/** Which uploaded docs to show in the expanded Review panel for the active Status filter. */
+function documentMatchesFilter(file: VerificationFile, filter: Filter): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'pending') return fileIsPendingReview(file);
+  if (filter === 'rejected') return file.status === 'rejected';
+  if (filter === 'expired') return fileIsExpired(file);
+  if (filter === 'expiring_soon') return fileIsExpiringSoon(file);
+  // verified: all approved docs, including expired
+  if (filter === 'verified') return file.status === 'approved';
+  return true;
+}
+
+function filterEmptyMessage(filter: Filter): string {
+  switch (filter) {
+    case 'pending':
+      return 'No pending documents for this coach.';
+    case 'expired':
+      return 'No expired documents for this coach.';
+    case 'expiring_soon':
+      return 'No documents expiring soon for this coach.';
+    case 'rejected':
+      return 'No rejected documents for this coach.';
+    case 'verified':
+      return 'No approved documents for this coach.';
+    default:
+      return 'No documents uploaded for this coach.';
+  }
+}
+
 function statusTone(status?: string) {
   if (status === 'approved') return 'primary' as const;
   if (status === 'rejected') return 'danger' as const;
@@ -259,7 +317,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   return (
     <>
       <PageHeader
-        title="Docs Verification"
+        title="Documents Verification"
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={acting || loading}>
             Refresh
@@ -397,13 +455,17 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                   <tr className="border-b border-border bg-muted/30 last:border-0">
                     <td colSpan={7} className="px-4 py-4">
                       {(() => {
-                        const submittedDocs = documentTypes.filter(meta =>
-                          fileByType.has(meta.id),
+                        const submittedDocs = documentTypes.filter(meta => {
+                          const file = fileByType.get(meta.id);
+                          return file ? documentMatchesFilter(file, filter) : false;
+                        });
+                        const visibleUntyped = untypedFiles.filter(file =>
+                          documentMatchesFilter(file, filter),
                         );
-                        if (submittedDocs.length === 0 && untypedFiles.length === 0) {
+                        if (submittedDocs.length === 0 && visibleUntyped.length === 0) {
                           return (
                             <p className="px-1 py-2 text-sm text-muted-foreground">
-                              No documents uploaded for this coach.
+                              {filterEmptyMessage(filter)}
                             </p>
                           );
                         }
@@ -491,7 +553,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
                                 </tr>
                               );
                             })}
-                            {untypedFiles.map(file => {
+                            {visibleUntyped.map(file => {
                               const display = file.displayStatus ?? file.status;
                               return (
                                 <tr
