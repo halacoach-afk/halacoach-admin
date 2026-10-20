@@ -1546,6 +1546,16 @@ export function ProfessionalDetailScreen({
           return (
             <DataTable
               columns={walletColumns}
+              columnWidths={[
+                '8%',
+                '12%',
+                '10%',
+                '12%',
+                '20%',
+                '14%',
+                '12%',
+                '12%',
+              ]}
               pagination={
                 <PaginationBar
                   variant="embedded"
@@ -1557,8 +1567,8 @@ export function ProfessionalDetailScreen({
                     setWalletPerPage(next);
                   }}
                 />
-              }
-            >              {walletLoading && walletTxns.length === 0 ? (
+              }>
+              {walletLoading && walletTxns.length === 0 ? (
                 <tr>
                   <td
                     colSpan={8}
@@ -1592,20 +1602,22 @@ export function ProfessionalDetailScreen({
                         {creditTxnTypeLabel(txn.type)}
                       </td>
                       <td
-                        className={`whitespace-nowrap px-4 py-3 align-top text-end text-sm font-semibold tabular-nums ${
+                        className={`px-4 py-3 align-top text-sm font-semibold tabular-nums ${
                           txn.type === 'spend' || txn.type === 'expiry'
                             ? 'text-muted-foreground'
                             : 'text-primary'
                         }`}>
                         {creditsDisplay(txn)}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                      <td className="px-4 py-3 align-top text-sm tabular-nums text-foreground">
                         {txn.totalAed != null && txn.totalAed > 0
                           ? formatAed(txn.totalAed)
                           : '\u2014'}
                       </td>
                       <td className="px-4 py-3 align-top text-sm font-medium text-foreground">
-                        <div>{source}</div>
+                        <div className="truncate" title={source}>
+                          {source}
+                        </div>
                         {txn.promoCode ? (
                           <div className="mt-0.5 text-xs text-muted-foreground">
                             Promo {txn.promoCode}
@@ -1613,7 +1625,7 @@ export function ProfessionalDetailScreen({
                         ) : null}
                       </td>
                       <td className="px-4 py-3 align-top text-sm text-muted-foreground">
-                        <span className="break-all">
+                        <span className="block truncate" title={txn.reference?.trim() || txn.orderId?.trim() || undefined}>
                           {txn.reference?.trim() || txn.orderId?.trim() || '\u2014'}
                         </span>
                       </td>
@@ -1626,7 +1638,7 @@ export function ProfessionalDetailScreen({
                           <span className="text-sm text-muted-foreground">{'\u2014'}</span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                      <td className="px-4 py-3 align-top text-sm text-muted-foreground">
                         {when ? (
                           <div className="leading-snug">
                             <div>{when.date}</div>
