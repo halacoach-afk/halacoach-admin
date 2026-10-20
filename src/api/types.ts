@@ -112,7 +112,10 @@ export type CreditPackageBadge = CreditPlanBadge;
 /** @deprecated Prefer CreditPlanType */
 export type CreditPackageType = CreditPlanType;
 
-export type CreditBenefitKind = 'founding_badge' | 'unlock_credit_discount';
+export type CreditBenefitKind =
+  | 'founding_badge'
+  | 'unlock_credit_discount'
+  | 'free_unlocks';
 
 export type CreditBenefit = {
   id: number;
@@ -441,7 +444,6 @@ export type Professional = {
   phoneVerified?: boolean;
   suspended: boolean;
   deletedAt?: string | null;
-  onboarded: boolean;
   /** Bought Founding Premium Pro and/or founding trial credit pack. */
   isFoundingProfessional?: boolean;
   createdAt: string;
@@ -525,7 +527,6 @@ export type ProfessionalSummary = {
   verificationStatus: VerificationStatus;
   credits: number;
   activated: boolean;
-  onboarded: boolean;
   suspended: boolean;
   deletedAt?: string | null;
   /** Bought Founding Premium Pro and/or founding trial credit pack. */
@@ -549,7 +550,6 @@ export type UpdateProfessionalInput = {
   serviceIds?: number[];
   locations?: Professional['locations'];
   radiusKm?: number;
-  activated?: boolean;
   suspended?: boolean;
 };
 
@@ -633,7 +633,6 @@ export type Client = {
   emailVerified?: boolean;
   phoneVerified?: boolean;
   birthDate?: string | null;
-  onboarded: boolean;
   otpVerified: boolean;
   otpVerifiedAt: string | null;
   suspended: boolean;
@@ -659,7 +658,6 @@ export type ClientSummary = {
   birthDate: string | null;
   location: string;
   services: string[];
-  onboarded: boolean;
   otpVerified: boolean;
   suspended: boolean;
   deletedAt?: string | null;

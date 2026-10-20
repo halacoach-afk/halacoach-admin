@@ -481,7 +481,6 @@ export function ProfessionalDetailScreen({
   const [leads, setLeads] = useState<LeadSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pendingActivate, setPendingActivate] = useState<boolean | null>(null);
   const [pendingSuspend, setPendingSuspend] = useState<boolean | null>(null);
   const [acting, setActing] = useState(false);
   const [viewer, setViewer] = useState<{fileId: string; name: string} | null>(null);
@@ -894,23 +893,6 @@ export function ProfessionalDetailScreen({
     }
   };
 
-  const toggleActivated = async () => {
-    if (!pro || pendingActivate === null) {
-      return;
-    }
-    setActing(true);
-    setError(null);
-    try {
-      const updated = await updateProfessional(pro.id, {activated: pendingActivate});
-      setPro(updated);
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not update activation.');
-    } finally {
-      setPendingActivate(null);
-      setActing(false);
-    }
-  };
-
   const toggleSuspended = async () => {
     if (!pro || pendingSuspend === null) {
       return;
@@ -1041,13 +1023,6 @@ export function ProfessionalDetailScreen({
                   {pro.suspended ? 'Unsuspend' : 'Suspend'}
                 </Button>
               ) : null}
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={acting}
-                onClick={() => setPendingActivate(!pro.activated)}>
-                {pro.activated ? 'Deactivate' : 'Activate'}
-              </Button>
             </>
           ) : null}
           <Button
@@ -1153,17 +1128,6 @@ export function ProfessionalDetailScreen({
                   <Badge tone="coral">Founding professional</Badge>
                 ) : (
                   <Badge tone="muted">No</Badge>
-                )
-              }
-            />
-            <PrefField
-              icon={<ClipboardCheck className="size-3.5" strokeWidth={1.8} />}
-              label="Onboarding"
-              value={
-                pro.onboarded ? (
-                  <Badge tone="primary">Complete</Badge>
-                ) : (
-                  <Badge tone="warning">Incomplete</Badge>
                 )
               }
             />
@@ -1749,27 +1713,12 @@ export function ProfessionalDetailScreen({
       ) : null}
 
       <ConfirmDialog
-        open={pendingActivate !== null}
-        title={pendingActivate ? 'Activate profile?' : 'Deactivate profile?'}
-        body={
-          pendingActivate
-            ? 'The coach profile can go live in the marketplace once verification is approved.'
-            : 'The profile will be hidden from clients until activated again.'
-        }
-        confirmLabel={pendingActivate ? 'Activate' : 'Deactivate'}
-        onClose={() => {
-          if (!acting) setPendingActivate(null);
-        }}
-        onConfirm={() => void toggleActivated()}
-      />
-
-      <ConfirmDialog
         open={pendingSuspend !== null}
         title={pendingSuspend ? 'Suspend this coach?' : 'Unsuspend this coach?'}
         body={
           pendingSuspend
             ? 'They will be signed out and cannot log in until unsuspended. Marketplace access is blocked while suspended.'
-            : 'They will be able to log in again. Marketplace visibility still depends on activation and verification.'
+            : 'They will be able to log in again. Marketplace visibility still depends on verification.'
         }
         confirmLabel={pendingSuspend ? 'Suspend' : 'Unsuspend'}
         destructive={pendingSuspend === true}

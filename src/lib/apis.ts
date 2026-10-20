@@ -105,7 +105,7 @@ export function listCreditBenefits() {
 
 export function createCreditBenefit(input: {
   title: string;
-  type: 'unlock_credit_discount';
+  type: 'unlock_credit_discount' | 'free_unlocks';
   value: number;
 }) {
   return request<CreditBenefit>('/v1/credit-benefits', {

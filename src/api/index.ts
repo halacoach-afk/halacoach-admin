@@ -261,7 +261,7 @@ export type ListProfessionalsParams = {
   createdTo?: string;
   /** Multi-select verification statuses (OR). */
   verificationStatuses?: string[];
-  /** Multi-select account statuses (OR): onboarded|incomplete|suspended|deleted */
+  /** Multi-select account statuses (OR): active|suspended|deleted */
   accountStatuses?: string[];
   creditsMin?: string | number;
   creditsMax?: string | number;
@@ -281,11 +281,7 @@ export function exportProfessionalsCsv(
   return requestBlob(`/v1/professionals/export${buildListQuery(params)}`);
 }
 
-export type ProfessionalBulkAction =
-  | 'activate'
-  | 'deactivate'
-  | 'suspend'
-  | 'unsuspend';
+export type ProfessionalBulkAction = 'suspend' | 'unsuspend';
 
 export type ProfessionalBulkResult = {
   action: ProfessionalBulkAction;

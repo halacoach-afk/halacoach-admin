@@ -45,16 +45,6 @@ const BULK_ACTION_COPY: Record<
   ProfessionalBulkAction,
   {title: string; body: string; confirmLabel: string; destructive?: boolean}
 > = {
-  activate: {
-    title: 'Activate selected profiles?',
-    body: 'Selected coaches can go live in the marketplace once verification is approved.',
-    confirmLabel: 'Activate',
-  },
-  deactivate: {
-    title: 'Deactivate selected profiles?',
-    body: 'Selected profiles will be hidden from clients until activated again.',
-    confirmLabel: 'Deactivate',
-  },
   suspend: {
     title: 'Suspend selected coaches?',
     body: 'They will be signed out and cannot log in until unsuspended. Marketplace access is blocked while suspended.',
@@ -63,12 +53,12 @@ const BULK_ACTION_COPY: Record<
   },
   unsuspend: {
     title: 'Unsuspend selected coaches?',
-    body: 'They will be able to log in again. Marketplace visibility still depends on activation and verification.',
+    body: 'They will be able to log in again. Marketplace visibility still depends on verification.',
     confirmLabel: 'Unsuspend',
   },
 };
 
-type AccountFilter = 'all' | 'onboarded' | 'incomplete' | 'suspended' | 'deleted';
+type AccountFilter = 'all' | 'active' | 'suspended' | 'deleted';
 
 type ColumnFilters = {
   id: string;
@@ -156,25 +146,32 @@ function verificationTone(status: ProfessionalSummary['verificationStatus']) {
   return 'muted' as const;
 }
 
-type AccountStatus = 'deleted' | 'suspended' | 'incomplete' | 'onboarded';
+type AccountStatus = 'deleted' | 'suspended' | 'active';
 
 function accountStatus(row: ProfessionalSummary): AccountStatus {
   if (row.deletedAt) return 'deleted';
   if (row.suspended) return 'suspended';
-  if (!row.onboarded) return 'incomplete';
-  return 'onboarded';
+  return 'active';
+}
+
+/** Cached flags for bulk action visibility (selection can span pages). */
+type SelectedAccountFlags = {suspended: boolean; deleted: boolean};
+
+function accountFlags(row: ProfessionalSummary): SelectedAccountFlags {
+  return {
+    suspended: Boolean(row.suspended),
+    deleted: Boolean(row.deletedAt),
+  };
 }
 
 const accountStatusLabels: Record<AccountStatus, string> = {
   deleted: 'Deleted',
   suspended: 'Suspended',
-  incomplete: 'Incomplete',
-  onboarded: 'Onboarded',
+  active: 'Active',
 };
 
 function accountStatusTone(status: AccountStatus) {
   if (status === 'deleted' || status === 'suspended') return 'danger' as const;
-  if (status === 'incomplete') return 'warning' as const;
   return 'primary' as const;
 }
 
@@ -318,8 +315,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
   const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
   const [counts, setCounts] = useState<Record<string, number>>({
     all: 0,
-    onboarded: 0,
-    incomplete: 0,
+    active: 0,
     suspended: 0,
     deleted: 0,
   });
@@ -341,8 +337,16 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [selectedFlags, setSelectedFlags] = useState<
+    Record<string, SelectedAccountFlags>
+  >({});
   const [pendingBulk, setPendingBulk] = useState<ProfessionalBulkAction | null>(null);
   const [bulkActing, setBulkActing] = useState(false);
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setSelectedFlags({});
+  };
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQ(query.trim()), 400);
@@ -502,7 +506,8 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
   }, [debouncedQ, perPage, appliedFilters, sortBy, sortDir]);
 
   useEffect(() => {
-    setSelectedIds(new Set());
+    clearSelection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQ, appliedFilters, sortBy, sortDir]);
 
   const pageIds = useMemo(() => rows.map(row => String(row.id)), [rows]);
@@ -517,29 +522,62 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
   const selectedCount = selectedIds.size;
   const selectedList = useMemo(() => [...selectedIds], [selectedIds]);
 
+  const {showSuspend, showUnsuspend} = useMemo(() => {
+    let suspend = false;
+    let unsuspend = false;
+    for (const id of selectedList) {
+      const flags = selectedFlags[id];
+      if (!flags || flags.deleted) continue;
+      if (flags.suspended) unsuspend = true;
+      else suspend = true;
+      if (suspend && unsuspend) break;
+    }
+    return {showSuspend: suspend, showUnsuspend: unsuspend};
+  }, [selectedList, selectedFlags]);
+
   const toggleSelectAllPage = () => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (allPageSelected) {
-        for (const id of pageIds) next.delete(id);
-      } else {
-        for (const id of pageIds) {
-          if (next.size >= MAX_BULK_IDS && !next.has(id)) continue;
-          next.add(id);
-        }
+    if (allPageSelected) {
+      const nextIds = new Set(selectedIds);
+      const nextFlags = {...selectedFlags};
+      for (const id of pageIds) {
+        nextIds.delete(id);
+        delete nextFlags[id];
       }
-      return next;
-    });
+      setSelectedIds(nextIds);
+      setSelectedFlags(nextFlags);
+      return;
+    }
+
+    const nextIds = new Set(selectedIds);
+    const nextFlags = {...selectedFlags};
+    for (const row of rows) {
+      const id = String(row.id);
+      if (nextIds.has(id)) {
+        nextFlags[id] = accountFlags(row);
+        continue;
+      }
+      if (nextIds.size >= MAX_BULK_IDS) continue;
+      nextIds.add(id);
+      nextFlags[id] = accountFlags(row);
+    }
+    setSelectedIds(nextIds);
+    setSelectedFlags(nextFlags);
   };
 
-  const toggleSelectOne = (id: string) => {
+  const toggleSelectOne = (id: string, row: ProfessionalSummary) => {
+    const removing = selectedIds.has(id);
+    if (!removing && selectedIds.size >= MAX_BULK_IDS) return;
+
     setSelectedIds(prev => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else if (next.size < MAX_BULK_IDS) {
-        next.add(id);
-      }
+      if (removing) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setSelectedFlags(prev => {
+      const next = {...prev};
+      if (removing) delete next[id];
+      else next[id] = accountFlags(row);
       return next;
     });
   };
@@ -560,7 +598,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
           `Updated ${result.updated}; ${result.failed.length} failed (e.g. deleted accounts).`,
         );
       }
-      setSelectedIds(new Set());
+      clearSelection();
       setPendingBulk(null);
       await load(page);
     } catch (err) {
@@ -610,8 +648,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
   ];
 
   const accountStatusOptions = [
-    {value: 'onboarded', label: 'Onboarded'},
-    {value: 'incomplete', label: 'Incomplete'},
+    {value: 'active', label: 'Active'},
     {value: 'suspended', label: 'Suspended'},
     {value: 'deleted', label: 'Deleted'},
   ];
@@ -858,8 +895,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
                 Multiple ({appliedFilters.accountStatuses.length})
               </option>
             ) : null}
-            <option value="onboarded">Onboarded ({counts.onboarded ?? 0})</option>
-            <option value="incomplete">Incomplete ({counts.incomplete ?? 0})</option>
+            <option value="active">Active ({counts.active ?? 0})</option>
             <option value="suspended">Suspended ({counts.suspended ?? 0})</option>
             <option value="deleted">Deleted ({counts.deleted ?? 0})</option>
           </select>
@@ -911,43 +947,29 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
               <Download className="size-3.5" strokeWidth={1.8} />
               {exporting ? 'Exporting…' : 'Export selected'}
             </Button>
-            {canWrite ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={bulkActing}
-                  onClick={() => setPendingBulk('activate')}>
-                  Activate
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={bulkActing}
-                  onClick={() => setPendingBulk('deactivate')}>
-                  Deactivate
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={bulkActing}
-                  onClick={() => setPendingBulk('suspend')}>
-                  Suspend
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={bulkActing}
-                  onClick={() => setPendingBulk('unsuspend')}>
-                  Unsuspend
-                </Button>
-              </>
+            {canWrite && showSuspend ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={bulkActing}
+                onClick={() => setPendingBulk('suspend')}>
+                Suspend
+              </Button>
+            ) : null}
+            {canWrite && showUnsuspend ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={bulkActing}
+                onClick={() => setPendingBulk('unsuspend')}>
+                Unsuspend
+              </Button>
             ) : null}
             <Button
               variant="ghost"
               size="sm"
               disabled={bulkActing}
-              onClick={() => setSelectedIds(new Set())}>
+              onClick={clearSelection}>
               Clear
             </Button>
           </div>
@@ -1000,7 +1022,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
                     className="size-4 rounded border-border"
                     checked={isSelected}
                     disabled={!isSelected && selectedCount >= MAX_BULK_IDS}
-                    onChange={() => toggleSelectOne(rowId)}
+                    onChange={() => toggleSelectOne(rowId, row)}
                     aria-label={`Select ${row.name}`}
                   />
                 </td>
