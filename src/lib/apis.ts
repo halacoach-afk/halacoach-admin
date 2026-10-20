@@ -11,6 +11,7 @@ import type {
   CreateCreditPlanInput,
   CreatePromoInput,
   CreateServiceInput,
+  FoundingMembersResponse,
   Paginated,
   PromoCode,
   ReorderServicesInput,
@@ -71,6 +72,12 @@ export function listCreditSubscriptions(
 
 export function getCreditSubscription(id: string) {
   return request<CreditSubscriptionDetail>(`/v1/credit-subscriptions/${id}`);
+}
+
+export function listFoundingMembers(params: {q?: string} = {}) {
+  return request<FoundingMembersResponse>(
+    `/v1/founding-members${buildListQuery(params)}`,
+  );
 }
 
 export function createCreditPlan(input: CreateCreditPlanInput) {

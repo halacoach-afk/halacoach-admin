@@ -32,7 +32,10 @@ export function DataTable({
         <table
           className={cn(
             // Fill the card; grow past 100% when nowrap content needs horizontal scroll.
-            'w-full min-w-max table-auto text-left text-sm',
+            'w-full text-left text-sm',
+            columnWidths?.length
+              ? 'table-fixed'
+              : 'min-w-max table-auto',
             '[&_th]:whitespace-nowrap [&_td]:whitespace-nowrap',
             tableClassName,
           )}>

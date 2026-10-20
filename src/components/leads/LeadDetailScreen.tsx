@@ -347,7 +347,9 @@ export function LeadDetailScreen({id}: {id: string}) {
               body="No coaches have unlocked this lead."
             />
           ) : (
-            <DataTable columns={['Name', 'Match', 'Credits', 'When']}>
+            <DataTable
+              columns={['Name', 'Match', 'Credits', 'When']}
+              columnWidths={['40%', '15%', '15%', '30%']}>
               {[...lead.unlocks]
                 .sort((a, b) => (b.matchPercent ?? -1) - (a.matchPercent ?? -1))
                 .map(row => {
@@ -363,13 +365,13 @@ export function LeadDetailScreen({id}: {id: string}) {
                           {row.professionalName}
                         </Link>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                      <td className="px-4 py-3 align-top text-sm tabular-nums text-foreground">
                         {row.matchPercent != null ? `${row.matchPercent}%` : '-'}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                      <td className="px-4 py-3 align-top text-sm tabular-nums text-foreground">
                         {row.credits}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                      <td className="px-4 py-3 align-top text-sm text-muted-foreground">
                         {when ? (
                           <div className="leading-snug">
                             <div>{when.date}</div>
@@ -398,7 +400,9 @@ export function LeadDetailScreen({id}: {id: string}) {
               body="No coaches have been notified for this lead."
             />
           ) : (
-            <DataTable columns={['Name', 'Match', 'Cost', 'Notified']}>
+            <DataTable
+              columns={['Name', 'Match', 'Cost', 'Notified']}
+              columnWidths={['40%', '15%', '15%', '30%']}>
               {[...(lead.notifiedProfessionals ?? [])]
                 .sort((a, b) => (b.matchPercent ?? -1) - (a.matchPercent ?? -1))
                 .map(row => {
@@ -414,13 +418,13 @@ export function LeadDetailScreen({id}: {id: string}) {
                         {row.professionalName}
                       </Link>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                    <td className="px-4 py-3 align-top text-sm tabular-nums text-foreground">
                       {row.matchPercent != null ? `${row.matchPercent}%` : '-'}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 align-top text-end text-sm tabular-nums text-foreground">
+                    <td className="px-4 py-3 align-top text-sm tabular-nums text-foreground">
                       {row.unlockCost != null ? row.unlockCost : '-'}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 align-top text-sm text-muted-foreground">
+                    <td className="px-4 py-3 align-top text-sm text-muted-foreground">
                       {notified ? (
                         <div className="leading-snug">
                           <div>{notified.date}</div>
