@@ -3,6 +3,7 @@ import {
   BadgeCheck,
   ClipboardList,
   Coins,
+  Crown,
   Headset,
   LayoutDashboard,
   LifeBuoy,
@@ -75,6 +76,14 @@ export const navItems: NavItem[] = [
     label: 'Billing & Invoices',
     description: 'Membership subscriptions and credit ledger activity.',
     icon: Receipt,
+    permission: 'credits:read',
+  },
+  {
+    href: '/founding-members',
+    label: 'Founding Members',
+    description:
+      'Coaches with founding badge from membership or Trial Pack, including canceled.',
+    icon: Crown,
     permission: 'credits:read',
   },
   {

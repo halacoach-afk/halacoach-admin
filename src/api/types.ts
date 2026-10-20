@@ -213,6 +213,39 @@ export type CreditSubscriptionDetail = CreditSubscriptionAdmin & {
   transactions: CreditSubscriptionTxn[];
 };
 
+export type FoundingMemberSource = 'membership' | 'trial_pack';
+
+export type FoundingMemberBenefit = {
+  id: number;
+  type: string;
+  title: string;
+  value: number | null;
+};
+
+export type FoundingMember = {
+  userId: number;
+  professionalId: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  joinedAt: string;
+  sources: FoundingMemberSource[];
+  /** Credit plan / pack names that conferred founding. */
+  bundles: string[];
+  membershipStatus: 'active' | 'canceled' | 'expired' | 'past_due' | 'none';
+  benefits: FoundingMemberBenefit[];
+  freeUnlocksGranted: number;
+  freeUnlocksRemaining: number;
+  freeUnlocksConsumed: number;
+  discountedUnlocksConsumed: number;
+  activeDiscountPercent: number;
+};
+
+export type FoundingMembersResponse = {
+  data: FoundingMember[];
+  meta: {total: number};
+};
+
 export type PromoBenefitType = 'percent_off' | 'fixed_off' | 'bonus_credits';
 
 export type PromoCode = {

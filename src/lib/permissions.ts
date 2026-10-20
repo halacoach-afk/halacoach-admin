@@ -75,6 +75,7 @@ export function permissionForPath(pathname: string): Permission {
     credits: 'credits:read',
     billing: 'credits:read',
     subscriptions: 'credits:read',
+    'founding-members': 'credits:read',
     services: 'services:read',
     support: 'support:read',
     settings: 'settings:read',
