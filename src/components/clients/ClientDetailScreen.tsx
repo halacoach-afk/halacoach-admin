@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Circle,
-  ClipboardCheck,
   Dumbbell,
   Hash,
   Mail,
@@ -347,17 +346,6 @@ export function ClientDetailScreen({
                   <Badge tone="danger">Suspended</Badge>
                 ) : (
                   <Badge tone="primary">Active</Badge>
-                )
-              }
-            />
-            <PrefField
-              icon={<ClipboardCheck className="size-3.5" strokeWidth={1.8} />}
-              label="Onboarding"
-              value={
-                client.onboarded ? (
-                  <Badge tone="primary">Complete</Badge>
-                ) : (
-                  <Badge tone="warning">Incomplete</Badge>
                 )
               }
             />

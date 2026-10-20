@@ -12,7 +12,6 @@ export function toClientSummary(client: Client): ClientSummary {
     birthDate: client.birthDate ?? client.profile?.birth_date ?? null,
     location: client.profile?.location ?? '-',
     services: client.matchPrefs?.services ?? [],
-    onboarded: client.onboarded,
     otpVerified: client.otpVerified,
     suspended: client.suspended,
     profileCompletion: client.profileCompletion ?? 0,

@@ -20,7 +20,7 @@ import {
 } from '@/lib/pagination';
 import {completionPercent} from '@/lib/professional-utils';
 
-type Filter = 'all' | 'onboarded' | 'incomplete' | 'suspended' | 'deleted';
+type Filter = 'all' | 'active' | 'suspended' | 'deleted';
 
 function contactCell(value: string, verified: boolean) {
   const display = value.trim();
@@ -42,8 +42,7 @@ export function ClientsScreen() {
   const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
   const [counts, setCounts] = useState<Record<string, number>>({
     all: 0,
-    onboarded: 0,
-    incomplete: 0,
+    active: 0,
     suspended: 0,
     deleted: 0,
   });
@@ -115,8 +114,7 @@ export function ClientsScreen() {
         {(
           [
             ['all', 'All'],
-            ['onboarded', 'Onboarded'],
-            ['incomplete', 'Incomplete'],
+            ['active', 'Active'],
             ['suspended', 'Suspended'],
             ['deleted', 'Deleted'],
           ] as const

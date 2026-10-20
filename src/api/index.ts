@@ -261,7 +261,7 @@ export type ListProfessionalsParams = {
   createdTo?: string;
   /** Multi-select verification statuses (OR). */
   verificationStatuses?: string[];
-  /** Multi-select account statuses (OR): onboarded|incomplete|suspended|deleted */
+  /** Multi-select account statuses (OR): active|suspended|deleted */
   accountStatuses?: string[];
   creditsMin?: string | number;
   creditsMax?: string | number;

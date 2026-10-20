@@ -1133,17 +1133,6 @@ export function ProfessionalDetailScreen({
             />
             <PrefField
               icon={<ClipboardCheck className="size-3.5" strokeWidth={1.8} />}
-              label="Onboarding"
-              value={
-                pro.onboarded ? (
-                  <Badge tone="primary">Complete</Badge>
-                ) : (
-                  <Badge tone="warning">Incomplete</Badge>
-                )
-              }
-            />
-            <PrefField
-              icon={<ClipboardCheck className="size-3.5" strokeWidth={1.8} />}
               label="Verification"
               value={
                 <Badge tone={verificationTone(pro.verificationStatus)}>

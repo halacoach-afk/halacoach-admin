@@ -58,7 +58,7 @@ const BULK_ACTION_COPY: Record<
   },
 };
 
-type AccountFilter = 'all' | 'onboarded' | 'incomplete' | 'suspended' | 'deleted';
+type AccountFilter = 'all' | 'active' | 'suspended' | 'deleted';
 
 type ColumnFilters = {
   id: string;
@@ -146,13 +146,12 @@ function verificationTone(status: ProfessionalSummary['verificationStatus']) {
   return 'muted' as const;
 }
 
-type AccountStatus = 'deleted' | 'suspended' | 'incomplete' | 'onboarded';
+type AccountStatus = 'deleted' | 'suspended' | 'active';
 
 function accountStatus(row: ProfessionalSummary): AccountStatus {
   if (row.deletedAt) return 'deleted';
   if (row.suspended) return 'suspended';
-  if (!row.onboarded) return 'incomplete';
-  return 'onboarded';
+  return 'active';
 }
 
 /** Cached flags for bulk action visibility (selection can span pages). */
@@ -168,13 +167,11 @@ function accountFlags(row: ProfessionalSummary): SelectedAccountFlags {
 const accountStatusLabels: Record<AccountStatus, string> = {
   deleted: 'Deleted',
   suspended: 'Suspended',
-  incomplete: 'Incomplete',
-  onboarded: 'Onboarded',
+  active: 'Active',
 };
 
 function accountStatusTone(status: AccountStatus) {
   if (status === 'deleted' || status === 'suspended') return 'danger' as const;
-  if (status === 'incomplete') return 'warning' as const;
   return 'primary' as const;
 }
 
@@ -318,8 +315,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
   const [meta, setMeta] = useState<PaginationMeta>(emptyPaginationMeta());
   const [counts, setCounts] = useState<Record<string, number>>({
     all: 0,
-    onboarded: 0,
-    incomplete: 0,
+    active: 0,
     suspended: 0,
     deleted: 0,
   });
@@ -652,8 +648,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
   ];
 
   const accountStatusOptions = [
-    {value: 'onboarded', label: 'Onboarded'},
-    {value: 'incomplete', label: 'Incomplete'},
+    {value: 'active', label: 'Active'},
     {value: 'suspended', label: 'Suspended'},
     {value: 'deleted', label: 'Deleted'},
   ];
@@ -900,8 +895,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
                 Multiple ({appliedFilters.accountStatuses.length})
               </option>
             ) : null}
-            <option value="onboarded">Onboarded ({counts.onboarded ?? 0})</option>
-            <option value="incomplete">Incomplete ({counts.incomplete ?? 0})</option>
+            <option value="active">Active ({counts.active ?? 0})</option>
             <option value="suspended">Suspended ({counts.suspended ?? 0})</option>
             <option value="deleted">Deleted ({counts.deleted ?? 0})</option>
           </select>
