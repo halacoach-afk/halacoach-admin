@@ -43,7 +43,7 @@ const REJECT_REASON_OPTIONS = [
   'Expiry date is missing or unclear',
 ] as const;
 
-type Filter = 'all' | 'pending' | 'rejected' | 'verified';
+type Filter = 'all' | 'pending' | 'rejected' | 'verified' | 'expiring_soon' | 'expired';
 
 function formatSubmittedParts(at: string): {date: string; time: string} | null {
   const date = new Date(at);
@@ -128,6 +128,8 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
     pending: 0,
     rejected: 0,
     verified: 0,
+    expiring_soon: 0,
+    expired: 0,
   });
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
@@ -257,7 +259,7 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
   return (
     <>
       <PageHeader
-        title="Verification"
+        title="Docs Verification"
         actions={
           <Button variant="outline" size="sm" onClick={() => void load()} disabled={acting || loading}>
             Refresh
@@ -272,10 +274,14 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
           <span className="whitespace-nowrap font-medium">Status</span>
           <select
             aria-label="Filter by verification status"
-            className="h-9 min-w-[11rem] rounded-xl border border-border bg-card px-3 text-sm font-medium text-foreground outline-none focus:border-primary"
+            className="h-9 min-w-[14rem] rounded-xl border border-border bg-card px-3 text-sm font-medium text-foreground outline-none focus:border-primary"
             value={filter}
             onChange={e => setFilter(e.target.value as Filter)}>
             <option value="all">All ({counts.all ?? 0})</option>
+            <option value="expired">Expired ({counts.expired ?? 0})</option>
+            <option value="expiring_soon">
+              Expiring soon ({counts.expiring_soon ?? 0})
+            </option>
             <option value="pending">Pending ({counts.pending ?? 0})</option>
             <option value="rejected">Rejected ({counts.rejected ?? 0})</option>
             <option value="verified">Verified ({counts.verified ?? 0})</option>
@@ -288,11 +294,23 @@ export function VerificationScreen({actor}: {actor: SessionUser}) {
         <p className="py-8 text-center text-sm text-muted-foreground">Searching…</p>
       ) : queue.length === 0 ? (
         <EmptyState
-          title={filter === 'verified' ? 'No verified coaches' : 'Queue is clear'}
+          title={
+            filter === 'verified'
+              ? 'No verified coaches'
+              : filter === 'expiring_soon'
+                ? 'No expiring documents'
+                : filter === 'expired'
+                  ? 'No expired documents'
+                  : 'Queue is clear'
+          }
           body={
             filter === 'verified'
               ? 'No verified coaches match this view right now.'
-              : 'No coaches are waiting for document review right now.'
+              : filter === 'expiring_soon'
+                ? 'No coaches have an approved document expiring within 30 days.'
+                : filter === 'expired'
+                  ? 'No coaches have an approved document past its expiry date.'
+                  : 'No coaches are waiting for document review right now.'
           }
         />
       ) : (

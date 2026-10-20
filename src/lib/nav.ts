@@ -36,7 +36,7 @@ export const navItems: NavItem[] = [
   },
   {
     href: '/verification',
-    label: 'Verification',
+    label: 'Docs Verification',
     description: 'Review coach documents. Profiles go live only after approval.',
     icon: BadgeCheck,
     permission: 'verification:read',

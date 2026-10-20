@@ -407,7 +407,14 @@ export async function listVerificationQueue(
         total: data.length,
         lastPage: 1,
       },
-      counts: {all: data.length, pending: 0, rejected: 0, verified: 0},
+      counts: {
+        all: data.length,
+        pending: 0,
+        rejected: 0,
+        verified: 0,
+        expiring_soon: 0,
+        expired: 0,
+      },
     };
   }
   const items = data.data ?? data.items ?? [];
