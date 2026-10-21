@@ -54,6 +54,7 @@ import {
   ExcelFilterTextField,
 } from '@/components/ui/ExcelColumnFilter';
 import {FileViewerModal} from '@/components/ui/FileViewerModal';
+import {FoundingCrown} from '@/components/ui/FoundingCrown';
 import {Input} from '@/components/ui/Input';
 import {LoadingState} from '@/components/ui/LoadingState';
 import {PaginationBar} from '@/components/ui/PaginationBar';
@@ -1054,9 +1055,7 @@ export function ProfessionalDetailScreen({
               value={
                 <span className="inline-flex flex-wrap items-center gap-2">
                   <span>{pro.name}</span>
-                  {pro.isFoundingProfessional ? (
-                    <Badge tone="coral">Founding</Badge>
-                  ) : null}
+                  {pro.isFoundingProfessional ? <FoundingCrown /> : null}
                 </span>
               }
             />
@@ -1117,17 +1116,6 @@ export function ProfessionalDetailScreen({
                   <Badge tone="danger">Suspended</Badge>
                 ) : (
                   <Badge tone="primary">Active</Badge>
-                )
-              }
-            />
-            <PrefField
-              icon={<Shield className="size-3.5" strokeWidth={1.8} />}
-              label="Founding"
-              value={
-                pro.isFoundingProfessional ? (
-                  <Badge tone="coral">Founding professional</Badge>
-                ) : (
-                  <Badge tone="muted">No</Badge>
                 )
               }
             />
