@@ -115,13 +115,16 @@ export type CreditPackageType = CreditPlanType;
 export type CreditBenefitKind =
   | 'founding_badge'
   | 'unlock_credit_discount'
-  | 'free_unlocks';
+  | 'free_unlocks'
+  | 'auto_grant';
 
 export type CreditBenefit = {
   id: number;
   title: string;
   type: CreditBenefitKind;
   value: number | null;
+  /** Null = lifetime under existing rules; N = expires N days after grant. */
+  expiryDays: number | null;
 };
 
 export type CreditPlanBenefitAssignment = {
@@ -129,6 +132,7 @@ export type CreditPlanBenefitAssignment = {
   title: string;
   type: CreditBenefitKind;
   value: number | null;
+  expiryDays?: number | null;
 };
 
 export type CreditPlan = {

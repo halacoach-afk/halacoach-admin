@@ -18,6 +18,7 @@ import {
 } from '@/api';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
+import {FoundingCrown} from '@/components/ui/FoundingCrown';
 import {ConfirmDialog} from '@/components/ui/ConfirmDialog';
 import {DataTable, FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
@@ -1032,9 +1033,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
                 <td className="px-4 py-3 font-medium text-foreground">
                   <div className="flex flex-wrap items-center gap-2">
                     <span>{row.name}</span>
-                    {row.isFoundingProfessional ? (
-                      <Badge tone="coral">Founding</Badge>
-                    ) : null}
+                    {row.isFoundingProfessional ? <FoundingCrown /> : null}
                   </div>
                 </td>
                 <td className="px-4 py-3">
