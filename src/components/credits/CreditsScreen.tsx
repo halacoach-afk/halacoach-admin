@@ -302,17 +302,21 @@ function CreditPackageTableCell({children, className}: {children: React.ReactNod
 function CatalogActions({
   isEditing,
   saving,
+  active,
+  toggling,
   onCancel,
   onSave,
   onEdit,
-  onDelete,
+  onToggleActive,
 }: {
   isEditing: boolean;
   saving: boolean;
+  active: boolean;
+  toggling?: boolean;
   onCancel: () => void;
   onSave: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onToggleActive: () => void;
 }) {
   return (
     <CreditPackageTableCell className="flex-nowrap justify-end gap-1">
@@ -339,8 +343,13 @@ function CatalogActions({
           Edit
         </Button>
       )}
-      <Button size="sm" variant="danger" className={creditPackageDeleteButtonClass} onClick={onDelete}>
-        Delete
+      <Button
+        size="sm"
+        variant={active ? 'danger' : 'outline'}
+        className={creditPackageDeleteButtonClass}
+        disabled={toggling || isEditing}
+        onClick={onToggleActive}>
+        {toggling ? '…' : active ? 'Disable' : 'Enable'}
       </Button>
     </CreditPackageTableCell>
   );
@@ -382,15 +391,17 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   const [creatingPromo, setCreatingPromo] = useState(false);
   const [editingPromoId, setEditingPromoId] = useState<number | null>(null);
   const [benefitCatalog, setBenefitCatalog] = useState<CreditBenefit[]>([]);
-  const [pendingDelete, setPendingDelete] = useState<
-    {kind: 'package'; id: number} | {kind: 'promo'; id: number} | null
+  const [togglingActiveId, setTogglingActiveId] = useState<string | null>(null);
+  const [pendingToggle, setPendingToggle] = useState<
+    | {kind: 'package'; id: number; name: string; nextActive: boolean}
+    | {kind: 'promo'; id: number; name: string; nextActive: boolean}
+    | null
   >(null);
-  const [deleting, setDeleting] = useState(false);
 
   const loadPackages = async () => {
     setPackages(s => ({...s, isLoading: true, error: null}));
     try {
-      const items = (await listCreditPackages()).filter(item => item.active);
+      const items = await listCreditPackages();
       setPackages({items, isLoading: false, error: null});
       setCreditPackageDrafts(
         Object.fromEntries(
@@ -425,7 +436,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
   const loadPromos = async () => {
     setPromos(s => ({...s, isLoading: true, error: null}));
     try {
-      const items = (await listPromoCodes()).filter(item => item.active);
+      const items = await listPromoCodes();
       setPromos({items, isLoading: false, error: null});
       setPromoDrafts(Object.fromEntries(items.map(promo => [promo.id, promoDraftFromPromo(promo)])));
     } catch (err) {
@@ -728,10 +739,19 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                     <CatalogActions
                       isEditing={isEditing}
                       saving={savingCreditPackage === pack.id}
+                      active={pack.active}
+                      toggling={togglingActiveId === `package:${pack.id}`}
                       onCancel={() => cancelEditCreditPackage(pack)}
                       onSave={() => void saveCreditPackage(pack.id)}
                       onEdit={() => startEditCreditPackage(pack)}
-                      onDelete={() => setPendingDelete({kind: 'package', id: pack.id})}
+                      onToggleActive={() =>
+                        setPendingToggle({
+                          kind: 'package',
+                          id: pack.id,
+                          name: pack.name,
+                          nextActive: !pack.active,
+                        })
+                      }
                     />
                   </td>
                 ) : null}
@@ -1011,43 +1031,53 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     setEditingCreditPackageId(current => (current === pack.id ? null : current));
   };
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return;
-    const target = pendingDelete;
-    setDeleting(true);
+  const setPackageActive = async (packId: number, nextActive: boolean) => {
+    const key = `package:${packId}`;
+    setTogglingActiveId(key);
     setError(null);
     try {
-      if (target.kind === 'package') {
-        await updateCreditPackage(target.id, {active: false});
-        setEditingCreditPackageId(current => (current === target.id ? null : current));
-        setPackages(state => ({
-          ...state,
-          items: state.items.filter(item => item.id !== target.id),
-        }));
-        setCreditPackageDrafts(state => {
-          const next = {...state};
-          delete next[target.id];
-          return next;
-        });
-      } else {
-        await updatePromoCode(target.id, {active: false});
-        setEditingPromoId(current => (current === target.id ? null : current));
-        setPromos(state => ({
-          ...state,
-          items: state.items.filter(item => item.id !== target.id),
-        }));
-        setPromoDrafts(state => {
-          const next = {...state};
-          delete next[target.id];
-          return next;
-        });
-      }
-      setPendingDelete(null);
+      await updateCreditPackage(packId, {active: nextActive});
+      setPackages(state => ({
+        ...state,
+        items: state.items.map(item =>
+          item.id === packId ? {...item, active: nextActive} : item,
+        ),
+      }));
     } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not delete.');
+      setError(isApiError(err) ? err.message : 'Could not update plan status.');
     } finally {
-      setDeleting(false);
+      setTogglingActiveId(null);
     }
+  };
+
+  const setPromoActive = async (promoId: number, nextActive: boolean) => {
+    const key = `promo:${promoId}`;
+    setTogglingActiveId(key);
+    setError(null);
+    try {
+      await updatePromoCode(promoId, {active: nextActive});
+      setPromos(state => ({
+        ...state,
+        items: state.items.map(item =>
+          item.id === promoId ? {...item, active: nextActive} : item,
+        ),
+      }));
+    } catch (err) {
+      setError(isApiError(err) ? err.message : 'Could not update promo status.');
+    } finally {
+      setTogglingActiveId(null);
+    }
+  };
+
+  const confirmToggleActive = async () => {
+    if (!pendingToggle) return;
+    const target = pendingToggle;
+    if (target.kind === 'package') {
+      await setPackageActive(target.id, target.nextActive);
+    } else {
+      await setPromoActive(target.id, target.nextActive);
+    }
+    setPendingToggle(null);
   };
 
   const savePromo = async (promoId: number) => {
@@ -1307,10 +1337,19 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                     <CatalogActions
                       isEditing={isEditing}
                       saving={savingPromo === promo.id}
+                      active={promo.active}
+                      toggling={togglingActiveId === `promo:${promo.id}`}
                       onCancel={() => cancelEditPromo(promo)}
                       onSave={() => void savePromo(promo.id)}
                       onEdit={() => startEditPromo(promo)}
-                      onDelete={() => setPendingDelete({kind: 'promo', id: promo.id})}
+                      onToggleActive={() =>
+                        setPendingToggle({
+                          kind: 'promo',
+                          id: promo.id,
+                          name: promo.code,
+                          nextActive: !promo.active,
+                        })
+                      }
                     />
                   </td>
                 ) : null}
@@ -1402,15 +1441,29 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
       </div>
 
       <ConfirmDialog
-        open={pendingDelete !== null}
-        title="Delete this?"
-        body="This can’t be undone from the list."
-        confirmLabel={deleting ? 'Deleting...' : 'Delete'}
-        destructive
+        open={pendingToggle !== null}
+        title={pendingToggle?.nextActive ? 'Enable this?' : 'Disable this?'}
+        body={
+          pendingToggle
+            ? pendingToggle.nextActive
+              ? `"${pendingToggle.name}" will be available for purchase again.`
+              : `"${pendingToggle.name}" will be hidden from purchase until you enable it again.`
+            : ''
+        }
+        confirmLabel={
+          togglingActiveId
+            ? pendingToggle?.nextActive
+              ? 'Enabling...'
+              : 'Disabling...'
+            : pendingToggle?.nextActive
+              ? 'Enable'
+              : 'Disable'
+        }
+        destructive={!pendingToggle?.nextActive}
         onClose={() => {
-          if (!deleting) setPendingDelete(null);
+          if (!togglingActiveId) setPendingToggle(null);
         }}
-        onConfirm={() => void confirmDelete()}
+        onConfirm={() => void confirmToggleActive()}
       />
     </>
   );
