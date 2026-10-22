@@ -588,7 +588,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                       <input
                         className={tableInputClass}
                         type="number"
-                        min={1}
+                        min={0}
                         value={draft.credits}
                         onChange={e =>
                           setCreditPackageDrafts(state => ({
@@ -775,10 +775,10 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                   <input
                     className={tableInputClass}
                     type="number"
-                    min={1}
+                    min={0}
                     value={form.credits}
                     onChange={e => setForm(current => ({...current, credits: e.target.value}))}
-                    placeholder="10"
+                    placeholder="0"
                   />
                 </CreditPackageTableCell>
               </td>
@@ -881,7 +881,9 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                     disabled={
                       creatingCreditPackage ||
                       !form.name.trim() ||
-                      !(Number(form.credits) >= 1) ||
+                      form.credits.trim() === '' ||
+                      !Number.isFinite(Number(form.credits)) ||
+                      Number(form.credits) < 0 ||
                       !(Number(form.price) > 0)
                     }
                     onClick={() => void submitCreateCreditPackage(type)}>
@@ -903,15 +905,21 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
 
   const saveCreditPackage = async (packId: number) => {
     const draft = creditPackageDrafts[packId];
-    const credits = Number(draft?.credits);
+    const creditsRaw = draft?.credits?.trim() ?? '';
+    const credits = Number(creditsRaw);
     const price = Number(draft?.price);
     const name = draft?.name.trim() ?? '';
     if (!name) {
       setError('Credit package name cannot be empty.');
       return;
     }
-    if (!Number.isFinite(credits) || credits < 1) {
-      setError('Each credit package needs at least 1 credit.');
+    if (
+      creditsRaw === '' ||
+      !Number.isFinite(credits) ||
+      credits < 0 ||
+      !Number.isInteger(credits)
+    ) {
+      setError('Credits must be a whole number of 0 or more.');
       return;
     }
     if (!Number.isFinite(price) || price <= 0) {
@@ -943,14 +951,20 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     const form = type === 'membership' ? membershipPackageForm : oneTimePackageForm;
     const setForm = type === 'membership' ? setMembershipPackageForm : setOneTimePackageForm;
     setCreditPackageError(null);
-    const credits = Number(form.credits);
+    const creditsRaw = form.credits.trim();
+    const credits = Number(creditsRaw);
     const price = Number(form.price);
     if (!form.name.trim()) {
       setCreditPackageError('Name is required.');
       return;
     }
-    if (!Number.isFinite(credits) || credits < 1) {
-      setCreditPackageError('Credits must be at least 1.');
+    if (
+      creditsRaw === '' ||
+      !Number.isFinite(credits) ||
+      credits < 0 ||
+      !Number.isInteger(credits)
+    ) {
+      setCreditPackageError('Credits must be a whole number of 0 or more.');
       return;
     }
     if (!Number.isFinite(price) || price <= 0) {
