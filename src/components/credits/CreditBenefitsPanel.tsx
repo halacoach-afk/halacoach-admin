@@ -30,12 +30,15 @@ const BENEFIT_TYPE_OPTIONS: {value: CreditBenefitKind; label: string}[] = [
   {value: 'unlock_credit_discount', label: 'Unlock discount'},
   {value: 'free_unlocks', label: 'Free unlocks'},
   {value: 'founding_badge', label: 'Founding Badge'},
+  {value: 'auto_grant', label: 'Auto grant'},
 ];
 
 const CREATABLE_BENEFIT_TYPES: CreditBenefitKind[] = [
   'unlock_credit_discount',
   'free_unlocks',
 ];
+
+const LOCKED_BENEFIT_TYPES: CreditBenefitKind[] = ['founding_badge', 'auto_grant'];
 
 const emptyForm: BenefitDraft = {title: '', type: '', value: '', expiryDays: ''};
 
@@ -46,6 +49,7 @@ const tableSelectClass =
 
 function formatBenefitValue(benefit: CreditBenefit) {
   if (benefit.type === 'founding_badge') return 'Founding Badge';
+  if (benefit.type === 'auto_grant') return 'Free plan on first verification';
   if (benefit.type === 'free_unlocks') {
     const n = benefit.value ?? 0;
     return `${n} complimentary unlock${n === 1 ? '' : 's'}`;
@@ -184,7 +188,7 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
     setSavingId(benefit.id);
     setError(null);
     try {
-      if (benefit.type === 'founding_badge') {
+      if (benefit.type === 'founding_badge' || benefit.type === 'auto_grant') {
         await updateCreditBenefit(benefit.id, {title, expiryDays});
       } else if (benefit.type === 'free_unlocks') {
         const value = Number(draft.value);
@@ -213,6 +217,10 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
   const removeRow = async (benefit: CreditBenefit) => {
     if (benefit.type === 'founding_badge') {
       setError('The Founding Professional badge cannot be deleted.');
+      return;
+    }
+    if (benefit.type === 'auto_grant') {
+      setError('Auto grant cannot be deleted. Unassign it from plans instead.');
       return;
     }
     setError(null);
@@ -253,7 +261,7 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
         {items.map(benefit => {
           const draft = drafts[benefit.id] ?? draftFromBenefit(benefit);
           const isEditing = canWrite && editingId === benefit.id;
-          const isFounding = benefit.type === 'founding_badge';
+          const isLockedType = LOCKED_BENEFIT_TYPES.includes(benefit.type);
 
           return (
             <tr
@@ -283,7 +291,7 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
                   <select
                     className={tableSelectClass}
                     value={draft.type}
-                    disabled={isFounding}
+                    disabled={isLockedType}
                     onChange={e =>
                       setDrafts(state => ({
                         ...state,
@@ -294,8 +302,8 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
                         },
                       }))
                     }>
-                    {(isFounding
-                      ? BENEFIT_TYPE_OPTIONS.filter(option => option.value === 'founding_badge')
+                    {(isLockedType
+                      ? BENEFIT_TYPE_OPTIONS.filter(option => option.value === benefit.type)
                       : BENEFIT_TYPE_OPTIONS.filter(option =>
                           CREATABLE_BENEFIT_TYPES.includes(option.value),
                         )
@@ -382,7 +390,7 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
                     <Button
                       size="sm"
                       variant="danger"
-                      disabled={isFounding}
+                      disabled={isLockedType}
                       onClick={() => void removeRow(benefit)}>
                       Delete
                     </Button>

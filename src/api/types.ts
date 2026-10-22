@@ -115,7 +115,8 @@ export type CreditPackageType = CreditPlanType;
 export type CreditBenefitKind =
   | 'founding_badge'
   | 'unlock_credit_discount'
-  | 'free_unlocks';
+  | 'free_unlocks'
+  | 'auto_grant';
 
 export type CreditBenefit = {
   id: number;
