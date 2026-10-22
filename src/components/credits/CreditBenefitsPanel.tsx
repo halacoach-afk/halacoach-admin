@@ -23,6 +23,7 @@ type BenefitDraft = {
   title: string;
   type: CreditBenefitKind | '';
   value: string;
+  expiryDays: string;
 };
 
 const BENEFIT_TYPE_OPTIONS: {value: CreditBenefitKind; label: string}[] = [
@@ -36,7 +37,7 @@ const CREATABLE_BENEFIT_TYPES: CreditBenefitKind[] = [
   'free_unlocks',
 ];
 
-const emptyForm: BenefitDraft = {title: '', type: '', value: ''};
+const emptyForm: BenefitDraft = {title: '', type: '', value: '', expiryDays: ''};
 
 const tableInputClass =
   'h-9 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-primary';
@@ -53,12 +54,35 @@ function formatBenefitValue(benefit: CreditBenefit) {
   return `${benefit.value}% unlock discount`;
 }
 
+function formatExpiry(benefit: CreditBenefit) {
+  if (benefit.expiryDays == null) return 'Lifetime';
+  const n = benefit.expiryDays;
+  return `${n} day${n === 1 ? '' : 's'}`;
+}
+
 function typeLabel(type: CreditBenefit['type']) {
   return BENEFIT_TYPE_OPTIONS.find(item => item.value === type)?.label ?? type;
 }
 
 function needsNumericValue(type: CreditBenefitKind | '') {
   return type === 'unlock_credit_discount' || type === 'free_unlocks';
+}
+
+function parseExpiryDays(raw: string): number | null | 'invalid' {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n < 1 || n > 3650) return 'invalid';
+  return Math.round(n);
+}
+
+function draftFromBenefit(b: CreditBenefit): BenefitDraft {
+  return {
+    title: b.title,
+    type: b.type,
+    value: b.value != null ? String(b.value) : '',
+    expiryDays: b.expiryDays != null ? String(b.expiryDays) : '',
+  };
 }
 
 export function CreditBenefitsPanel({user, onChange}: Props) {
@@ -72,27 +96,25 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<BenefitDraft>(emptyForm);
 
-  const load = useCallback(async (notify = false) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const rows = await listCreditBenefits();
-      setItems(rows);
-      setDrafts(
-        Object.fromEntries(
-          rows.map(b => [
-            b.id,
-            {title: b.title, type: b.type, value: b.value != null ? String(b.value) : ''},
-          ]),
-        ),
-      );
-      if (notify) onChange?.();
-    } catch (err) {
-      setError(isApiError(err) ? err.message : 'Could not load benefits.');
-    } finally {
-      setLoading(false);
-    }
-  }, [onChange]);
+  const colCount = canWrite ? 5 : 4;
+
+  const load = useCallback(
+    async (notify = false) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const rows = await listCreditBenefits();
+        setItems(rows);
+        setDrafts(Object.fromEntries(rows.map(b => [b.id, draftFromBenefit(b)])));
+        if (notify) onChange?.();
+      } catch (err) {
+        setError(isApiError(err) ? err.message : 'Could not load benefits.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onChange],
+  );
 
   useEffect(() => {
     void load(false);
@@ -123,6 +145,11 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
       setError('Free unlocks must be from 1 to 1000.');
       return;
     }
+    const expiryDays = parseExpiryDays(form.expiryDays);
+    if (expiryDays === 'invalid') {
+      setError('Expiry days must be from 1 to 3650, or empty for lifetime.');
+      return;
+    }
     setCreating(true);
     setError(null);
     try {
@@ -130,6 +157,7 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
         title,
         type: form.type,
         value,
+        expiryDays,
       });
       setForm(emptyForm);
       await load(true);
@@ -148,25 +176,30 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
       setError('Title cannot be empty.');
       return;
     }
+    const expiryDays = parseExpiryDays(draft.expiryDays);
+    if (expiryDays === 'invalid') {
+      setError('Expiry days must be from 1 to 3650, or empty for lifetime.');
+      return;
+    }
     setSavingId(benefit.id);
     setError(null);
     try {
       if (benefit.type === 'founding_badge') {
-        await updateCreditBenefit(benefit.id, {title});
+        await updateCreditBenefit(benefit.id, {title, expiryDays});
       } else if (benefit.type === 'free_unlocks') {
         const value = Number(draft.value);
         if (!Number.isFinite(value) || value < 1 || value > 1000) {
           setError('Free unlocks must be from 1 to 1000.');
           return;
         }
-        await updateCreditBenefit(benefit.id, {title, value});
+        await updateCreditBenefit(benefit.id, {title, value, expiryDays});
       } else {
         const value = Number(draft.value);
         if (!Number.isFinite(value) || value < 1 || value > 100) {
           setError('Discount percent must be from 1 to 100.');
           return;
         }
-        await updateCreditBenefit(benefit.id, {title, value});
+        await updateCreditBenefit(benefit.id, {title, value, expiryDays});
       }
       setEditingId(null);
       await load(true);
@@ -201,22 +234,24 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
 
       <DataTable
         columnHeaderClassNames={
-          canWrite ? [undefined, undefined, undefined, 'text-right'] : undefined
+          canWrite
+            ? [undefined, undefined, undefined, undefined, 'text-right']
+            : undefined
         }
-        columns={canWrite ? ['Title', 'Type', 'Benefit', 'Actions'] : ['Title', 'Type', 'Benefit']}>
+        columns={
+          canWrite
+            ? ['Title', 'Type', 'Benefit', 'Expiry', 'Actions']
+            : ['Title', 'Type', 'Benefit', 'Expiry']
+        }>
         {loading && items.length === 0 ? (
           <tr>
-            <td colSpan={canWrite ? 4 : 3} className="px-4 py-8 text-center">
+            <td colSpan={colCount} className="px-4 py-8 text-center">
               <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
             </td>
           </tr>
         ) : null}
         {items.map(benefit => {
-          const draft = drafts[benefit.id] ?? {
-            title: benefit.title,
-            type: benefit.type,
-            value: benefit.value != null ? String(benefit.value) : '',
-          };
+          const draft = drafts[benefit.id] ?? draftFromBenefit(benefit);
           const isEditing = canWrite && editingId === benefit.id;
           const isFounding = benefit.type === 'founding_badge';
 
@@ -294,6 +329,27 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
                   <span className="text-sm text-foreground">{formatBenefitValue(benefit)}</span>
                 )}
               </td>
+              <td className="px-4 py-2">
+                {isEditing ? (
+                  <input
+                    className={tableInputClass}
+                    type="number"
+                    min={1}
+                    max={3650}
+                    value={draft.expiryDays}
+                    placeholder="Lifetime"
+                    title="Days after grant; empty = lifetime"
+                    onChange={e =>
+                      setDrafts(state => ({
+                        ...state,
+                        [benefit.id]: {...draft, expiryDays: e.target.value},
+                      }))
+                    }
+                  />
+                ) : (
+                  <span className="text-sm text-foreground">{formatExpiry(benefit)}</span>
+                )}
+              </td>
               {canWrite ? (
                 <td className="px-4 py-2">
                   <div className="flex justify-end gap-1">
@@ -306,11 +362,7 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
                             setEditingId(null);
                             setDrafts(state => ({
                               ...state,
-                              [benefit.id]: {
-                                title: benefit.title,
-                                type: benefit.type,
-                                value: benefit.value != null ? String(benefit.value) : '',
-                              },
+                              [benefit.id]: draftFromBenefit(benefit),
                             }));
                           }}>
                           Cancel
@@ -387,6 +439,18 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
               ) : (
                 <span className="text-sm text-muted-foreground">—</span>
               )}
+            </td>
+            <td className="px-4 py-2">
+              <input
+                className={tableInputClass}
+                type="number"
+                min={1}
+                max={3650}
+                value={form.expiryDays}
+                placeholder="Lifetime"
+                title="Days after grant; empty = lifetime"
+                onChange={e => setForm(f => ({...f, expiryDays: e.target.value}))}
+              />
             </td>
             <td className="px-4 py-2 text-right">
               <Button

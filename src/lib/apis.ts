@@ -114,6 +114,7 @@ export function createCreditBenefit(input: {
   title: string;
   type: 'unlock_credit_discount' | 'free_unlocks';
   value: number;
+  expiryDays?: number | null;
 }) {
   return request<CreditBenefit>('/v1/credit-benefits', {
     method: 'POST',
@@ -126,6 +127,7 @@ export function updateCreditBenefit(
   input: {
     title?: string;
     value?: number | null;
+    expiryDays?: number | null;
   },
 ) {
   return request<CreditBenefit>(`/v1/credit-benefits/${id}`, {
