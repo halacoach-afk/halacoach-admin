@@ -59,7 +59,7 @@ function formatBenefitValue(benefit: CreditBenefit) {
 }
 
 function formatExpiry(benefit: CreditBenefit) {
-  if (benefit.expiryDays == null) return 'Lifetime';
+  if (benefit.expiryDays == null) return '-';
   const n = benefit.expiryDays;
   return `${n} day${n === 1 ? '' : 's'}`;
 }
@@ -345,7 +345,7 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
                     min={1}
                     max={3650}
                     value={draft.expiryDays}
-                    placeholder="Lifetime"
+                    placeholder="-"
                     title="Days after grant; empty = lifetime"
                     onChange={e =>
                       setDrafts(state => ({
@@ -455,7 +455,7 @@ export function CreditBenefitsPanel({user, onChange}: Props) {
                 min={1}
                 max={3650}
                 value={form.expiryDays}
-                placeholder="Lifetime"
+                placeholder="-"
                 title="Days after grant; empty = lifetime"
                 onChange={e => setForm(f => ({...f, expiryDays: e.target.value}))}
               />
