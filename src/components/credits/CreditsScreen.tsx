@@ -489,7 +489,8 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
     const showPurchaseLimit = true;
     const showMaxPurchases = true;
     const assignableBenefits = benefitsForPlanType(benefitCatalog, type);
-    const baseWrite = canWrite ? (showVat ? 7 : 6) : showVat ? 6 : 5;
+    // Name, Credits, Price, Benefits, Badge, Status (+ optional cols + Actions)
+    const baseWrite = canWrite ? (showVat ? 8 : 7) : showVat ? 7 : 6;
     const effectiveColSpan =
       baseWrite + (showPurchaseLimit ? 1 : 0) + (showMaxPurchases ? 1 : 0);
     const priceLabel = showVat ? 'Price (excl. VAT)' : 'Price';
@@ -502,6 +503,7 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
       ...(showPurchaseLimit ? ['Purchase limit'] : []),
       ...(showMaxPurchases ? ['Max purchases'] : []),
       ...(showVat ? ['Incl. VAT'] : []),
+      'Status',
       ...(canWrite ? ['Actions'] : []),
     ];
     return (
@@ -734,6 +736,15 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                     </CreditPackageTableCell>
                   </td>
                 ) : null}
+                <td className="px-4 py-2">
+                  <CreditPackageTableCell>
+                    {pack.active ? (
+                      <Badge tone="primary">Active</Badge>
+                    ) : (
+                      <Badge tone="muted">Inactive</Badge>
+                    )}
+                  </CreditPackageTableCell>
+                </td>
                 {canWrite ? (
                   <td className="px-4 py-2">
                     <CatalogActions
@@ -872,6 +883,11 @@ export function CreditsScreen({actor}: {actor: SessionUser}) {
                   </CreditPackageTableCell>
                 </td>
               ) : null}
+              <td className="px-4 py-2">
+                <CreditPackageTableCell>
+                  <span className="text-muted-foreground">-</span>
+                </CreditPackageTableCell>
+              </td>
               <td className="px-4 py-2">
                 <CreditPackageTableCell className="flex-nowrap justify-end gap-1">
                   <span className={creditPackageActionButtonClass} aria-hidden />
