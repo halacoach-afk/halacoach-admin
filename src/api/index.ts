@@ -38,6 +38,8 @@ import type {
   ConversationSummary,
   DashboardOverview,
   NavBadges,
+  AdminNotification,
+  AdminNotificationsResponse,
   OnlinePlanDetail,
   OnlinePlanRevision,
   OnlinePlanSummary,
@@ -72,6 +74,8 @@ export type {
   DashboardCounts,
   DashboardOverview,
   NavBadges,
+  AdminNotification,
+  AdminNotificationsResponse,
   CreditLedgerEntry,
   CreditPlan,
   CreditPlanBadge,
@@ -139,6 +143,20 @@ export function getDashboardOverview() {
 
 export function getNavBadges() {
   return request<NavBadges>('/v1/nav-badges');
+}
+
+export function listAdminNotifications() {
+  return request<AdminNotificationsResponse>('/v1/notifications');
+}
+
+export function markAdminNotificationRead(id: number | 'all') {
+  return request<AdminNotificationsResponse & {notification?: AdminNotification}>(
+    `/v1/notifications/${id}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(id === 'all' ? {all: true} : {}),
+    },
+  );
 }
 
 export function login(email: string, password: string) {

@@ -8,6 +8,7 @@ import type {SessionUser} from '@/api';
 import {ConfirmProvider} from '@/components/ui/confirm';
 import {ToastProvider} from '@/components/ui/toast';
 import {cn} from '@/lib/cn';
+import {NotificationBell} from './NotificationBell';
 import {Sidebar} from './Sidebar';
 
 export function AdminChrome({actor, children}: {actor: SessionUser; children: ReactNode}) {
@@ -58,6 +59,7 @@ export function AdminChrome({actor, children}: {actor: SessionUser; children: Re
                 className="h-8 w-auto max-w-[11rem] lg:h-9 lg:max-w-none"
               />
             </Link>
+            <NotificationBell />
           </header>
 
           <div className="flex min-h-0 min-w-0 flex-1">
