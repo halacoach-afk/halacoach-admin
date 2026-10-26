@@ -1002,6 +1002,21 @@ export type NavBadges = {
   openSupportTickets: number;
 };
 
+export type AdminNotification = {
+  id: number;
+  title: string;
+  body: string;
+  type: string | null;
+  data: Record<string, unknown> | null;
+  read: boolean;
+  createdAt: string | null;
+};
+
+export type AdminNotificationsResponse = {
+  notifications: AdminNotification[];
+  unreadCount: number;
+};
+
 export type ActivityLogEntityRef = {
   type: string;
   id: string;
