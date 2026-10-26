@@ -4,6 +4,15 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'HalaCoach Admin',
   description: 'Operations console for HalaCoach matching, verification, and credits.',
+  applicationName: 'HalaCoach Admin',
+  icons: {
+    icon: [
+      {url: '/favicon.png', type: 'image/png', sizes: '48x48'},
+      {url: '/icon.png', type: 'image/png', sizes: '512x512'},
+    ],
+    apple: [{url: '/apple-icon.png', type: 'image/png', sizes: '180x180'}],
+    shortcut: '/favicon.png',
+  },
 };
 
 export default function RootLayout({
