@@ -1236,7 +1236,7 @@ export function ProfessionalDetailScreen({
           )}
         </Section>
 
-        <Section title="Notifications">
+        <Section title="Notification Preferences">
           <NotificationPrefsPanel prefs={pro.notificationPrefs} />
         </Section>
       </div>

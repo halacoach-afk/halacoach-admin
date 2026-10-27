@@ -440,7 +440,7 @@ export function ClientDetailScreen({
           )}
         </Section>
 
-        <Section title="Notifications">
+        <Section title="Notification Preferences">
           <NotificationPrefsPanel prefs={client.notificationPrefs} />
         </Section>
       </div>
