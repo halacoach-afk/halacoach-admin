@@ -4,14 +4,17 @@ import {useEffect, useState} from 'react';
 import {
   getBillingSettings,
   getFeaturesSettings,
+  getNotificationPolicySettings,
   getSupportContactSettings,
   isApiError,
   updateBillingSettings,
   updateFeaturesSettings,
   updateSupportContactSettings,
   type FeaturesSettings,
+  type NotificationPolicySettings,
   type SessionUser,
 } from '@/api';
+import {NotificationPolicySection} from '@/components/settings/NotificationPolicySection';
 import {Button} from '@/components/ui/Button';
 import {DataTable} from '@/components/ui/DataTable';
 import {ErrorState} from '@/components/ui/ErrorState';
@@ -100,15 +103,18 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
   const [features, setFeatures] = useState<FeaturesSettings>({
     onlinePlansEnabled: true,
   });
+  const [notificationPolicy, setNotificationPolicy] =
+    useState<NotificationPolicySettings | null>(null);
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [support, billing, nextFeatures] = await Promise.all([
+      const [support, billing, nextFeatures, nextNotifications] = await Promise.all([
         getSupportContactSettings(),
         getBillingSettings(),
         getFeaturesSettings(),
+        getNotificationPolicySettings(),
       ]);
       setSupportEmail(support.supportEmail);
       setSupportPhone(support.supportPhone);
@@ -117,6 +123,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       setVatPercent(billing.vatPercent);
       setDraftVatPercent(String(billing.vatPercent));
       setFeatures(nextFeatures);
+      setNotificationPolicy(nextNotifications);
       setEditing(false);
       setEditingBilling(false);
     } catch (err) {
@@ -463,6 +470,15 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
           </tr>
         </DataTable>
       </div>
+
+      {notificationPolicy ? (
+        <NotificationPolicySection
+          policy={notificationPolicy}
+          canWrite={canWrite}
+          onUpdated={setNotificationPolicy}
+          onError={setError}
+        />
+      ) : null}
     </>
   );
 }
