@@ -4,14 +4,20 @@ import {useEffect, useState} from 'react';
 import {
   getBillingSettings,
   getFeaturesSettings,
+  getMobileAppSettings,
+  getNotificationPolicySettings,
   getSupportContactSettings,
   isApiError,
   updateBillingSettings,
   updateFeaturesSettings,
   updateSupportContactSettings,
   type FeaturesSettings,
+  type MobileAppPolicySettings,
+  type NotificationPolicySettings,
   type SessionUser,
 } from '@/api';
+import {MobileAppSettingsSection} from '@/components/settings/MobileAppSettingsSection';
+import {NotificationPolicySection} from '@/components/settings/NotificationPolicySection';
 import {Button} from '@/components/ui/Button';
 import {DataTable} from '@/components/ui/DataTable';
 import {ErrorState} from '@/components/ui/ErrorState';
@@ -100,16 +106,24 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
   const [features, setFeatures] = useState<FeaturesSettings>({
     onlinePlansEnabled: true,
   });
+  const [notificationPolicy, setNotificationPolicy] =
+    useState<NotificationPolicySettings | null>(null);
+  const [mobileAppPolicy, setMobileAppPolicy] = useState<MobileAppPolicySettings | null>(
+    null,
+  );
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [support, billing, nextFeatures] = await Promise.all([
-        getSupportContactSettings(),
-        getBillingSettings(),
-        getFeaturesSettings(),
-      ]);
+      const [support, billing, nextFeatures, nextNotifications, nextMobile] =
+        await Promise.all([
+          getSupportContactSettings(),
+          getBillingSettings(),
+          getFeaturesSettings(),
+          getNotificationPolicySettings(),
+          getMobileAppSettings(),
+        ]);
       setSupportEmail(support.supportEmail);
       setSupportPhone(support.supportPhone);
       setDraftEmail(support.supportEmail);
@@ -117,6 +131,8 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       setVatPercent(billing.vatPercent);
       setDraftVatPercent(String(billing.vatPercent));
       setFeatures(nextFeatures);
+      setNotificationPolicy(nextNotifications);
+      setMobileAppPolicy(nextMobile);
       setEditing(false);
       setEditingBilling(false);
     } catch (err) {
@@ -463,6 +479,24 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
           </tr>
         </DataTable>
       </div>
+
+      {mobileAppPolicy ? (
+        <MobileAppSettingsSection
+          policy={mobileAppPolicy}
+          canWrite={canWrite}
+          onUpdated={setMobileAppPolicy}
+          onError={setError}
+        />
+      ) : null}
+
+      {notificationPolicy ? (
+        <NotificationPolicySection
+          policy={notificationPolicy}
+          canWrite={canWrite}
+          onUpdated={setNotificationPolicy}
+          onError={setError}
+        />
+      ) : null}
     </>
   );
 }

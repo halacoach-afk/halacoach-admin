@@ -643,6 +643,79 @@ export function updateFeaturesSettings(input: Partial<FeaturesSettings>) {
   });
 }
 
+export type MobilePlatformPolicy = {
+  latestVersion: string;
+  forceUpdate: boolean;
+  storeUrl: string;
+};
+
+export type MobileAppPolicySettings = {
+  android: MobilePlatformPolicy;
+  ios: MobilePlatformPolicy;
+};
+
+export function getMobileAppSettings() {
+  return request<MobileAppPolicySettings>('/v1/platform-settings/mobile-app');
+}
+
+export function updateMobileAppSettings(
+  input: Partial<{
+    android: Partial<MobilePlatformPolicy>;
+    ios: Partial<MobilePlatformPolicy>;
+  }>,
+) {
+  return request<MobileAppPolicySettings>('/v1/platform-settings/mobile-app', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export type NotifyChannel = 'inApp' | 'push' | 'email' | 'sms' | 'whatsapp';
+
+export type NotifyFrequencyField =
+  | 'maxPerStretch'
+  | 'intervalHours'
+  | 'batchSize'
+  | 'daysBefore';
+
+export type NotificationPolicyEvent = {
+  key: string;
+  title: string;
+  description: string;
+  group: string;
+  required: boolean;
+  channels: Record<NotifyChannel, boolean>;
+  availableChannels: NotifyChannel[];
+  frequency: Partial<Record<NotifyFrequencyField, number>> | null;
+  availableFrequency: NotifyFrequencyField[];
+};
+
+export type NotificationPolicySettings = {
+  required: NotificationPolicyEvent[];
+  optional: NotificationPolicyEvent[];
+};
+
+export type NotificationPolicyPatch = {
+  events?: Record<
+    string,
+    {
+      channels?: Partial<Record<NotifyChannel, boolean>>;
+      frequency?: Partial<Record<NotifyFrequencyField, number>>;
+    }
+  >;
+};
+
+export function getNotificationPolicySettings() {
+  return request<NotificationPolicySettings>('/v1/platform-settings/notifications');
+}
+
+export function updateNotificationPolicySettings(input: NotificationPolicyPatch) {
+  return request<NotificationPolicySettings>('/v1/platform-settings/notifications', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
 export type LeadPricingMode = 'match_scaled' | 'factor_based';
 
 export type LeadCreditLimits = {
