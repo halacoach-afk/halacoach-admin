@@ -4,6 +4,7 @@ import {useEffect, useState} from 'react';
 import {
   getBillingSettings,
   getFeaturesSettings,
+  getMobileAppSettings,
   getNotificationPolicySettings,
   getSupportContactSettings,
   isApiError,
@@ -11,9 +12,11 @@ import {
   updateFeaturesSettings,
   updateSupportContactSettings,
   type FeaturesSettings,
+  type MobileAppPolicySettings,
   type NotificationPolicySettings,
   type SessionUser,
 } from '@/api';
+import {MobileAppSettingsSection} from '@/components/settings/MobileAppSettingsSection';
 import {NotificationPolicySection} from '@/components/settings/NotificationPolicySection';
 import {Button} from '@/components/ui/Button';
 import {DataTable} from '@/components/ui/DataTable';
@@ -105,17 +108,22 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
   });
   const [notificationPolicy, setNotificationPolicy] =
     useState<NotificationPolicySettings | null>(null);
+  const [mobileAppPolicy, setMobileAppPolicy] = useState<MobileAppPolicySettings | null>(
+    null,
+  );
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [support, billing, nextFeatures, nextNotifications] = await Promise.all([
-        getSupportContactSettings(),
-        getBillingSettings(),
-        getFeaturesSettings(),
-        getNotificationPolicySettings(),
-      ]);
+      const [support, billing, nextFeatures, nextNotifications, nextMobile] =
+        await Promise.all([
+          getSupportContactSettings(),
+          getBillingSettings(),
+          getFeaturesSettings(),
+          getNotificationPolicySettings(),
+          getMobileAppSettings(),
+        ]);
       setSupportEmail(support.supportEmail);
       setSupportPhone(support.supportPhone);
       setDraftEmail(support.supportEmail);
@@ -124,6 +132,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       setDraftVatPercent(String(billing.vatPercent));
       setFeatures(nextFeatures);
       setNotificationPolicy(nextNotifications);
+      setMobileAppPolicy(nextMobile);
       setEditing(false);
       setEditingBilling(false);
     } catch (err) {
@@ -470,6 +479,15 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
           </tr>
         </DataTable>
       </div>
+
+      {mobileAppPolicy ? (
+        <MobileAppSettingsSection
+          policy={mobileAppPolicy}
+          canWrite={canWrite}
+          onUpdated={setMobileAppPolicy}
+          onError={setError}
+        />
+      ) : null}
 
       {notificationPolicy ? (
         <NotificationPolicySection

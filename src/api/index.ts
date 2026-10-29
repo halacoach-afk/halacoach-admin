@@ -643,6 +643,33 @@ export function updateFeaturesSettings(input: Partial<FeaturesSettings>) {
   });
 }
 
+export type MobilePlatformPolicy = {
+  latestVersion: string;
+  forceUpdate: boolean;
+  storeUrl: string;
+};
+
+export type MobileAppPolicySettings = {
+  android: MobilePlatformPolicy;
+  ios: MobilePlatformPolicy;
+};
+
+export function getMobileAppSettings() {
+  return request<MobileAppPolicySettings>('/v1/platform-settings/mobile-app');
+}
+
+export function updateMobileAppSettings(
+  input: Partial<{
+    android: Partial<MobilePlatformPolicy>;
+    ios: Partial<MobilePlatformPolicy>;
+  }>,
+) {
+  return request<MobileAppPolicySettings>('/v1/platform-settings/mobile-app', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
 export type NotifyChannel = 'inApp' | 'push' | 'email' | 'sms' | 'whatsapp';
 
 export type NotifyFrequencyField =
