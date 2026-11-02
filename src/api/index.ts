@@ -716,6 +716,24 @@ export function updateNotificationPolicySettings(input: NotificationPolicyPatch)
   });
 }
 
+export type SmsProviderId = 'brevo' | 'messagecentral';
+
+export type SmsProviderSettings = {
+  provider: SmsProviderId;
+  providers: SmsProviderId[];
+};
+
+export function getSmsProviderSettings() {
+  return request<SmsProviderSettings>('/v1/platform-settings/sms-provider');
+}
+
+export function updateSmsProviderSettings(input: {provider: SmsProviderId}) {
+  return request<SmsProviderSettings>('/v1/platform-settings/sms-provider', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
 export type LeadPricingMode = 'match_scaled' | 'factor_based';
 
 export type LeadCreditLimits = {
