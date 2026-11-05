@@ -8,7 +8,7 @@ import type {
 import type {CreditPackage} from '@/api/types';
 
 /** Fallback VAT rate when billing settings are unavailable. */
-export const VAT_RATE = 0.05;
+export const VAT_RATE = 0;
 
 export function buildCreditLedger(
   professionals: Professional[],

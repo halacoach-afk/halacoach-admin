@@ -104,8 +104,8 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
   const [supportPhone, setSupportPhone] = useState('');
   const [draftEmail, setDraftEmail] = useState('');
   const [draftPhone, setDraftPhone] = useState('');
-  const [vatPercent, setVatPercent] = useState(5);
-  const [draftVatPercent, setDraftVatPercent] = useState('5');
+  const [vatPercent, setVatPercent] = useState(0);
+  const [draftVatPercent, setDraftVatPercent] = useState('0');
   const [features, setFeatures] = useState<FeaturesSettings>({
     onlinePlansEnabled: false,
   });
