@@ -107,7 +107,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
   const [vatPercent, setVatPercent] = useState(5);
   const [draftVatPercent, setDraftVatPercent] = useState('5');
   const [features, setFeatures] = useState<FeaturesSettings>({
-    onlinePlansEnabled: true,
+    onlinePlansEnabled: false,
   });
   const [notificationPolicy, setNotificationPolicy] =
     useState<NotificationPolicySettings | null>(null);
