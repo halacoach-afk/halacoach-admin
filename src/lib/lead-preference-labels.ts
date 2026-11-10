@@ -3,8 +3,8 @@ import type {LeadDetail, LeadSummary} from '@/api/types';
 const FORMAT_LABELS: Record<string, string> = {
   client: "Client's location",
   coach: "Coach's location",
-  online: 'Online',
-  online_live: 'Online live',
+  online: 'Personalized training plan',
+  online_live: 'Live virtual coaching',
 };
 
 const FREQUENCY_LABELS: Record<string, string> = {

@@ -137,8 +137,8 @@ const COLUMN_CHIP_LABELS: Record<FilterColumnKey, string> = {
 const FORMAT_OPTIONS = [
   {value: 'client', label: "Client's location"},
   {value: 'coach', label: "Coach's location"},
-  {value: 'online', label: 'Online'},
-  {value: 'online_live', label: 'Online live'},
+  {value: 'online', label: 'Personalized training plan'},
+  {value: 'online_live', label: 'Live virtual coaching'},
 ];
 
 const FREQUENCY_OPTIONS = [
