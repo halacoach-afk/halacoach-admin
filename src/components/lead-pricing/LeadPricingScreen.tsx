@@ -25,8 +25,8 @@ const inputClass =
 const FORMAT_LABELS: Record<string, string> = {
   coach: 'At coach location',
   client: 'At client location',
-  online_live: 'Online live',
-  online: 'Online (plans)',
+  online_live: 'Live virtual coaching',
+  online: 'Personalized training plan',
 };
 
 const START_LABELS: Record<string, string> = {

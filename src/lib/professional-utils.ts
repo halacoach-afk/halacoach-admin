@@ -67,7 +67,7 @@ export const locationLabels: Record<string, string> = {
   coach: 'My location',
   client: 'Client location',
   online_live: 'Live virtual coaching',
-  online: 'Online',
+  online: 'Personalized training plan',
 };
 
 /** Coach profile experience bands (same as app/web about.yearsOpt*). */
