@@ -176,12 +176,12 @@ function accountStatusTone(status: AccountStatus) {
   return 'primary' as const;
 }
 
-function servicesLabel(row: ProfessionalSummary) {
+function servicesList(row: ProfessionalSummary): string[] {
   const listed = (row.services ?? []).map(s => s.trim()).filter(Boolean);
-  if (listed.length) return listed.join(', ');
+  if (listed.length) return listed;
   const specialty = row.specialty?.trim();
-  if (specialty && specialty.toLowerCase() !== 'coaching') return specialty;
-  return null;
+  if (specialty && specialty.toLowerCase() !== 'coaching') return [specialty];
+  return [];
 }
 
 function formatJoined(iso: string | null | undefined) {
@@ -1009,7 +1009,7 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
         ) : (
           rows.map(row => {
             const pct = completionPercent(row.profileCompletion);
-            const servicesText = servicesLabel(row);
+            const serviceNames = servicesList(row);
             const joined = formatJoined(row.createdAt);
             const location = row.location?.trim();
             const status = accountStatus(row);
@@ -1043,8 +1043,14 @@ export function ProfessionalsScreen({actor}: {actor: SessionUser}) {
                   {contactCell(row.phone, Boolean(row.phoneVerified))}
                 </td>
                 <td className="px-4 py-3">
-                  {servicesText ? (
-                    <span className="text-sm text-foreground">{servicesText}</span>
+                  {serviceNames.length > 0 ? (
+                    <div className="flex flex-col items-start gap-1">
+                      {serviceNames.map(name => (
+                        <Badge key={name} tone="primary">
+                          {name}
+                        </Badge>
+                      ))}
+                    </div>
                   ) : (
                     <span className="text-sm text-muted-foreground">—</span>
                   )}
