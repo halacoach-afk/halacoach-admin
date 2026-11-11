@@ -108,11 +108,11 @@ export function ExcelColumnFilter({
         aria-haspopup="dialog"
         onClick={() => onOpenChange(!open)}
         className={cn(
-          'inline-flex max-w-full items-center gap-1 rounded-md px-1 py-0.5 text-start font-semibold transition-colors',
+          'inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-start font-semibold transition-colors',
           'hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
           headerActive ? 'text-primary' : 'text-muted-foreground',
         )}>
-        <span className="truncate">{label}</span>
+        <span className="whitespace-nowrap">{label}</span>
         <ChevronDown
           className={cn(
             'size-3.5 shrink-0 transition-transform',

@@ -6,9 +6,7 @@ import {
   ArrowLeft,
   Briefcase,
   CalendarDays,
-  CheckCircle2,
   ChevronRight,
-  Circle,
   ClipboardCheck,
   Hash,
   Mail,
@@ -42,6 +40,7 @@ import {
   type VerificationFile,
   type WalletTxnSortBy,
 } from '@/api';
+import {ProfileCompletionChecklist} from '@/components/profile/ProfileCompletionChecklist';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
@@ -76,6 +75,7 @@ import {can} from '@/lib/permissions';
 import {
   coachLeadPrefRows,
   coachLeadPrefsEmpty,
+  completionPercent,
   formatCoachYearsExperience,
   verificationLabels,
 } from '@/lib/professional-utils';
@@ -426,10 +426,13 @@ function docStatusLabel(status?: string) {
   return String(status ?? 'submitted').replace(/_/g, ' ');
 }
 
+/** Labels aligned with coach profile completion card (web/app). */
 const COMPLETION_SECTION_LABELS: Record<string, string> = {
   about: 'About',
-  verification: 'Verification',
-  activated: 'Activated',
+  prefs: 'Lead preferences',
+  verification: 'Verifications',
+  pricing: 'Pricing',
+  credits: 'Credits balance',
 };
 
 const COMPLETION_FIELD_LABELS: Record<string, string> = {
@@ -437,35 +440,34 @@ const COMPLETION_FIELD_LABELS: Record<string, string> = {
   email: 'Email',
   phone: 'Phone',
   bio: 'Bio',
-  years: 'Years experience',
-  emailVerified: 'Email verified',
-  phoneVerified: 'Phone verified',
+  years: 'Years of experience',
+  services: 'Services',
+  formats: 'Formats',
+  frequency: 'Frequency',
+  days: 'Days',
+  times: 'Times',
+  timesOther: 'Other time details',
+  gender: 'Coach gender preference',
+  style: 'Coaching style',
+  ages: 'Ages you coach',
+  languages: 'Languages',
+  emailVerified: 'Email',
+  phoneVerified: 'Phone number',
+  licence: 'Licence (any one)',
   reps_uae: 'REPs UAE',
-  muahal: 'Muahal',
-  ministry_or_federation: 'Ministry / federation',
-  live: 'Live profile',
+  muahal: "Mu'Ahal",
+  ministry_or_federation: 'Ministry of Sports / federation approval',
+  rates: 'Service rates',
+  balance: 'Credits balance',
 };
 
-/** Checklist without prefs/pricing/credits - shown elsewhere or not needed here. */
 function completionItems(
   value: Professional['profileCompletion'],
 ): ProfileCompletionPayload['items'] {
   if (!value || typeof value === 'number') {
     return [];
   }
-  const items = Array.isArray(value.items) ? value.items : [];
-  return items.filter(
-    section =>
-      section.id !== 'prefs' &&
-      section.id !== 'pricing' &&
-      section.id !== 'credits',
-  );
-}
-
-function checklistPercent(items: ProfileCompletionPayload['items']): number {
-  const fields = items.flatMap(section => section.fields ?? []);
-  if (fields.length === 0) return 0;
-  return Math.round((fields.filter(field => field.done).length / fields.length) * 100);
+  return Array.isArray(value.items) ? value.items : [];
 }
 
 export function ProfessionalDetailScreen({
@@ -999,7 +1001,7 @@ export function ProfessionalDetailScreen({
   }
 
   const checklist = completionItems(pro.profileCompletion);
-  const pct = checklistPercent(checklist);
+  const pct = completionPercent(pro.profileCompletion);
   const leadPrefRows = coachLeadPrefRows(pro, serviceNameById);
   const leadPrefsEmpty = coachLeadPrefsEmpty(pro, serviceNameById);
 
@@ -1170,70 +1172,12 @@ export function ProfessionalDetailScreen({
         </Section>
 
         <Section title="Profile completion">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{width: `${pct}%`}}
-              />
-            </div>
-            <span className="text-sm font-semibold tabular-nums text-foreground">
-              {pct}%
-            </span>
-          </div>
-          {checklist.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No checklist data.</p>
-          ) : (
-            <div className="space-y-4">
-              {checklist.map(section => {
-                const fields = section.fields ?? [];
-                return (
-                  <div key={section.id}>
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {COMPLETION_SECTION_LABELS[section.id] ?? section.id}
-                      </p>
-                      <Badge tone={section.done ? 'primary' : 'muted'}>
-                        {section.done ? 'Done' : 'Incomplete'}
-                      </Badge>
-                    </div>
-                    <ul className="space-y-2">
-                      {fields.map(field => (
-                        <li
-                          key={field.id}
-                          className="flex items-center gap-2.5 text-sm">
-                          {field.done ? (
-                            <CheckCircle2
-                              className="size-4 shrink-0 text-primary"
-                              strokeWidth={2}
-                            />
-                          ) : (
-                            <Circle
-                              className="size-4 shrink-0 text-muted-foreground"
-                              strokeWidth={1.8}
-                            />
-                          )}
-                          <span
-                            className={
-                              field.done
-                                ? 'text-foreground'
-                                : 'text-muted-foreground'
-                            }>
-                            {COMPLETION_FIELD_LABELS[field.id] ?? field.id}
-                            {field.optional ? (
-                              <span className="ms-1 text-xs text-muted-foreground">
-                                (optional)
-                              </span>
-                            ) : null}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <ProfileCompletionChecklist
+            percent={pct}
+            items={checklist}
+            sectionLabels={COMPLETION_SECTION_LABELS}
+            fieldLabels={COMPLETION_FIELD_LABELS}
+          />
         </Section>
 
         <Section title="Notification Preferences">

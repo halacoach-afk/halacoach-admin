@@ -5,9 +5,7 @@ import {useEffect, useMemo, useState, type ReactNode} from 'react';
 import {
   ArrowLeft,
   CalendarDays,
-  CheckCircle2,
   ChevronRight,
-  Circle,
   Dumbbell,
   Hash,
   Mail,
@@ -30,6 +28,7 @@ import {
   type SessionUser,
 } from '@/api';
 import {ActivityTimeline} from '@/components/activity/ActivityTimeline';
+import {ProfileCompletionChecklist} from '@/components/profile/ProfileCompletionChecklist';
 import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {Card} from '@/components/ui/Card';
@@ -129,9 +128,10 @@ function LeadCell({value, className}: {value: string; className?: string}) {
   );
 }
 
+/** Labels aligned with client profile completion card (web/app). */
 const COMPLETION_SECTION_LABELS: Record<string, string> = {
   about: 'About',
-  verification: 'Verification',
+  verification: 'Verifications',
 };
 
 const COMPLETION_FIELD_LABELS: Record<string, string> = {
@@ -139,10 +139,10 @@ const COMPLETION_FIELD_LABELS: Record<string, string> = {
   email: 'Email',
   phone: 'Phone',
   gender: 'Gender',
-  birth_date: 'Birth date',
+  birth_date: 'Date of birth',
   gymAccess: 'Gym access',
-  emailVerified: 'Email verified',
-  phoneVerified: 'Phone verified',
+  emailVerified: 'Email',
+  phoneVerified: 'Phone number',
 };
 
 function completionItems(value: Client['profileCompletion']): ProfileCompletionPayload['items'] {
@@ -374,70 +374,12 @@ export function ClientDetailScreen({
         </Section>
 
         <Section title="Profile completion">
-          <div className="mb-4 flex items-center gap-3">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary"
-                style={{width: `${pct}%`}}
-              />
-            </div>
-            <span className="text-sm font-semibold tabular-nums text-foreground">
-              {pct}%
-            </span>
-          </div>
-          {checklist.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No checklist data.</p>
-          ) : (
-            <div className="space-y-4">
-              {checklist.map(section => {
-                const fields = section.fields ?? [];
-                return (
-                  <div key={section.id}>
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {COMPLETION_SECTION_LABELS[section.id] ?? section.id}
-                      </p>
-                      <Badge tone={section.done ? 'primary' : 'muted'}>
-                        {section.done ? 'Done' : 'Incomplete'}
-                      </Badge>
-                    </div>
-                    <ul className="space-y-2">
-                      {fields.map(field => (
-                        <li
-                          key={field.id}
-                          className="flex items-center gap-2.5 text-sm">
-                          {field.done ? (
-                            <CheckCircle2
-                              className="size-4 shrink-0 text-primary"
-                              strokeWidth={2}
-                            />
-                          ) : (
-                            <Circle
-                              className="size-4 shrink-0 text-muted-foreground"
-                              strokeWidth={1.8}
-                            />
-                          )}
-                          <span
-                            className={
-                              field.done
-                                ? 'text-foreground'
-                                : 'text-muted-foreground'
-                            }>
-                            {COMPLETION_FIELD_LABELS[field.id] ?? field.id}
-                            {field.optional ? (
-                              <span className="ms-1 text-xs text-muted-foreground">
-                                (optional)
-                              </span>
-                            ) : null}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <ProfileCompletionChecklist
+            percent={pct}
+            items={checklist}
+            sectionLabels={COMPLETION_SECTION_LABELS}
+            fieldLabels={COMPLETION_FIELD_LABELS}
+          />
         </Section>
 
         <Section title="Notification Preferences">
