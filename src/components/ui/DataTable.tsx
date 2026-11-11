@@ -36,7 +36,9 @@ export function DataTable({
             columnWidths?.length
               ? 'table-fixed'
               : 'min-w-max table-auto',
-            '[&_th]:whitespace-nowrap [&_td]:whitespace-nowrap',
+            // Keep body cells compact; headers must stay fully readable (never ellipsis/crop).
+            '[&_td]:whitespace-nowrap',
+            '[&_th]:min-w-max [&_th]:overflow-visible [&_th]:whitespace-nowrap',
             tableClassName,
           )}>
           {columnWidths?.length ? (
@@ -52,7 +54,7 @@ export function DataTable({
                 <th
                   key={index}
                   className={cn(
-                    'relative px-4 py-3 font-semibold',
+                    'relative min-w-max whitespace-nowrap px-4 py-3 font-semibold',
                     columnHeaderClassNames?.[index],
                   )}>
                   {col}
