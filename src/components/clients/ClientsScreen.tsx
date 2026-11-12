@@ -4,6 +4,7 @@ import Link from 'next/link';
 import {useEffect, useState} from 'react';
 import {ChevronRight} from 'lucide-react';
 import {isApiError, listClients, type ClientSummary} from '@/api';
+import {Badge} from '@/components/ui/Badge';
 import {Button} from '@/components/ui/Button';
 import {DataTable, FilterBar} from '@/components/ui/DataTable';
 import {EmptyState} from '@/components/ui/EmptyState';
@@ -21,6 +22,25 @@ import {
 import {completionPercent} from '@/lib/professional-utils';
 
 type Filter = 'all' | 'active' | 'suspended' | 'deleted';
+
+type AccountStatus = 'deleted' | 'suspended' | 'active';
+
+function accountStatus(row: ClientSummary): AccountStatus {
+  if (row.deletedAt) return 'deleted';
+  if (row.suspended) return 'suspended';
+  return 'active';
+}
+
+const accountStatusLabels: Record<AccountStatus, string> = {
+  deleted: 'Deleted',
+  suspended: 'Suspended',
+  active: 'Active',
+};
+
+function accountStatusTone(status: AccountStatus) {
+  if (status === 'deleted' || status === 'suspended') return 'danger' as const;
+  return 'primary' as const;
+}
 
 function contactCell(value: string, verified: boolean) {
   const display = value.trim();
@@ -136,7 +156,16 @@ export function ClientsScreen() {
         <EmptyState title="No clients match" body="Try another filter or clear the search box." />
       ) : (
         <DataTable
-          columns={['ID', 'Name', 'Email', 'Number', 'Birth date', 'Profile', '']}
+          columns={[
+            'ID',
+            'Name',
+            'Email',
+            'Number',
+            'Birth date',
+            'Status',
+            'Profile',
+            '',
+          ]}
           pagination={
             <PaginationBar
               variant="embedded"
@@ -151,6 +180,7 @@ export function ClientsScreen() {
           }>
           {rows.map(row => {
             const pct = completionPercent(row.profileCompletion);
+            const status = accountStatus(row);
             return (
               <tr key={row.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 font-medium tabular-nums text-foreground">
@@ -178,6 +208,11 @@ export function ClientsScreen() {
                       </div>
                     );
                   })()}
+                </td>
+                <td className="px-4 py-3">
+                  <Badge tone={accountStatusTone(status)}>
+                    {accountStatusLabels[status]}
+                  </Badge>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
