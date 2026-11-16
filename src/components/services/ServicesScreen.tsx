@@ -43,6 +43,7 @@ function draftFrom(service: CatalogService): NameDraft {
 function CatalogActions({
   isEditing,
   saving,
+  deleteDisabled,
   onCancel,
   onSave,
   onEdit,
@@ -50,6 +51,7 @@ function CatalogActions({
 }: {
   isEditing: boolean;
   saving: boolean;
+  deleteDisabled?: boolean;
   onCancel: () => void;
   onSave: () => void;
   onEdit: () => void;
@@ -80,7 +82,13 @@ function CatalogActions({
           Edit
         </Button>
       )}
-      <Button size="sm" variant="danger" className={deleteButtonClass} onClick={onDelete}>
+      <Button
+        size="sm"
+        variant="danger"
+        className={deleteButtonClass}
+        disabled={deleteDisabled}
+        title={deleteDisabled ? 'At least one active service is required.' : undefined}
+        onClick={onDelete}>
         Delete
       </Button>
     </TableCell>
@@ -172,6 +180,11 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
   const confirmDelete = async () => {
     if (!pendingDelete) return;
     const target = pendingDelete;
+    if (services.items.filter(item => item.active).length <= 1) {
+      setPendingDelete(null);
+      setError('At least one active service is required.');
+      return;
+    }
     setDeleting(true);
     setError(null);
     try {
@@ -412,6 +425,7 @@ export function ServicesScreen({actor}: {actor: SessionUser}) {
                     <CatalogActions
                       isEditing={isEditing}
                       saving={savingId === service.id}
+                      deleteDisabled={services.items.filter(item => item.active).length <= 1}
                       onCancel={() => cancelEdit(service)}
                       onSave={() => void save(service.id)}
                       onEdit={() => startEdit(service)}

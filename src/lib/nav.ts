@@ -6,6 +6,7 @@ import {
   Crown,
   Headset,
   LayoutDashboard,
+  LifeBuoy,
   MapPin,
   Receipt,
   Settings,
@@ -99,7 +100,13 @@ export const navItems: NavItem[] = [
     icon: Tag,
     permission: 'credits:read',
   },
-  // Services catalog remains at /services — hidden from sidebar only.
+  {
+    href: '/services',
+    label: 'Services',
+    description: 'Catalog of coaching services used in professional onboarding.',
+    icon: LifeBuoy,
+    permission: 'services:read',
+  },
   {
     href: '/support',
     label: 'Support',
