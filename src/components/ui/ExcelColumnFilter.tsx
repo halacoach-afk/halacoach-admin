@@ -15,7 +15,49 @@ import {cn} from '@/lib/cn';
 const panelInputClass =
   'h-9 w-full rounded-lg border border-border bg-background px-2.5 text-sm text-foreground outline-none focus:border-primary';
 
+const PANEL_WIDTH_FALLBACK = 224; // w-56
+const PANEL_HEIGHT_FALLBACK = 280;
+const VIEWPORT_EDGE = 8;
+const TRIGGER_GAP = 6;
+
 type PanelPos = {top: number; left: number};
+
+function placeFilterPanel(
+  trigger: DOMRect,
+  panelWidth: number,
+  panelHeight: number,
+): PanelPos {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const width = Math.min(panelWidth, vw - VIEWPORT_EDGE * 2);
+  const height = Math.min(panelHeight, vh - VIEWPORT_EDGE * 2);
+
+  let left = trigger.left;
+  if (left + width > vw - VIEWPORT_EDGE) {
+    left = trigger.right - width;
+  }
+  left = Math.min(Math.max(left, VIEWPORT_EDGE), vw - VIEWPORT_EDGE - width);
+
+  const spaceBelow = vh - trigger.bottom - VIEWPORT_EDGE;
+  const spaceAbove = trigger.top - VIEWPORT_EDGE;
+  const fitsBelow = spaceBelow >= height + TRIGGER_GAP;
+  const fitsAbove = spaceAbove >= height + TRIGGER_GAP;
+
+  let top: number;
+  if (fitsBelow || (!fitsAbove && spaceBelow >= spaceAbove)) {
+    top = trigger.bottom + TRIGGER_GAP;
+    if (top + height > vh - VIEWPORT_EDGE) {
+      top = Math.max(VIEWPORT_EDGE, vh - VIEWPORT_EDGE - height);
+    }
+  } else {
+    top = trigger.top - TRIGGER_GAP - height;
+    if (top < VIEWPORT_EDGE) {
+      top = VIEWPORT_EDGE;
+    }
+  }
+
+  return {top, left};
+}
 
 export function ExcelColumnFilter({
   label,
@@ -61,19 +103,32 @@ export function ExcelColumnFilter({
 
   useLayoutEffect(() => {
     if (!open || !buttonRef.current) return;
+
     const update = () => {
-      const rect = buttonRef.current!.getBoundingClientRect();
-      const panelWidth = 224; // w-56
-      let left = rect.left;
-      if (left + panelWidth > window.innerWidth - 8) {
-        left = Math.max(8, rect.right - panelWidth);
-      }
-      setPos({top: rect.bottom + 6, left});
+      const trigger = buttonRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const panel = panelRef.current;
+      const panelWidth = panel?.offsetWidth || PANEL_WIDTH_FALLBACK;
+      const panelHeight = panel?.offsetHeight || PANEL_HEIGHT_FALLBACK;
+      setPos(placeFilterPanel(rect, panelWidth, panelHeight));
     };
+
     update();
+    // Second pass after paint so measured panel size drives flip/clamp.
+    const raf = window.requestAnimationFrame(update);
+    const panel = panelRef.current;
+    const resizeObserver =
+      panel && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => update())
+        : null;
+    if (panel && resizeObserver) resizeObserver.observe(panel);
+
     window.addEventListener('scroll', update, true);
     window.addEventListener('resize', update);
     return () => {
+      window.cancelAnimationFrame(raf);
+      resizeObserver?.disconnect();
       window.removeEventListener('scroll', update, true);
       window.removeEventListener('resize', update);
     };
@@ -135,7 +190,7 @@ export function ExcelColumnFilter({
               role="dialog"
               aria-label={`Filter ${label}`}
               style={{top: pos.top, left: pos.left}}
-              className="fixed z-[80] w-56 rounded-xl border border-border bg-card p-3 shadow-lg">
+              className="fixed z-[80] max-h-[min(24rem,calc(100vh-1rem))] w-56 overflow-y-auto rounded-xl border border-border bg-card p-3 shadow-lg">
               {showSort ? (
                 <div className="mb-2 space-y-0.5 border-b border-border pb-2">
                   <button

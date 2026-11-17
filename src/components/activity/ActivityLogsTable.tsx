@@ -75,10 +75,14 @@ const TYPE_FILTER_OPTIONS = [
   ...ACTIVITY_ACTOR_KIND_OPTIONS,
 ];
 
-function toIso(local: string) {
-  if (!local.trim()) return undefined;
-  const ms = Date.parse(local);
-  return Number.isFinite(ms) ? new Date(ms).toISOString() : undefined;
+/** Send YYYY-MM-DD for date filters; API expands to day start/end. */
+function dateFilterValue(local: string) {
+  const trimmed = local.trim();
+  if (!trimmed) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const ms = Date.parse(trimmed);
+  if (!Number.isFinite(ms)) return undefined;
+  return new Date(ms).toISOString().slice(0, 10);
 }
 
 function isColumnActive(filters: Filters, key: ColumnKey) {
@@ -126,8 +130,8 @@ async function fetchRows(
     actorId: filters.actorId.trim() || undefined,
     entityType: filters.entityType.trim() || undefined,
     entityId: filters.entityId.trim() || undefined,
-    from: toIso(filters.from),
-    to: toIso(filters.to),
+    from: dateFilterValue(filters.from),
+    to: dateFilterValue(filters.to),
   };
   if (scope.kind === 'client') return listClientActivityLogs(scope.id, params);
   if (scope.kind === 'coach') return listProfessionalActivityLogs(scope.id, params);
@@ -239,13 +243,13 @@ export function ActivityLogsTable({scope, compactFilters = false}: Props) {
         'When',
         <>
           <ExcelFilterTextField
-            type="datetime-local"
+            type="date"
             label="From"
             value={draft.from}
             onChange={v => patchDraft('from', v)}
           />
           <ExcelFilterTextField
-            type="datetime-local"
+            type="date"
             label="To"
             value={draft.to}
             onChange={v => patchDraft('to', v)}
