@@ -3,8 +3,9 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'HalaCoach Admin',
-  description: 'Operations console for HalaCoach matching, verification, and credits.',
+  description: 'HalaCoach administration',
   applicationName: 'HalaCoach Admin',
+  robots: {index: false, follow: false, nocache: true},
   icons: {
     icon: [
       {url: '/favicon.png', type: 'image/png', sizes: '48x48'},
