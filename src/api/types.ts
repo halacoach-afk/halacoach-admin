@@ -13,6 +13,8 @@ export type AdminPermission =
   | 'credits:adjust'
   | 'services:read'
   | 'services:write'
+  | 'cms:read'
+  | 'cms:write'
   | 'support:read'
   | 'support:write'
   | 'settings:read'
@@ -1048,4 +1050,32 @@ export type ListActivityLogsParams = {
   entityId?: string | number;
   from?: string;
   to?: string;
+};
+
+export type CmsContentStatus = 'draft' | 'published' | 'archived';
+
+export type CmsResourceGuideLocale = {
+  title: string;
+  summary: string;
+  /** TipTap / Word-like HTML body (preferred when set). */
+  html?: string;
+  introBlocks: unknown[];
+  sections: unknown[];
+  sources: unknown[];
+};
+
+export type CmsResourceGuideContent = {
+  audience?: 'client' | 'professional';
+  legacySlug?: string;
+  en: CmsResourceGuideLocale;
+  ar: CmsResourceGuideLocale;
+};
+
+export type CmsContent = {
+  id: number;
+  type: string;
+  status: CmsContentStatus;
+  content: Record<string, unknown> | CmsResourceGuideContent;
+  createdAt: string;
+  updatedAt: string;
 };

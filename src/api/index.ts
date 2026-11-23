@@ -69,6 +69,10 @@ export type {
   CreateCreditPackageInput,
   CreatePromoInput,
   CreateServiceInput,
+  CmsContent,
+  CmsContentStatus,
+  CmsResourceGuideContent,
+  CmsResourceGuideLocale,
   DashboardActivity,
   DashboardActivityKind,
   DashboardCounts,
@@ -239,6 +243,13 @@ export async function getCreditsOverview(
 
 export {createPromoCode, listPromoCodes, updatePromoCode} from '@/lib/apis';
 export {createService, listServices, reorderServices, updateService} from '@/lib/apis';
+export {
+  archiveCmsContent,
+  createCmsContent,
+  getCmsContent,
+  listCmsContents,
+  updateCmsContent,
+} from '@/lib/apis';
 
 export function adjustCredits(input: AdjustCreditsInput) {
   return request<Professional>(`/v1/credit-adjustments`, {

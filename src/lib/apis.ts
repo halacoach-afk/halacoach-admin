@@ -18,6 +18,8 @@ import type {
   UpdateCreditPlanInput,
   UpdatePromoInput,
   UpdateServiceInput,
+  CmsContent,
+  CmsContentStatus,
 } from '@/api/types';
 
 // ── Admin roles ───────────────────────────────────────────────────────────────
@@ -187,4 +189,43 @@ export function reorderServices(input: ReorderServicesInput) {
     method: 'PATCH',
     body: JSON.stringify(input),
   });
+}
+
+// ── CMS ───────────────────────────────────────────────────────────────────────
+
+export function listCmsContents(params: {type?: string; status?: string} = {}) {
+  const qs = new URLSearchParams();
+  if (params.type) qs.set('type', params.type);
+  if (params.status) qs.set('status', params.status);
+  const suffix = qs.toString() ? `?${qs}` : '';
+  return request<CmsContent[]>(`/v1/cms/contents${suffix}`);
+}
+
+export function getCmsContent(id: number) {
+  return request<CmsContent>(`/v1/cms/contents/${id}`);
+}
+
+export function createCmsContent(input: {
+  type: string;
+  status?: CmsContentStatus;
+  content: Record<string, unknown>;
+}) {
+  return request<CmsContent>('/v1/cms/contents', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateCmsContent(
+  id: number,
+  input: {status?: CmsContentStatus; content?: Record<string, unknown>},
+) {
+  return request<CmsContent>(`/v1/cms/contents/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function archiveCmsContent(id: number) {
+  return request<CmsContent>(`/v1/cms/contents/${id}`, {method: 'DELETE'});
 }
