@@ -6,6 +6,7 @@ import {
   Crown,
   Headset,
   LayoutDashboard,
+  FileText,
   LifeBuoy,
   MapPin,
   Receipt,
@@ -106,6 +107,13 @@ export const navItems: NavItem[] = [
     description: 'Catalog of coaching services used in professional onboarding.',
     icon: LifeBuoy,
     permission: 'services:read',
+  },
+  {
+    href: '/cms',
+    label: 'CMS',
+    description: 'Resources & Guides and other site content.',
+    icon: FileText,
+    permission: 'cms:read',
   },
   {
     href: '/support',

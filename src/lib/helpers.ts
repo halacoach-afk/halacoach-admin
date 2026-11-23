@@ -20,6 +20,7 @@ const MODULE_LABELS: Record<string, string> = {
   leads: 'Leads',
   credits: 'Credits',
   services: 'Services',
+  cms: 'CMS',
   support: 'Support',
   settings: 'Settings',
   messages: 'Messages',
