@@ -50,6 +50,38 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/**
+ * Multipart upload — do not set Content-Type (browser sets boundary).
+ */
+export async function requestFormData<T>(path: string, formData: FormData): Promise<T> {
+  const base = config.apiBaseUrl.replace(/\/$/, '');
+  if (!base) {
+    throw new ApiError(
+      503,
+      'API base URL is not configured. Set NEXT_PUBLIC_API_BASE_URL in .env.local.',
+    );
+  }
+
+  const token = getApiToken();
+  const res = await fetch(`${base}${path}`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      ...(token ? {Authorization: `Bearer ${token}`} : {}),
+    },
+  });
+
+  if (!res.ok) {
+    throw new ApiError(res.status, await readErrorMessage(res));
+  }
+
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  return res.json() as Promise<T>;
+}
+
 export async function requestBlob(path: string): Promise<Blob> {
   const base = config.apiBaseUrl.replace(/\/$/, '');
   if (!base) {

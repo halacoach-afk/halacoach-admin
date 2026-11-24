@@ -2,6 +2,7 @@
 
 import {useEffect, useState} from 'react';
 import {
+  getAppPromoSettings,
   getBillingSettings,
   getFeaturesSettings,
   getMobileAppSettings,
@@ -12,12 +13,14 @@ import {
   updateBillingSettings,
   updateFeaturesSettings,
   updateSupportContactSettings,
+  type AppPromoSettings,
   type FeaturesSettings,
   type MobileAppPolicySettings,
   type NotificationPolicySettings,
   type SessionUser,
   type SmsProviderSettings,
 } from '@/api';
+import {AppPromoSettingsSection} from '@/components/settings/AppPromoSettingsSection';
 import {MobileAppSettingsSection} from '@/components/settings/MobileAppSettingsSection';
 import {NotificationPolicySection} from '@/components/settings/NotificationPolicySection';
 import {SmsProviderSection} from '@/components/settings/SmsProviderSection';
@@ -115,20 +118,29 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
     null,
   );
   const [smsProvider, setSmsProvider] = useState<SmsProviderSettings | null>(null);
+  const [appPromo, setAppPromo] = useState<AppPromoSettings | null>(null);
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [support, billing, nextFeatures, nextNotifications, nextMobile, nextSms] =
-        await Promise.all([
-          getSupportContactSettings(),
-          getBillingSettings(),
-          getFeaturesSettings(),
-          getNotificationPolicySettings(),
-          getMobileAppSettings(),
-          getSmsProviderSettings(),
-        ]);
+      const [
+        support,
+        billing,
+        nextFeatures,
+        nextNotifications,
+        nextMobile,
+        nextSms,
+        nextPromo,
+      ] = await Promise.all([
+        getSupportContactSettings(),
+        getBillingSettings(),
+        getFeaturesSettings(),
+        getNotificationPolicySettings(),
+        getMobileAppSettings(),
+        getSmsProviderSettings(),
+        getAppPromoSettings(),
+      ]);
       setSupportEmail(support.supportEmail);
       setSupportPhone(support.supportPhone);
       setDraftEmail(support.supportEmail);
@@ -139,6 +151,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
       setNotificationPolicy(nextNotifications);
       setMobileAppPolicy(nextMobile);
       setSmsProvider(nextSms);
+      setAppPromo(nextPromo);
       setEditing(false);
       setEditingBilling(false);
     } catch (err) {
@@ -485,6 +498,15 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
           </tr>
         </DataTable>
       </div>
+
+      {appPromo ? (
+        <AppPromoSettingsSection
+          settings={appPromo}
+          canWrite={canWrite}
+          onUpdated={setAppPromo}
+          onError={message => setError(message || null)}
+        />
+      ) : null}
 
       {mobileAppPolicy ? (
         <MobileAppSettingsSection
