@@ -1,1 +1,1 @@
-export {request, requestBlob} from '@/lib/request';
+export {request, requestBlob, requestFormData} from '@/lib/request';

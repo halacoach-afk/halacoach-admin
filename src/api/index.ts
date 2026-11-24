@@ -1,4 +1,4 @@
-import {request, requestBlob} from './client';
+import {request, requestBlob, requestFormData} from './client';
 import {buildListQuery, DEFAULT_PER_PAGE} from '@/lib/pagination';
 import type {
   ActivityLogEntry,
@@ -679,6 +679,67 @@ export function updateMobileAppSettings(
     method: 'PATCH',
     body: JSON.stringify(input),
   });
+}
+
+export type AppPromoFrequency = 'every_open' | 'once';
+
+export type AppPromoSlide = {
+  id: string;
+  imageUrl: string;
+  sortOrder: number;
+};
+
+export type AppPromoSettings = {
+  enabled: boolean;
+  frequency: AppPromoFrequency;
+  version: number;
+  slideCount: number;
+  slides: AppPromoSlide[];
+};
+
+export function getAppPromoSettings() {
+  return request<AppPromoSettings>('/v1/platform-settings/app-promo');
+}
+
+export function updateAppPromoSettings(input: {
+  enabled?: boolean;
+  frequency?: AppPromoFrequency;
+}) {
+  return request<AppPromoSettings>('/v1/platform-settings/app-promo', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function uploadAppPromoSlide(file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  return requestFormData<AppPromoSettings>(
+    '/v1/platform-settings/app-promo/slides',
+    form,
+  );
+}
+
+export function deleteAppPromoSlide(id: string) {
+  return request<AppPromoSettings>(`/v1/platform-settings/app-promo/slides/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export function reorderAppPromoSlides(orderedIds: string[]) {
+  return request<AppPromoSettings>('/v1/platform-settings/app-promo/slides/reorder', {
+    method: 'PATCH',
+    body: JSON.stringify({orderedIds}),
+  });
+}
+
+/** Public image URL for admin thumbnails (no auth header needed on <img>). */
+export function appPromoSlidePublicImageUrl(slideId: string) {
+  const adminBase = (typeof process !== 'undefined'
+    ? process.env.NEXT_PUBLIC_API_BASE_URL
+    : '')?.replace(/\/$/, '') ?? '';
+  const publicBase = adminBase.replace(/\/admin$/, '');
+  return `${publicBase}/v1/platform-settings/app-promo/slides/${slideId}/image`;
 }
 
 export type NotifyChannel = 'inApp' | 'push' | 'email' | 'sms' | 'whatsapp';
