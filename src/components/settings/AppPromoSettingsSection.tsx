@@ -22,8 +22,8 @@ const tableSelectClass =
   'h-9 w-full max-w-xs rounded-lg border border-border bg-background px-2.5 text-sm outline-none focus:border-primary';
 
 const FREQUENCY_LABELS: Record<AppPromoFrequency, string> = {
-  every_open: 'Every open',
-  once: 'Only once',
+  every_open: 'Repeated',
+  once: 'Once',
 };
 
 function FeatureSwitch({
