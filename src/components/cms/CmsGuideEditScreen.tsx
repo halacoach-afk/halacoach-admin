@@ -207,7 +207,7 @@ export function CmsGuideEditScreen({
         }
       />
 
-      {error ? <ErrorState message={error} /> : null}
+      {error ? <ErrorState body={error} /> : null}
 
       {!isNew ? (
         <p className="text-sm text-muted-foreground">

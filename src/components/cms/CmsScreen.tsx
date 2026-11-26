@@ -78,7 +78,7 @@ export function CmsScreen({actor}: {actor: SessionUser}) {
       </p>
 
       {loading ? <LoadingState /> : null}
-      {!loading && error ? <ErrorState message={error} /> : null}
+      {!loading && error ? <ErrorState body={error} /> : null}
 
       {!loading && !error ? (
         <DataTable columns={['ID', 'Title', 'Audience', 'Status', 'Actions']}>
