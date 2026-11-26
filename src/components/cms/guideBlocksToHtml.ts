@@ -19,21 +19,22 @@ function escapeHtml(text: string): string {
 }
 
 function blockToHtml(block: Block): string {
-  const type = typeof block.type === 'string' ? block.type : '';
+  const raw = block as Record<string, unknown>;
+  const type = typeof raw.type === 'string' ? raw.type : '';
   if (type === 'paragraph') {
-    const text = typeof block.text === 'string' ? block.text : '';
+    const text = typeof raw.text === 'string' ? raw.text : '';
     return text.trim() ? `<p>${escapeHtml(text)}</p>` : '';
   }
   if (type === 'list') {
-    const items = Array.isArray(block.items) ? block.items : [];
+    const items = Array.isArray(raw.items) ? raw.items : [];
     if (!items.length) return '';
     return `<ul>${items
       .map(item => `<li>${escapeHtml(String(item))}</li>`)
       .join('')}</ul>`;
   }
   if (type === 'table') {
-    const headers = Array.isArray(block.headers) ? block.headers : [];
-    const rows = Array.isArray(block.rows) ? block.rows : [];
+    const headers = Array.isArray(raw.headers) ? raw.headers : [];
+    const rows = Array.isArray(raw.rows) ? raw.rows : [];
     const thead = headers.length
       ? `<thead><tr>${headers
           .map(h => `<th>${escapeHtml(String(h))}</th>`)
@@ -50,11 +51,15 @@ function blockToHtml(block: Block): string {
     return `<table>${thead}${tbody}</table>`;
   }
   if (type === 'faq') {
-    const items = Array.isArray(block.items) ? block.items : [];
+    const items = Array.isArray(raw.items) ? raw.items : [];
     return items
       .map(item => {
-        const q = escapeHtml(String(item?.question ?? ''));
-        const a = escapeHtml(String(item?.answer ?? ''));
+        const entry =
+          item && typeof item === 'object'
+            ? (item as {question?: unknown; answer?: unknown})
+            : {};
+        const q = escapeHtml(String(entry.question ?? ''));
+        const a = escapeHtml(String(entry.answer ?? ''));
         if (!q && !a) return '';
         return `<h3>${q}</h3><p>${a}</p>`;
       })
