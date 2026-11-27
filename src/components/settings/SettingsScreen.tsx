@@ -304,7 +304,7 @@ export function SettingsScreen({actor}: {actor: SessionUser}) {
           columnHeaderClassNames={
             canWrite ? [undefined, undefined, 'text-right'] : undefined
           }
-          columns={canWrite ? ['Email', 'Phone', 'Actions'] : ['Email', 'Phone']}>
+          columns={canWrite ? ['Email', 'WhatsApp', 'Actions'] : ['Email', 'WhatsApp']}>
           <tr
             className={cn(
               'border-b border-border last:border-0',
